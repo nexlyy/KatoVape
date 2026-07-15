@@ -1,1 +1,225 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>KATO VAPE</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Rubik+Mono+One&family=Rubik:wght@500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --yel:#ffd500; --blu:#0057b7; --ink:#0d0d0d; --paper:#fffdf4;
+  --grn:#19c161; --red:#ff2e4d;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--yel);color:var(--ink);font-family:Rubik,system-ui,sans-serif;padding-bottom:96px}
+button{font-family:inherit}
+.ticker{background:var(--ink);color:var(--yel);overflow:hidden;white-space:nowrap}
+.ticker span{display:inline-block;font-family:'Rubik Mono One';font-size:10px;padding:7px 0;animation:mq 20s linear infinite}
+@keyframes mq{from{transform:translateX(0)}to{transform:translateX(-50%)}}
 
+.top{padding:14px 16px 10px;display:flex;align-items:center;gap:10px}
+.top h1{font-family:'Rubik Mono One';font-size:20px}
+.top .upd{display:inline-block;background:#fff;border:3px solid var(--ink);box-shadow:3px 3px 0 var(--ink);padding:3px 9px;font-weight:900;font-size:10.5px;margin-top:7px;transform:rotate(-1deg);text-transform:uppercase}
+#lang{display:flex;gap:5px;margin-left:auto}
+.kv-lang{border:3px solid var(--ink);background:#fff;padding:4px 8px;font-size:10.5px;font-weight:900;cursor:pointer;box-shadow:2px 2px 0 var(--ink)}
+.kv-lang.on{background:var(--blu);color:#fff;transform:translate(1px,1px);box-shadow:1px 1px 0 var(--ink)}
+#city{position:relative;margin-bottom:10px}
+.kv-city{display:flex;align-items:center;gap:7px;width:100%;border:3px solid var(--ink);background:#fff;color:var(--ink);padding:10px 13px;font-weight:900;font-size:12.5px;cursor:pointer;box-shadow:3px 3px 0 var(--ink);text-transform:uppercase;font-family:inherit}
+.kv-city-pin{color:var(--blu);font-size:8px}
+.kv-city-car{font-size:10px;margin-left:auto}
+.kv-city-menu{position:absolute;top:calc(100% + 5px);left:0;right:0;z-index:30;background:#fff;border:3px solid var(--ink);box-shadow:4px 4px 0 var(--ink);padding:5px}
+.kv-city-menu[hidden]{display:none}
+.kv-city-menu button{display:block;width:100%;text-align:left;background:none;border:none;color:var(--ink);padding:10px 11px;font-weight:900;font-size:12.5px;cursor:pointer;font-family:inherit;text-transform:uppercase}
+.kv-city-menu button:hover{background:var(--yel)}
+.kv-city-menu button.on{color:var(--blu)}
+
+.sticky{position:sticky;top:0;z-index:10;background:var(--yel);padding:10px 16px;border-bottom:3px solid var(--ink)}
+.srow{display:flex;gap:8px;margin-bottom:10px}
+.search{flex:1;border:3px solid var(--ink);background:#fff;padding:10px 13px;font-family:inherit;font-weight:700;font-size:14px;outline:none;box-shadow:3px 3px 0 var(--ink)}
+.cartbtn{border:3px solid var(--ink);background:#fff;padding:0 13px;font-weight:900;font-size:12px;cursor:pointer;box-shadow:3px 3px 0 var(--ink);white-space:nowrap}
+.cartbtn b{color:var(--blu)}
+.chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding:2px 2px 5px}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:0 0 auto;border:3px solid var(--ink);background:#fff;padding:7px 12px;font-weight:900;font-size:12px;cursor:pointer;box-shadow:3px 3px 0 var(--ink);text-transform:uppercase}
+.chip.on{background:var(--blu);color:#fff;transform:translate(1px,1px);box-shadow:2px 2px 0 var(--ink)}
+
+.sec{padding:16px 16px 2px}
+.sec h2{font-family:'Rubik Mono One';font-size:12px;margin-bottom:10px;text-transform:uppercase}
+.sec h2 b{background:var(--ink);color:var(--yel);padding:2px 7px;margin-left:6px}
+.row{position:relative;background:#fff;border:3px solid var(--ink);box-shadow:4px 4px 0 var(--ink);margin-bottom:12px}
+.row:nth-child(odd){transform:rotate(.4deg)} .row:nth-child(even){transform:rotate(-.4deg)}
+.row.open{transform:rotate(0)}
+.row.is-out{background:#efece1}
+.row.is-out .rname{color:#9a958a;text-decoration:line-through;text-decoration-thickness:2px}
+.rhead{display:flex;align-items:center;gap:10px;padding:11px 12px;cursor:pointer}
+.kv-photo{position:relative;width:46px;height:46px;border:2.5px solid var(--ink);background:repeating-linear-gradient(45deg,#f4f0e2,#f4f0e2 8px,#fff 8px,#fff 16px);display:grid;place-items:center;overflow:hidden;flex-shrink:0}
+.kv-photo span{font-family:'Rubik Mono One';font-size:16px;color:#c9c2a8}
+.kv-photo img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.rmain{flex:1;min-width:0}
+.rname{font-weight:900;font-size:13.5px;line-height:1.3}
+.rsub{font-size:11px;font-weight:700;color:#6b6656;margin-top:2px}
+.rsub b{color:var(--ink)}
+.tag{border:2.5px solid var(--ink);padding:3px 8px;font-family:'Rubik Mono One';font-size:9px;flex-shrink:0;transform:rotate(3deg)}
+.tag.in{background:var(--grn);color:#fff}
+.tag.out{background:var(--red);color:#fff;transform:rotate(-3deg)}
+.tag.new{background:var(--blu);color:var(--yel)}
+
+.kv-details{display:none;border-top:3px solid var(--ink);padding:10px 12px 13px;background:#fffbe8}
+.row.open .kv-details{display:block}
+.kvf-meta{font-size:10.5px;font-weight:900;text-transform:uppercase;color:#6b6656;margin-bottom:8px}
+.kvf-row{display:flex;align-items:center;gap:9px;padding:7px 0;border-bottom:2px dashed #d9d2ba;font-size:12.5px}
+.kvf-row:last-child{border-bottom:none}
+.kvf-row.off{opacity:.45}
+.kvf-name{flex:1;font-weight:900}
+.kvf-qty{font-size:10px;font-weight:700;color:#6b6656}
+.kvf-add{border:2.5px solid var(--ink);background:var(--grn);color:#fff;padding:4px 10px;font-size:10px;font-weight:900;cursor:pointer;box-shadow:2px 2px 0 var(--ink)}
+.kvf-add:active{transform:translate(2px,2px);box-shadow:none}
+.kvf-res{margin-top:10px;width:100%;border:3px solid var(--ink);background:var(--yel);padding:8px;font-size:11px;font-weight:900;cursor:pointer;box-shadow:3px 3px 0 var(--ink);text-transform:uppercase}
+.empty{padding:32px 16px;font-weight:900;text-align:center}
+
+.cta{position:fixed;left:16px;right:16px;bottom:14px;background:var(--ink);color:var(--yel);text-align:center;border:3px solid var(--ink);font-family:'Rubik Mono One';font-size:12px;padding:17px;box-shadow:5px 5px 0 rgba(13,13,13,.3);cursor:pointer;z-index:20}
+
+.kvd{position:fixed;inset:0;z-index:90;background:rgba(13,13,13,.55)}
+.kvd[hidden]{display:none}
+.kvd-box{position:absolute;left:0;right:0;bottom:0;max-height:80vh;background:var(--paper);border-top:3px solid var(--ink);padding:18px 16px;display:flex;flex-direction:column;gap:12px;overflow-y:auto}
+.kvd-head{display:flex;align-items:center;justify-content:space-between}
+.kvd-title{font-family:'Rubik Mono One';font-size:14px}
+.kvd-x{border:none;background:none;font-size:24px;cursor:pointer}
+.kvd-row{display:flex;align-items:center;gap:9px;padding:9px 0;border-bottom:2px dashed #d9d2ba;font-size:12.5px}
+.kvd-name{flex:1;font-weight:900}
+.kvd-name small{display:block;color:#6b6656;font-weight:500}
+.kvd-ctr{display:flex;align-items:center;gap:7px}
+.kvd-ctr button{width:25px;height:25px;border:2.5px solid var(--ink);background:#fff;cursor:pointer;font-weight:900;box-shadow:2px 2px 0 var(--ink)}
+.kvd-ctr button:active{transform:translate(2px,2px);box-shadow:none}
+.kvd-sum{font-family:'Rubik Mono One';font-size:11px;min-width:52px;text-align:right}
+.kvd-empty{color:#6b6656;font-weight:700}
+.kvd-total{font-family:'Rubik Mono One';font-size:13px}
+.kvd-go{background:var(--blu);color:#fff;border:3px solid var(--ink);box-shadow:3px 3px 0 var(--ink);padding:12px;font-family:'Rubik Mono One';font-size:11px;cursor:pointer}
+.kvd-go:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--ink)}
+.kvd-clear{background:none;border:none;color:#6b6656;font-size:12px;font-weight:700;cursor:pointer}
+
+.kv-toast{position:fixed;left:50%;bottom:92px;transform:translate(-50%,20px);background:var(--ink);color:var(--yel);font-weight:900;font-size:12px;padding:11px 20px;opacity:0;pointer-events:none;transition:.25s;z-index:120;max-width:90vw;text-align:center}
+.kv-toast.show{opacity:1;transform:translate(-50%,0)}
+</style>
+</head>
+<body>
+
+<div class="ticker"><span id="tick"></span></div>
+
+<div class="top">
+  <div>
+    <h1>KATO VAPE</h1>
+    <span class="upd" id="upd"></span>
+  </div>
+  <div id="lang"></div>
+</div>
+
+<div class="sticky">
+  <div id="city"></div>
+  <div class="srow">
+    <input class="search" id="q" type="search">
+    <button class="cartbtn" id="cartFab" onclick="KV.openCart()"></button>
+  </div>
+  <div class="chips" id="chips"></div>
+</div>
+
+<div id="list"></div>
+<button class="cta" id="cta"></button>
+
+<script src="../../../shared/core.js?v=5"></script>
+<script>
+let cat = 'all', q = '';
+const tg = window.Telegram && window.Telegram.WebApp;
+const inTg = !!(tg && tg.initData);
+
+const TICK = {
+  ru: ' АКТУАЛЬНОЕ НАЛИЧИЕ ★ САМОВЫВОЗ КАТОВИЦЕ ★ ЗАКАЗ: @KATOMANAGER ★',
+  uk: ' АКТУАЛЬНА НАЯВНІСТЬ ★ САМОВИВІЗ КАТОВІЦЕ ★ ЗАМОВЛЕННЯ: @KATOMANAGER ★',
+  pl: ' AKTUALNY ASORTYMENT ★ ODBIÓR KATOWICE ★ ZAMÓWIENIA: @KATOMANAGER ★'
+};
+
+if (inTg) {
+  tg.ready(); tg.expand();
+  tg.setHeaderColor('#ffd500'); tg.setBackgroundColor('#ffd500');
+  document.getElementById('cta').style.display = 'none';
+  document.body.style.paddingBottom = '20px';
+  tg.MainButton.onClick(() => {
+    if (KV.cartCount()) KV.openCart(); else tg.openTelegramLink(KV.manager);
+  });
+}
+
+function render() {
+  const db = KV.db;
+  tick.textContent = TICK[KV.lang].repeat(5);
+  upd.textContent = KV.t('updated') + ' ' + KV.fmtDate(db.updated);
+  document.getElementById('q').placeholder = KV.t('search').toUpperCase();
+
+  const cats = [{ id: 'all', name: null }, ...db.categories];
+  chips.innerHTML = cats.map(c =>
+    '<button class="chip' + (c.id === cat ? ' on' : '') + '" data-c="' + c.id + '">' +
+    (c.name ? KV.catName(c) : { ru: 'Все', uk: 'Всі', pl: 'Wszystko' }[KV.lang]) + '</button>').join('');
+  drawList();
+}
+
+function drawList() {
+  const db = KV.db, out = [];
+  const SL = { in: { ru: 'ЕСТЬ', uk: 'Є', pl: 'JEST' }, out: { ru: 'НЕТ', uk: 'НЕМА', pl: 'BRAK' }, new: { ru: 'NEW', uk: 'NEW', pl: 'NEW' } };
+  for (const c of db.categories) {
+    if (cat !== 'all' && c.id !== cat) continue;
+    const items = c.items.filter(i => KV.match(i, q));
+    if (!items.length) continue;
+    const have = items.filter(i => KV.status(i) !== 'out').length;
+    out.push('<div class="sec"><h2>' + KV.catName(c) + '<b>' + have + '/' + items.length + '</b></h2>' +
+      items.map(i => {
+        const st = KV.status(i);
+        return '<div class="row' + (st === 'out' ? ' is-out' : '') + '">' +
+          '<div class="rhead">' + KV.photo(i) +
+            '<div class="rmain">' +
+              '<div class="rname">' + i.name + '</div>' +
+              '<div class="rsub"><b>' + KV.price(i) + '</b>' +
+                (st !== 'out' ? ' · ' + KV.qty(i) + ' ' + KV.t('pcs') : '') + '</div>' +
+            '</div>' +
+            '<span class="tag ' + st + '">' + SL[st][KV.lang] + '</span>' +
+          '</div>' + KV.detailsHTML(i) + '</div>';
+      }).join('') + '</div>');
+  }
+  list.innerHTML = out.join('') || '<p class="empty">' + KV.t('empty').toUpperCase() + ' :(</p>';
+}
+
+chips.onclick = e => {
+  const b = e.target.closest('.chip'); if (!b) return;
+  cat = b.dataset.c;
+  chips.querySelectorAll('.chip').forEach(x => x.classList.toggle('on', x === b));
+  drawList();
+};
+document.getElementById('q').oninput = e => { q = e.target.value.trim().toLowerCase(); drawList(); };
+list.onclick = e => {
+  if (e.target.closest('button')) return;
+  const row = e.target.closest('.row');
+  if (row) row.classList.toggle('open');
+};
+
+function cartHook() {
+  const n = KV.cartCount();
+  cartFab.innerHTML = KV.t('cart').toUpperCase() + (n ? ' <b>' + n + '</b>' : '');
+  const cta = document.getElementById('cta');
+  if (inTg) {
+    tg.MainButton.setParams({
+      text: (n ? KV.t('cart') + ' (' + n + ') · ' + KV.cartTotal() + ' zł' : KV.t('write')).toUpperCase(),
+      color: '#0d0d0d', text_color: '#ffd500'
+    });
+    tg.MainButton.show();
+  } else {
+    cta.textContent = (n ? KV.t('cart') + ' (' + n + ') · ' + KV.cartTotal() + ' zł' : KV.t('write')).toUpperCase();
+    cta.onclick = () => { if (KV.cartCount()) KV.openCart(); else window.open(KV.manager, '_blank'); };
+  }
+}
+
+KV.init({
+  render, cart: cartHook,
+  fail: () => { list.innerHTML = '<p class="empty">Базу не удалось загрузить, открой демо через локальный сервер.</p>'; }
+});
+</script>
+</body>
+</html>
