@@ -120,8 +120,14 @@ window.KV = (function () {
   let currentCity = null;
   let lang = detectLang();
   let cart = {};
-  try { cart = JSON.parse(localStorage.getItem('kv_cart') || '{}'); } catch (e) {}
   let hooks = { render: null, cart: null };
+
+  // у каждого города своя корзина: один заказ уходит в один магазин
+  function cartStoreKey() { return 'kv_cart_' + city; }
+  function loadCart() {
+    try { cart = JSON.parse(localStorage.getItem(cartStoreKey()) || '{}'); }
+    catch (e) { cart = {}; }
+  }
 
   function t(key, n) {
     let s = (STR[lang] && STR[lang][key]) || STR.ru[key] || key;
@@ -286,7 +292,7 @@ window.KV = (function () {
     saveCart();
   }
   function saveCart() {
-    localStorage.setItem('kv_cart', JSON.stringify(cart));
+    localStorage.setItem(cartStoreKey(), JSON.stringify(cart));
     if (hooks.cart) hooks.cart();
     drawDrawer();
   }
@@ -392,6 +398,8 @@ window.KV = (function () {
           '<span class="kvd-sum">' + l.sum + ' zł</span></div>').join('')
       : '<p class="kvd-empty">' + t('cartEmpty') + '</p>';
     d.querySelector('.kvd-total').textContent = lines.length ? t('total') + ': ' + cartTotal() + ' zł' : '';
+    d.querySelector('.kvd-go').hidden = !lines.length;
+    d.querySelector('.kvd-clear').hidden = !lines.length;
   }
 
   function openCart() { ensureDrawer(); drawDrawer(); document.getElementById('kvd').hidden = false; }
@@ -451,6 +459,7 @@ window.KV = (function () {
   async function setCity(id) {
     localStorage.setItem('kv_city', id);
     await loadCity(id);
+    loadCart();
     const cs = document.getElementById('city');
     if (cs) citySwitch(cs);
     drawDrawer();
@@ -509,6 +518,7 @@ window.KV = (function () {
       city = cities[0].id;
       await loadCity(city);            // сорвался файл города, откатываемся на главный
     }
+    loadCart();
     ensureDrawer();
     drawDrawer();
     const cs = document.getElementById('city');
