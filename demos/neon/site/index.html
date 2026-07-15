@@ -17,7 +17,12 @@
   --bg:#0a0a10; --panel:#12121d; --panel2:#171725; --line:#242439;
   --acid:#c8ff2e; --violet:#8f6bff; --pink:#ff5ce1; --cyan:#4de1ff; --red:#ff5c7a;
   --txt:#eef0ff; --mut:#8a8db0;
+  --kv-surface:var(--panel); --kv-surface2:var(--panel2); --kv-line:var(--line);
+  --kv-text:var(--txt); --kv-muted:var(--mut); --kv-field:var(--panel);
+  --kv-accent:var(--acid); --kv-accent-2:var(--acid); --kv-accent-ink:#0a0a10;
+  --kv-radius:14px; --kv-shadow:0 16px 36px rgba(0,0,0,.45); --kv-gate-bg:rgba(6,6,10,.96);
 }
+html[data-theme="light"]{--kv-accent-2:#5f8f00; --kv-gate-bg:rgba(238,240,247,.96)}
 *{margin:0;padding:0;box-sizing:border-box}
 html{scroll-behavior:smooth}
 body{background:var(--bg);color:var(--txt);font-family:Manrope,system-ui,sans-serif;overflow-x:hidden}
@@ -192,17 +197,6 @@ html[data-theme="light"] .kv-city-menu{box-shadow:0 16px 36px rgba(31,71,125,.18
 </head>
 <body>
 
-<div class="gate" id="gate" hidden>
-  <div class="box">
-    <h2>18+</h2>
-    <p id="gateText"></p>
-    <div class="row">
-      <button class="yes" id="gateYes" onclick="sessionStorage.setItem('kv_age','1');gate.hidden=true"></button>
-      <button id="gateNo" onclick="location.href='https://www.google.com'"></button>
-    </div>
-  </div>
-</div>
-
 <header>
   <div class="wrap nav">
     <div class="nav-left">
@@ -278,11 +272,14 @@ html[data-theme="light"] .kv-city-menu{box-shadow:0 16px 36px rgba(31,71,125,.18
   </div>
   <div class="controls" id="chips"></div>
   <div class="controls">
+    <div id="filters"></div>
     <input class="search" id="q" type="search">
     <label class="only"><input type="checkbox" id="only"> <span id="onlyT"></span></label>
   </div>
   <div class="grid" id="list"></div>
 </section>
+
+<div id="kv-info"></div>
 
 <footer id="contact">
   <div class="wrap">
@@ -293,7 +290,7 @@ html[data-theme="light"] .kv-city-menu{box-shadow:0 16px 36px rgba(31,71,125,.18
 </footer>
 
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
-<script src="../../../shared/core.js?v=8"></script>
+<script src="../../../shared/core.js?v=9"></script>
 <script>
 const L = {
   ru: {
@@ -319,8 +316,6 @@ const p = k => (L[KV.lang] || L.ru)[k];
 
 let cat = 'all', q = '', only = false;
 
-if (!sessionStorage.getItem('kv_age')) gate.hidden = false;
-
 function render() {
   const db = KV.db;
   navStock.textContent = p('navStock');
@@ -329,9 +324,6 @@ function render() {
   stockT.textContent = p('stock');
   heroT.innerHTML = p('heroT');
   heroP.textContent = p('heroP');
-  gateText.textContent = KV.t('gateText');
-  gateYes.textContent = KV.t('gateYes');
-  gateNo.textContent = KV.t('gateNo');
   fAdult.textContent = KV.t('adult');
   fPickup.textContent = KV.pickup();
   fPay.textContent = KV.t('pay');
@@ -365,6 +357,7 @@ function drawGrid() {
     for (const it of KV.sortItems(c.items)) {
       const st = KV.status(it);
       if (only && st === 'out') continue;
+      if (!KV.filterPass(it)) continue;
       if (!KV.match(it, q)) continue;
       rows.push({ it, st, cname: KV.catName(c) });
     }
@@ -375,11 +368,13 @@ function drawGrid() {
     '<div class="card-body">' +
       '<span class="cat">' + r.cname + '</span>' +
       '<span class="name">' + r.it.name + '</span>' +
+      KV.badgesHTML(r.it) +
       '<div class="meta">' +
         '<span class="price">' + KV.price(r.it) + '</span>' +
         '<span class="pill ' + r.st + '">' + KV.t(r.st === 'in' ? 'in' : r.st === 'new' ? 'new' : 'out') + '</span>' +
         (r.st !== 'out' ? '<span class="qtytag">' + KV.qty(r.it) + ' ' + KV.t('pcs') + '</span>' : '') +
       '</div>' +
+      KV.starsHTML(r.it) +
     '</div>' +
     KV.detailsHTML(r.it) +
     '</div>').join('') || '<p class="empty">' + KV.t('empty') + '</p>';
@@ -393,6 +388,7 @@ chips.onclick = e => {
 };
 document.getElementById('q').oninput = e => { q = e.target.value.trim().toLowerCase(); drawGrid(); };
 document.getElementById('only').onchange = e => { only = e.target.checked; drawGrid(); };
+KV.searchSuggest(document.getElementById('q'), v => { q = v.trim().toLowerCase(); drawGrid(); });
 
 // клик по карточке раскрывает вкусы, кнопки внутри при этом не трогаем
 list.onclick = e => {

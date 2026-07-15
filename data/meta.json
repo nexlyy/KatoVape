@@ -1,0 +1,49 @@
+{
+  "_note": "Доп-данные по товарам поверх каталога, ключ = id товара. rating.avg переопределяет авто-рейтинг; badges: hit (хит) / choice (выбор менеджера). reviews не переводятся (как есть от людей).",
+  "hqd": {
+    "badges": ["hit"],
+    "rating": { "avg": 4.8, "count": 41 },
+    "reviews": [
+      { "a": "Артём", "r": 5, "t": "Беру уже третий раз, арбуз топ" },
+      { "a": "Kasia", "r": 4, "t": "Dobra cena, smak ok" }
+    ]
+  },
+  "chaser-lux": {
+    "badges": ["hit"],
+    "rating": { "avg": 4.9, "count": 63 },
+    "reviews": [
+      { "a": "Влад", "r": 5, "t": "Энергетик как надо, вкус не пропадает" },
+      { "a": "Оля", "r": 5, "t": "Личи мягкий, брала на пробу, теперь постоянно" },
+      { "a": "Roman", "r": 4, "t": "Всё ок, забрал быстро" }
+    ]
+  },
+  "chaser-black": {
+    "badges": ["choice"],
+    "rating": { "avg": 4.7, "count": 28 }
+  },
+  "elf-bar-king-30000": {
+    "badges": ["hit"],
+    "rating": { "avg": 4.8, "count": 37 },
+    "reviews": [
+      { "a": "Денис", "r": 5, "t": "Ice King реально холодит, надолго хватает" }
+    ]
+  },
+  "elf-bar-d3-25000": {
+    "badges": ["hit"],
+    "rating": { "avg": 4.6, "count": 33 }
+  },
+  "vaporesso-xros-5": {
+    "badges": ["choice"],
+    "rating": { "avg": 4.9, "count": 52 },
+    "reviews": [
+      { "a": "Іван", "r": 5, "t": "Тримає заряд весь день, беру не перший" }
+    ]
+  },
+  "lost-mary-bm-15000": {
+    "badges": ["choice"],
+    "rating": { "avg": 4.7, "count": 19 }
+  },
+  "cuba": {
+    "rating": { "avg": 4.5, "count": 22 }
+  }
+}

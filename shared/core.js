@@ -124,6 +124,19 @@ window.KV = (function () {
   let lang = detectLang();
   let cart = {};
   let hooks = { render: null, cart: null };
+  let meta = {};                     // доп-данные по товарам (рейтинги, бейджи, отзывы)
+  let content = {};                  // тексты разделов, промо, самовывоз
+  let appliedPromo = null;           // применённый промокод {code, type, value}
+  let filters = { brand: '', maxPrice: 0 };
+
+  // локализованное значение: объект {ru,uk,pl} -> строка текущего языка
+  function loc(o) { return o ? (o[lang] || o.ru || '') : ''; }
+  // строки интерфейса из content.ui с подстановкой {n}/{need}
+  function ui(key, vars) {
+    let s = loc(content.ui && content.ui[key]) || key;
+    if (vars) for (const k in vars) s = s.replace('{' + k + '}', vars[k]);
+    return s;
+  }
 
   // у каждого города своя корзина: один заказ уходит в один магазин
   function cartStoreKey() { return 'kv_cart_' + city; }
@@ -264,7 +277,7 @@ window.KV = (function () {
       'loading="lazy" decoding="async" onerror="this.remove()"></div>';
   }
 
-  // раскрытая часть карточки: характеристика, вкусы с остатками, кнопки
+  // раскрытая часть карточки: рейтинг, характеристика, вкусы, похожее, отзывы, кнопки
   function detailsHTML(item) {
     const st = status(item);
     let rows = '';
@@ -272,7 +285,7 @@ window.KV = (function () {
       rows = '<div class="kvf-list">' + item.flavors.map((f, i) => {
         const have = f.qty > 0;
         return '<div class="kvf-row' + (have ? '' : ' off') + '">' +
-          '<span class="kvf-name">' + flavorName(f) + '</span>' +
+          '<span class="kvf-name"><span class="kvf-ic">' + flavorIcon(f.name) + '</span>' + flavorName(f) + '</span>' +
           '<span class="kvf-qty">' + (have ? t('left', f.qty) : t('qtyNone')) + '</span>' +
           (have ? '<button class="kvf-add" data-add="' + item.id + '" data-fl="' + i + '">' + t('add') + '</button>' : '') +
           '</div>';
@@ -284,10 +297,13 @@ window.KV = (function () {
         '</div></div>';
     }
     const spec = specOf(item);
-    const meta = spec ? '<div class="kvf-meta">' + spec + '</div>' : '';
-    const res = st !== 'out'
-      ? '<button class="kvf-res" data-res="' + item.id + '">' + t('reserve') + '</button>' : '';
-    return '<div class="kv-details">' + meta + rows + res + '</div>';
+    const metaLine = spec ? '<div class="kvf-meta">' + spec + '</div>' : '';
+    const stars = st !== 'out' ? '<div class="kvf-rate">' + starsHTML(item) + '</div>' : '';
+    const action = st === 'out'
+      ? '<button class="kv-restock" data-notify="' + item.id + '">' + ui('notify') + '</button>'
+      : '<button class="kvf-res" data-res="' + item.id + '">' + t('reserve') + '</button>';
+    return '<div class="kv-details">' + stars + metaLine + rows +
+      reviewsHTML(item) + relatedHTML(item) + action + '</div>';
   }
 
   // корзина хранится как "id::вкус" -> штук
@@ -332,8 +348,11 @@ window.KV = (function () {
     const lines = cartLines().map((l, i) =>
       (i + 1) + ') ' + l.item.name + (l.flavor ? ', ' + flavorName(l.flavor) : '') +
       ' x' + l.n + (l.item.price ? ', ' + l.sum + ' zł' : ''));
+    const disc = discount();
+    const discLine = disc
+      ? '\n' + ui('discount') + (appliedPromo ? ' ' + appliedPromo.code : '') + ': −' + disc + ' zł' : '';
     return t('order') + ' KatoVape (' + cityName(currentCity) + '):\n' + lines.join('\n') +
-      '\n' + t('total') + ': ' + cartTotal() + ' zł\n' + pickup();
+      discLine + '\n' + t('total') + ': ' + grandTotal() + ' zł\n' + pickup();
   }
 
   function copyText(text) {
@@ -365,6 +384,8 @@ window.KV = (function () {
 
   function checkout() {
     if (!cartCount()) return;
+    saveLastOrder();
+    track('checkout', { total: grandTotal() });
     tgSend(orderText(), t('copied'));
   }
 
@@ -389,6 +410,7 @@ window.KV = (function () {
     d.innerHTML = '<div class="kvd-box">' +
       '<div class="kvd-head"><b class="kvd-title"></b><button class="kvd-x">&times;</button></div>' +
       '<div class="kvd-items"></div>' +
+      '<div class="kvd-extra"></div>' +
       '<div class="kvd-total"></div>' +
       '<button class="kvd-go"></button>' +
       '<button class="kvd-clear"></button></div>';
@@ -403,8 +425,15 @@ window.KV = (function () {
         if ((cart[k] || 0) >= availFor(k)) toast(t('maxQty'));
         else cartSet(k, (cart[k] || 0) + 1);
       }
+      if (e.target.closest('.kvd-promo-go')) {
+        const inp = d.querySelector('.kvd-promo input');
+        toast(applyPromo(inp.value) ? ui('discount') : ui('promoBad'));
+        drawDrawer();
+      }
+      if (e.target.closest('.kvd-ref button')) inviteFriend();
+      if (e.target.closest('.kvd-repeat')) repeatOrder();
       if (e.target.closest('.kvd-go')) checkout();
-      if (e.target.closest('.kvd-clear')) { cart = {}; saveCart(); }
+      if (e.target.closest('.kvd-clear')) { cart = {}; appliedPromo = null; saveCart(); }
     };
   }
 
@@ -420,7 +449,27 @@ window.KV = (function () {
           '<span class="kvd-ctr"><button data-minus="' + l.key + '">&minus;</button><b>' + l.n + '</b><button data-plus="' + l.key + '">+</button></span>' +
           '<span class="kvd-sum">' + l.sum + ' zł</span></div>').join('')
       : '<p class="kvd-empty">' + t('cartEmpty') + '</p>';
-    d.querySelector('.kvd-total').textContent = lines.length ? t('total') + ': ' + cartTotal() + ' zł' : '';
+
+    // блок промо, скидки, реферала, либо кнопка повтора заказа для пустой корзины
+    const extra = d.querySelector('.kvd-extra');
+    if (lines.length) {
+      const disc = discount();
+      const r = content.referral;
+      extra.innerHTML =
+        '<div class="kvd-promo"><input type="text" placeholder="' + ui('promoPh') +
+          '" value="' + (appliedPromo ? appliedPromo.code : '') + '"><button class="kvd-promo-go">' + ui('promoApply') + '</button></div>' +
+        (disc ? '<div class="kvd-disc"><span>' + ui('discount') + '</span><span>−' + disc + ' zł</span></div>' : '') +
+        (r ? '<div class="kvd-ref"><b>' + loc(r.title) + '</b>' + loc(r.text) +
+          '<div class="kvd-ref-p">' + (referralReady() ? loc(r.done) : loc(r.progress).replace('{n}', invitedCount()).replace('{need}', r.need)) + '</div>' +
+          (referralReady() ? '' : '<button>' + loc(r.invite) + '</button>') + '</div>' : '');
+    } else {
+      extra.innerHTML = hasLastOrder()
+        ? '<button class="kvd-repeat">' + ui('repeat') + '</button>' : '';
+    }
+
+    const disc = discount();
+    d.querySelector('.kvd-total').innerHTML = lines.length
+      ? t('total') + ': ' + (disc ? '<s>' + cartTotal() + '</s> ' : '') + grandTotal() + ' zł' : '';
     d.querySelector('.kvd-go').hidden = !lines.length;
     d.querySelector('.kvd-clear').hidden = !lines.length;
   }
@@ -455,8 +504,11 @@ window.KV = (function () {
       langSwitch(el);
       const cs = document.getElementById('city');
       if (cs) citySwitch(cs);           // названия городов тоже переводим
+      const fp = document.getElementById('filters');
+      if (fp) filterPanel(fp);
       drawDrawer();
       if (hooks.render) hooks.render();
+      renderInfo();
       if (hooks.cart) hooks.cart();
     };
   }
@@ -485,9 +537,13 @@ window.KV = (function () {
     loadCart();
     const cs = document.getElementById('city');
     if (cs) citySwitch(cs);
+    const fp = document.getElementById('filters');
+    if (fp) filterPanel(fp);           // бренды у города свои
     drawDrawer();
     if (hooks.render) hooks.render();
+    renderInfo();                      // самовывоз зависит от города
     if (hooks.cart) hooks.cart();
+    track('city', { to: id });
   }
 
   // шапка прячется при скролле вниз и возвращается при скролле вверх.
@@ -524,29 +580,429 @@ window.KV = (function () {
     }
   }
 
+  // ==== рейтинг и отзывы (8) ====
+  // если рейтинга в meta нет, генерим стабильный по id: 4.3–4.9, чтобы демо
+  // не выглядело пустым, но одна позиция всегда показывала одно и то же
+  function hashId(s) { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0; return h; }
+  function ratingOf(item) {
+    const m = meta[item.id];
+    if (m && m.rating) return m.rating;
+    const h = hashId(item.id);
+    return { avg: +(4.3 + (h % 7) / 10).toFixed(1), count: 5 + (h % 55) };
+  }
+  function starsHTML(item) {
+    if (status(item) === 'out') return '';
+    const r = ratingOf(item), full = Math.round(r.avg);
+    let s = '';
+    for (let i = 1; i <= 5; i++) s += '<span class="kv-star' + (i <= full ? ' on' : '') + '">★</span>';
+    return '<span class="kv-stars">' + s + '<i>' + r.avg.toFixed(1) + ' · ' + r.count + '</i></span>';
+  }
+  function reviewsHTML(item) {
+    const m = meta[item.id];
+    if (!m || !m.reviews || !m.reviews.length) return '';
+    return '<div class="kv-revs"><b>' + ui('reviews') + '</b>' + m.reviews.map(rv =>
+      '<div class="kv-rev"><span class="kv-rev-h">' + rv.a +
+      ' <em>' + '★'.repeat(rv.r) + '</em></span>' + rv.t + '</div>').join('') + '</div>';
+  }
+
+  // ==== бейджи (10): хит / выбор менеджера / осталось мало ====
+  function badgesHTML(item) {
+    const m = meta[item.id], out = [];
+    if (m && m.badges) m.badges.forEach(b => out.push('<span class="kv-badge ' + b + '">' + ui(b) + '</span>'));
+    const q = qty(item);
+    if (q > 0 && q <= 3) out.push('<span class="kv-badge few">' + ui('lastFew') + '</span>');
+    return out.length ? '<div class="kv-badges">' + out.join('') + '</div>' : '';
+  }
+
+  // ==== иконки вкусов (13) ====
+  const FLAVOR_ICONS = [
+    [/лёд|лед|лід|ice/, '🧊'], [/арбуз|watermelon|кавун/, '🍉'], [/манго|mango/, '🥭'],
+    [/клубник|полуниц|truskaw|strawberr/, '🍓'], [/виноград|grape|winogron/, '🍇'],
+    [/черник|голубик|чорниц|лохин|blueberr|jagoda|borówk/, '🫐'], [/вишн|cherry|wiśni/, '🍒'],
+    [/кола|cola/, '🥤'], [/энергетик|energy|energetyk/, '⚡'], [/мят|mint|м’ят|mięt/, '🌿'],
+    [/лимон|лайм|lemon|lime|cytryn|limonk/, '🍋'], [/персик|peach|brzoskwin/, '🍑'],
+    [/ананас|pineapple|ananas/, '🍍'], [/банан|banana/, '🍌'], [/яблок|apple|jabłk/, '🍏'],
+    [/дын|melon|дин/, '🍈'], [/груш|pear|gruszk/, '🍐'], [/ежевик|blackberr|ожин|jeżyn/, '🫐'],
+    [/малин|raspberr|malin/, '🍓'], [/табак|tobacco|tytoń/, '🚬'], [/энерг|барбарис|тропик|микс|mix/, '🍹']
+  ];
+  function flavorIcon(name) {
+    const n = name.toLowerCase();
+    for (const [re, ic] of FLAVOR_ICONS) if (re.test(n)) return ic + ' ';
+    return '';
+  }
+
+  // ==== "с этим берут" (9) ====
+  function relatedHTML(item) {
+    const cat = db.categories.find(c => c.id === item._cat);
+    if (!cat) return '';
+    const rel = sortItems(cat.items.filter(x => x.id !== item.id && status(x) !== 'out')).slice(0, 3);
+    if (!rel.length) return '';
+    return '<div class="kv-rel"><b>' + ui('related') + '</b><div class="kv-rel-row">' +
+      rel.map(x => '<button class="kv-rel-i" data-goto="' + x.id + '">' +
+        '<img src="' + ROOT + 'data/photos/' + x.id + '.jpg" alt="" loading="lazy" onerror="this.style.visibility=\'hidden\'">' +
+        '<span>' + x.name + '</span><b>' + price(x) + '</b></button>').join('') + '</div></div>';
+  }
+
+  // ==== бренд и фильтры (11) ====
+  const BRAND_FIX = { 'Elf': 'Elf Bar', 'Lost': 'Lost Mary', 'Funky': 'Funky Monkey' };
+  function brandOf(item) {
+    if (item.brand) return item.brand;
+    const w = item.name.replace(/^Elf Bar \| /, '').split(/[ |]/)[0];
+    return BRAND_FIX[w] || w;
+  }
+  function allBrands() {
+    const set = [];
+    db.categories.forEach(c => c.items.forEach(it => { const b = brandOf(it); if (!set.includes(b)) set.push(b); }));
+    return set.sort();
+  }
+  function filterPass(item) {
+    if (filters.brand && brandOf(item) !== filters.brand) return false;
+    if (filters.maxPrice && (item.price || 0) > filters.maxPrice) return false;
+    return true;
+  }
+  function maxItemPrice() {
+    let m = 0; db.categories.forEach(c => c.items.forEach(it => { if ((it.price || 0) > m) m = it.price; }));
+    return Math.ceil(m / 10) * 10;
+  }
+  function filterPanel(el) {
+    const brands = allBrands(), top = maxItemPrice();
+    const cur = filters.maxPrice || top;
+    el.innerHTML =
+      '<button class="kv-fbtn" type="button">☰ ' + ui('filters') +
+      (filters.brand || filters.maxPrice ? ' <i>●</i>' : '') + '</button>' +
+      '<div class="kv-fpanel" hidden>' +
+        '<label>' + ui('brand') + '<select class="kv-fbrand"><option value="">' + ui('all') + '</option>' +
+          brands.map(b => '<option' + (b === filters.brand ? ' selected' : '') + '>' + b + '</option>').join('') + '</select></label>' +
+        '<label>' + ui('priceUpTo', { n: '<b class="kv-fprice">' + cur + '</b>' }) +
+          '<input type="range" class="kv-frange" min="20" max="' + top + '" step="5" value="' + cur + '"></label>' +
+        '<button class="kv-freset" type="button">' + ui('reset') + '</button>' +
+      '</div>';
+    const panel = el.querySelector('.kv-fpanel');
+    el.querySelector('.kv-fbtn').onclick = e => { e.stopPropagation(); panel.hidden = !panel.hidden; };
+    el.querySelector('.kv-fbrand').onchange = e => { filters.brand = e.target.value; if (hooks.render) hooks.render(); };
+    const range = el.querySelector('.kv-frange');
+    range.oninput = e => { el.querySelector('.kv-fprice').textContent = e.target.value; };
+    range.onchange = e => { filters.maxPrice = +e.target.value >= top ? 0 : +e.target.value; if (hooks.render) hooks.render(); };
+    el.querySelector('.kv-freset').onclick = () => { filters = { brand: '', maxPrice: 0 }; panel.hidden = true; filterPanel(el); if (hooks.render) hooks.render(); };
+  }
+
+  // ==== промокод, реферал, скидка (4, 25) ====
+  function findPromo(code) {
+    return (content.promos || []).find(p => p.code.toUpperCase() === String(code).trim().toUpperCase());
+  }
+  function applyPromo(code) {
+    const p = findPromo(code);
+    if (!p) { appliedPromo = null; return false; }
+    appliedPromo = p; localStorage.setItem('kv_promo', p.code);
+    return true;
+  }
+  function invitedCount() { return +(localStorage.getItem('kv_invited') || 0); }
+  function referralReady() {
+    const r = content.referral;
+    return r && invitedCount() >= r.need;
+  }
+  // ссылка-приглашение: свой же сайт с меткой ref
+  function referralLink() { return location.origin + location.pathname + '?ref=' + (localStorage.getItem('kv_me') || 'me'); }
+  function inviteFriend() {
+    const r = content.referral; if (!r) return;
+    // демо: каждый показ ссылки засчитываем как принятое приглашение, до нужного числа
+    const n = Math.min(invitedCount() + 1, r.need);
+    localStorage.setItem('kv_invited', n);
+    copyText(referralLink());
+    const url = 'https://t.me/share/url?url=' + encodeURIComponent(referralLink()) +
+      '&text=' + encodeURIComponent('KatoVape — украинские вейпы в Польше');
+    const tg = window.Telegram && window.Telegram.WebApp;
+    if (tg && tg.initData) tg.openTelegramLink(url); else window.open(url, '_blank');
+    toast(n >= r.need ? loc(r.done) : loc(r.progress).replace('{n}', n).replace('{need}', r.need));
+    drawDrawer();
+  }
+  function discount() {
+    const sub = cartTotal();
+    let d = 0;
+    if (appliedPromo) d += appliedPromo.type === 'percent' ? Math.round(sub * appliedPromo.value / 100) : appliedPromo.value;
+    if (referralReady() && content.referral) d += content.referral.reward;
+    return Math.min(d, sub);
+  }
+  function grandTotal() { return Math.max(cartTotal() - discount(), 0); }
+
+  // ==== повтор заказа (3) ====
+  function lastOrderKey() { return 'kv_last_' + city; }
+  function saveLastOrder() {
+    if (cartCount()) localStorage.setItem(lastOrderKey(), JSON.stringify(cart));
+  }
+  function hasLastOrder() {
+    try { return Object.keys(JSON.parse(localStorage.getItem(lastOrderKey()) || '{}')).length > 0; }
+    catch (e) { return false; }
+  }
+  function repeatOrder() {
+    let last = {};
+    try { last = JSON.parse(localStorage.getItem(lastOrderKey()) || '{}'); } catch (e) {}
+    let added = false;
+    for (const key in last) {
+      const av = availFor(key); if (!av) continue;
+      cart[key] = Math.min(last[key], av); added = true;
+    }
+    if (added) { saveCart(); openCart(); } else toast(t('maxQty'));
+  }
+
+  // ==== уведомить о поступлении (14) ====
+  function notifyRestock(id) {
+    const item = find(id); if (!item) return;
+    tgSend(ui('notifyMsg') + item.name + ' (' + cityName(currentCity) + ')', ui('notify'));
+  }
+
+  // ==== аналитика (29): считаем события локально + в dataLayer, если есть ====
+  function track(ev, data) {
+    try {
+      const s = JSON.parse(localStorage.getItem('kv_stats') || '{}');
+      s[ev] = (s[ev] || 0) + 1;
+      localStorage.setItem('kv_stats', JSON.stringify(s));
+    } catch (e) {}
+    if (window.dataLayer) window.dataLayer.push(Object.assign({ event: 'kv_' + ev, city: city }, data || {}));
+  }
+
+  // ==== поиск с подсказками и историей (30) ====
+  function searchHistory() { try { return JSON.parse(localStorage.getItem('kv_searches') || '[]'); } catch (e) { return []; } }
+  function pushHistory(q) {
+    if (!q || q.length < 2) return;
+    let h = searchHistory().filter(x => x !== q); h.unshift(q); h = h.slice(0, 6);
+    localStorage.setItem('kv_searches', JSON.stringify(h));
+  }
+  // навешивается на input поиска, onPick(value) вызывается при выборе
+  function searchSuggest(input, onPick) {
+    const box = document.createElement('div');
+    box.className = 'kv-sugg'; box.hidden = true;
+    input.parentNode.style.position = 'relative';
+    input.parentNode.appendChild(box);
+    function names() {
+      const out = [];
+      db.categories.forEach(c => c.items.forEach(it => {
+        out.push(it.name);
+        (it.flavors || []).forEach(f => out.push(flavorName(f)));
+      }));
+      return out;
+    }
+    function draw() {
+      const q = input.value.trim().toLowerCase();
+      let rows = [];
+      if (!q) rows = searchHistory().map(h => ['↺', h]);
+      else rows = names().filter(n => n.toLowerCase().includes(q))
+        .filter((v, i, a) => a.indexOf(v) === i).slice(0, 6).map(n => ['🔍', n]);
+      if (!rows.length) { box.hidden = true; return; }
+      box.innerHTML = rows.map(([ic, n]) =>
+        '<button data-sugg="' + n.replace(/"/g, '&quot;') + '"><span>' + ic + '</span>' + n + '</button>').join('');
+      box.hidden = false;
+    }
+    input.addEventListener('focus', draw);
+    input.addEventListener('input', draw);
+    input.addEventListener('blur', () => setTimeout(() => { box.hidden = true; }, 150));
+    box.onclick = e => {
+      const b = e.target.closest('[data-sugg]'); if (!b) return;
+      input.value = b.dataset.sugg; pushHistory(input.value);
+      box.hidden = true; onPick(input.value);
+    };
+  }
+
+  // ==== информационные разделы (17,18,19,20) собираем в один контейнер ====
+  function renderInfo() {
+    const el = document.getElementById('kv-info'); if (!el || !content.howto) return;
+    const h = content.howto, f = content.faq, a = content.about, p = content.pickup;
+    const pc = p && p.cities && p.cities[city];
+    el.innerHTML =
+      '<section class="kv-sec kv-howto"><h3>' + loc(h.title) + '</h3><div class="kv-steps">' +
+        h.steps.map(s => '<div class="kv-step"><span class="kv-step-n">' + s.ic + '</span>' +
+          '<b>' + loc(s.t) + '</b><p>' + loc(s.d) + '</p></div>').join('') + '</div></section>' +
+      (pc ? '<section class="kv-sec kv-pickup"><h3>' + loc(p.title) + ' · ' + cityName(currentCity) + '</h3>' +
+        '<p class="kv-pick-addr">' + pc.addr + '</p>' +
+        '<p class="kv-pick-h">' + loc(p.hoursLabel) + ': ' + loc(pc.hours) + '</p>' +
+        '<a class="kv-pick-map" href="' + pc.map + '" target="_blank" rel="noopener">' + loc(p.mapLabel) + ' →</a></section>' : '') +
+      (a ? '<section class="kv-sec kv-about"><h3>' + loc(a.title) + '</h3><p>' + loc(a.text) + '</p></section>' : '') +
+      (f ? '<section class="kv-sec kv-faq"><h3>' + loc(f.title) + '</h3>' +
+        f.items.map((q, i) => '<div class="kv-q" data-faq="' + i + '"><button>' + loc(q.q) + '<span>+</span></button>' +
+          '<div class="kv-a" hidden>' + loc(q.a) + '</div></div>').join('') + '</section>' : '');
+  }
+
+  // ==== 18+ гейт с записью согласия + PL-предупреждение (21) ====
+  function ensureGate() {
+    if (localStorage.getItem('kv_age')) return;      // согласие уже дано и записано
+    const g = document.createElement('div');
+    g.className = 'kv-gate';
+    g.innerHTML = '<div class="kv-gate-box"><div class="kv-gate-18">18+</div>' +
+      '<p class="kv-gate-warn">' + loc(content.legal && content.legal.warn) + '</p>' +
+      '<div class="kv-gate-row"><button class="kv-gate-yes">' + t('gateYes') + '</button>' +
+      '<button class="kv-gate-no">' + t('gateNo') + '</button></div></div>';
+    document.body.appendChild(g);
+    g.querySelector('.kv-gate-yes').onclick = () => {
+      localStorage.setItem('kv_age', JSON.stringify({ ok: true, ts: Date.now(), v: 1 }));
+      g.remove(); maybeSubscribe();
+    };
+    g.querySelector('.kv-gate-no').onclick = () => { location.href = 'https://www.google.com'; };
+  }
+
+  // ==== cookie-баннер (22) ====
+  function ensureCookie() {
+    if (localStorage.getItem('kv_cookie') || !content.cookie) return;
+    const c = document.createElement('div');
+    c.className = 'kv-cookie';
+    c.innerHTML = '<span>' + loc(content.cookie.text) + '</span><button>' + loc(content.cookie.ok) + '</button>';
+    document.body.appendChild(c);
+    c.querySelector('button').onclick = () => { localStorage.setItem('kv_cookie', '1'); c.remove(); };
+  }
+
+  // ==== попап подписки на канал (26), один раз ====
+  function maybeSubscribe() {
+    if (localStorage.getItem('kv_subbed') || !content.subscribe) return;
+    if (localStorage.getItem('kv_age') == null) return;   // не поверх гейта
+    const s = content.subscribe;
+    const el = document.createElement('div');
+    el.className = 'kv-sub';
+    el.innerHTML = '<div class="kv-sub-box"><b>' + loc(s.title) + '</b><p>' + loc(s.text) + '</p>' +
+      '<a class="kv-sub-go" href="' + s.url + '" target="_blank" rel="noopener">' + loc(s.btn) + '</a>' +
+      '<button class="kv-sub-later">' + loc(s.later) + '</button></div>';
+    document.body.appendChild(el);
+    const close = () => { localStorage.setItem('kv_subbed', '1'); el.remove(); };
+    el.querySelector('.kv-sub-later').onclick = close;
+    el.querySelector('.kv-sub-go').onclick = () => { track('subscribe'); close(); };
+    el.onclick = e => { if (e.target === el) close(); };
+  }
+
+  // ==== один общий стиль для всех новых компонентов ====
+  // сайты только мапят палитру на нейтральные токены --kv-*, разметку красим тут
+  function injectCSS() {
+    if (document.getElementById('kv-shared')) return;
+    const css = `
+:root{--kv-radius:14px}
+.kv-stars{display:inline-flex;align-items:center;gap:1px;font-size:12px}
+.kv-star{color:var(--kv-line)}.kv-star.on{color:#ffb020}
+.kv-stars i{font-style:normal;color:var(--kv-muted);font-size:11px;margin-left:5px}
+.kv-badges{display:flex;gap:5px;flex-wrap:wrap}
+.kv-badge{font-size:10px;font-weight:800;padding:3px 8px;border-radius:99px;text-transform:uppercase;letter-spacing:.4px}
+.kv-badge.hit{background:#ff5c3322;color:#ff6a3d}
+.kv-badge.choice{background:#8f6bff22;color:#9a7bff}
+.kv-badge.few{background:#ffb02022;color:#e0920f}
+.kv-revs{margin-top:12px}.kv-revs>b{font-size:12px;color:var(--kv-muted);display:block;margin-bottom:6px}
+.kv-rev{font-size:12.5px;line-height:1.5;padding:7px 0;border-top:1px solid var(--kv-line)}
+.kv-rev-h{display:block;font-weight:700}.kv-rev-h em{color:#ffb020;font-style:normal;font-size:11px}
+.kv-rel{margin-top:12px}.kv-rel>b{font-size:12px;color:var(--kv-muted);display:block;margin-bottom:7px}
+.kv-rel-row{display:flex;gap:8px}
+.kv-rel-i{flex:1;min-width:0;background:var(--kv-surface2);border:1px solid var(--kv-line);border-radius:calc(var(--kv-radius) - 4px);padding:7px;cursor:pointer;text-align:center;font-family:inherit;color:var(--kv-text)}
+.kv-rel-i img{width:100%;height:52px;object-fit:contain;background:#fff;border-radius:6px}
+.kv-rel-i span{display:block;font-size:11px;font-weight:700;margin:5px 0 2px;line-height:1.2}
+.kv-rel-i b{font-size:11px;color:var(--kv-accent-2,var(--kv-accent))}
+.kv-restock{margin-top:10px;width:100%;border:1px dashed var(--kv-line);background:none;color:var(--kv-muted);border-radius:var(--kv-radius);padding:9px;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit}
+.kv-restock:hover{color:var(--kv-accent);border-color:var(--kv-accent)}
+#filters{position:relative}
+.kv-fbtn{border:1px solid var(--kv-line);background:var(--kv-surface);color:var(--kv-text);padding:9px 15px;border-radius:99px;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit}
+.kv-fbtn i{color:var(--kv-accent-2,var(--kv-accent));font-style:normal}
+.kv-fpanel{position:absolute;top:calc(100% + 8px);left:0;z-index:40;background:var(--kv-surface2);border:1px solid var(--kv-line);border-radius:var(--kv-radius);padding:16px;min-width:230px;box-shadow:var(--kv-shadow);display:flex;flex-direction:column;gap:12px}
+.kv-fpanel[hidden]{display:none}
+.kv-fpanel label{display:flex;flex-direction:column;gap:6px;font-size:12.5px;font-weight:700;color:var(--kv-muted)}
+.kv-fpanel select{background:var(--kv-field);border:1px solid var(--kv-line);color:var(--kv-text);border-radius:10px;padding:9px;font-family:inherit;font-size:13.5px}
+.kv-frange{accent-color:var(--kv-accent)}
+.kv-fprice{color:var(--kv-text)}
+.kv-freset{background:none;border:none;color:var(--kv-accent-2,var(--kv-accent));font-weight:700;font-size:12.5px;cursor:pointer;font-family:inherit;text-align:left;padding:0}
+.kv-sugg{position:absolute;top:calc(100% + 6px);left:0;right:0;z-index:45;background:var(--kv-surface2);border:1px solid var(--kv-line);border-radius:var(--kv-radius);padding:5px;box-shadow:var(--kv-shadow)}
+.kv-sugg[hidden]{display:none}
+.kv-sugg button{display:flex;align-items:center;gap:9px;width:100%;text-align:left;background:none;border:none;color:var(--kv-text);padding:9px 11px;border-radius:9px;font-size:13.5px;cursor:pointer;font-family:inherit}
+.kv-sugg button:hover{background:var(--kv-surface)}
+.kv-sugg span{opacity:.6;font-size:12px}
+.kvd-promo{display:flex;gap:7px;margin-top:4px}
+.kvd-promo input{flex:1;min-width:0;background:var(--kv-field);border:1px solid var(--kv-line);color:var(--kv-text);border-radius:10px;padding:9px 12px;font-family:inherit;font-size:13px}
+.kvd-promo button{background:var(--kv-surface);border:1px solid var(--kv-line);color:var(--kv-text);border-radius:10px;padding:0 14px;font-weight:700;font-size:12.5px;cursor:pointer;font-family:inherit}
+.kvd-disc{display:flex;justify-content:space-between;color:var(--kv-accent-2,var(--kv-accent));font-weight:700;font-size:13.5px}
+.kvd-ref{border:1px dashed var(--kv-line);border-radius:var(--kv-radius);padding:12px;font-size:12.5px;color:var(--kv-muted);line-height:1.5}
+.kvd-ref b{color:var(--kv-text);display:block;margin-bottom:4px}
+.kvd-ref button{margin-top:8px;background:var(--kv-accent);color:var(--kv-accent-ink);border:none;border-radius:10px;padding:9px 14px;font-weight:800;font-size:12.5px;cursor:pointer;font-family:inherit}
+.kvd-ref .kvd-ref-p{margin-top:6px;font-weight:700;color:var(--kv-text)}
+.kvd-repeat{width:100%;background:var(--kv-surface);border:1px solid var(--kv-line);color:var(--kv-text);border-radius:var(--kv-radius);padding:12px;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit}
+#kv-info{max-width:1100px;margin:0 auto;padding:10px 22px 40px;display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));position:relative;z-index:1}
+.kv-sec{background:var(--kv-surface);border:1px solid var(--kv-line);border-radius:var(--kv-radius);padding:20px 22px}
+.kv-sec h3{font-size:16px;margin-bottom:12px;color:var(--kv-text)}
+.kv-howto{grid-column:1/-1}
+.kv-steps{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+.kv-step{display:flex;flex-direction:column;gap:5px}
+.kv-step-n{width:30px;height:30px;border-radius:50%;background:var(--kv-accent);color:var(--kv-accent-ink);display:grid;place-items:center;font-weight:900;margin-bottom:4px}
+.kv-step b{font-size:14px;color:var(--kv-text)}.kv-step p{font-size:12.5px;color:var(--kv-muted);line-height:1.5}
+.kv-pick-addr{font-size:14px;font-weight:700;color:var(--kv-text)}
+.kv-pick-h{font-size:12.5px;color:var(--kv-muted);margin:6px 0 10px}
+.kv-pick-map{color:var(--kv-accent-2,var(--kv-accent));text-decoration:none;font-weight:700;font-size:13px}
+.kv-about p{font-size:13px;color:var(--kv-muted);line-height:1.6}
+.kv-q button{width:100%;display:flex;justify-content:space-between;gap:10px;align-items:center;background:none;border:none;border-top:1px solid var(--kv-line);color:var(--kv-text);padding:12px 0;font-size:13.5px;font-weight:600;text-align:left;cursor:pointer;font-family:inherit}
+.kv-q:first-of-type button{border-top:none}
+.kv-q button span{color:var(--kv-accent-2,var(--kv-accent));font-size:18px;flex-shrink:0}
+.kv-a{font-size:12.5px;color:var(--kv-muted);line-height:1.6;padding:0 0 12px}
+.kv-cookie{position:fixed;left:12px;right:12px;bottom:12px;z-index:130;background:var(--kv-surface2);border:1px solid var(--kv-line);border-radius:var(--kv-radius);padding:14px 16px;display:flex;gap:14px;align-items:center;justify-content:center;flex-wrap:wrap;box-shadow:var(--kv-shadow);font-size:12.5px;color:var(--kv-muted)}
+.kv-cookie button{background:var(--kv-accent);color:var(--kv-accent-ink);border:none;border-radius:10px;padding:9px 18px;font-weight:800;cursor:pointer;font-family:inherit;font-size:12.5px}
+.kv-gate{position:fixed;inset:0;z-index:200;background:var(--kv-gate-bg,rgba(6,6,10,.96));display:flex;align-items:center;justify-content:center;padding:20px}
+.kv-gate-box{background:var(--kv-surface2);border:1px solid var(--kv-line);border-radius:20px;padding:36px 32px;max-width:430px;text-align:center}
+.kv-gate-18{font-size:46px;font-weight:900;color:var(--kv-accent);margin-bottom:12px}
+.kv-gate-warn{color:var(--kv-muted);line-height:1.6;margin-bottom:24px;font-size:13.5px}
+.kv-gate-row{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.kv-gate-row button{font-weight:800;font-size:14.5px;padding:13px 24px;border-radius:12px;cursor:pointer;border:1px solid var(--kv-line);background:none;color:var(--kv-muted);font-family:inherit}
+.kv-gate-yes{background:var(--kv-accent)!important;border-color:var(--kv-accent)!important;color:var(--kv-accent-ink)!important}
+.kv-sub{position:fixed;inset:0;z-index:140;background:rgba(6,6,10,.6);display:flex;align-items:center;justify-content:center;padding:20px}
+.kv-sub-box{background:var(--kv-surface2);border:1px solid var(--kv-line);border-radius:20px;padding:28px;max-width:360px;text-align:center}
+.kv-sub-box b{font-size:18px;color:var(--kv-text)}
+.kv-sub-box p{color:var(--kv-muted);margin:10px 0 20px;line-height:1.5;font-size:13.5px}
+.kv-sub-go{display:block;background:var(--kv-accent);color:var(--kv-accent-ink);text-decoration:none;font-weight:800;padding:13px;border-radius:12px;font-size:14px}
+.kv-sub-later{background:none;border:none;color:var(--kv-muted);margin-top:12px;cursor:pointer;font-family:inherit;font-size:12.5px}
+.kvf-ic{margin-right:2px}`;
+    const s = document.createElement('style');
+    s.id = 'kv-shared'; s.textContent = css;
+    document.head.appendChild(s);
+  }
+
   // клики по кнопкам "в корзину" и "бронь" ловим один раз на документе
   document.addEventListener('click', e => {
     const add = e.target.closest('[data-add]');
     if (add) {
       const ok = cartAdd(add.dataset.add, add.dataset.fl !== undefined ? +add.dataset.fl : undefined);
       toast(t(ok ? 'added' : 'maxQty'));
+      if (ok) track('add_to_cart', { id: add.dataset.add });
     }
     const res = e.target.closest('[data-res]');
     if (res) reserve(res.dataset.res);
-    // клик мимо выпадашек закрывает их
+    const notify = e.target.closest('[data-notify]');
+    if (notify) notifyRestock(notify.dataset.notify);
+    // переход к похожему товару: подсветить и открыть его карточку
+    const goto = e.target.closest('[data-goto]');
+    if (goto) {
+      const card = document.querySelector('[data-id="' + goto.dataset.goto + '"]');
+      if (card) { card.classList.add('open'); card.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+    }
+    // аккордеон FAQ
+    const faq = e.target.closest('.kv-q button');
+    if (faq) {
+      const a = faq.parentNode.querySelector('.kv-a');
+      a.hidden = !a.hidden; faq.querySelector('span').textContent = a.hidden ? '+' : '–';
+    }
+    // клик мимо выпадашек и панели фильтров закрывает их
     if (!e.target.closest('#city') && !e.target.closest('#lang')) closeMenus();
+    if (!e.target.closest('#filters')) {
+      const fp = document.querySelector('.kv-fpanel'); if (fp) fp.hidden = true;
+    }
   });
+
+  function loadJSON(f) { return fetch(ROOT + f, { cache: 'no-store' }).then(r => r.json()).catch(() => ({})); }
 
   async function init(opts) {
     hooks.render = opts.render;
     hooks.cart = opts.cart || null;
+    injectCSS();
+    if (!localStorage.getItem('kv_me')) localStorage.setItem('kv_me', Math.random().toString(36).slice(2, 8));
     try {
-      const r = await fetch(ROOT + 'data/products.json', { cache: 'no-store' });
-      master = await r.json();
+      const [prod, m, c] = await Promise.all([
+        loadJSON('data/products.json'), loadJSON('data/meta.json'), loadJSON('data/content.json')
+      ]);
+      if (!prod || !prod.categories) throw new Error('no products');
+      master = prod; meta = m || {}; content = c || {};
     } catch (e) {
       if (opts.fail) opts.fail();
       return;
     }
+    // восстанавливаем ранее введённый промокод
+    const savedPromo = localStorage.getItem('kv_promo');
+    if (savedPromo) appliedPromo = findPromo(savedPromo) || null;
     cities = master.cities || [{ id: master.city || 'katowice',
       name: { ru: 'Катовице', uk: 'Катовіце', pl: 'Katowice' }, main: true, logo: 'cat.png' }];
     if (!cities.some(c => c.id === city)) city = cities[0].id;
@@ -565,14 +1021,22 @@ window.KV = (function () {
     if (ts) themeSwitch(ts);
     const ls = document.getElementById('lang');
     if (ls) langSwitch(ls);
+    const fp = document.getElementById('filters');
+    if (fp) filterPanel(fp);
     opts.render();
+    renderInfo();
     if (hooks.cart) hooks.cart();
+    ensureGate();
+    ensureCookie();
+    if (localStorage.getItem('kv_age')) maybeSubscribe();
+    track('view');
   }
 
   return {
-    init, t, catName, cityName, pickup, cityLogo, flavorName, specOf, qty, status,
+    init, t, ui, loc, catName, cityName, pickup, cityLogo, flavorName, specOf, qty, status,
     isNew, match, find, price, plural, fmtDate, photo, detailsHTML, openCart, checkout,
     cartCount, cartTotal, toast, autoHideHeader, sortItems,
+    starsHTML, badgesHTML, filterPass, searchSuggest, track,
     get db() { return db; }, get lang() { return lang; }, get city() { return city; },
     manager: MANAGER
   };
