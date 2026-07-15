@@ -1,1 +1,335 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KatoVape</title>
+<link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;600;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#e9f1fa; --ink:#0f2136; --mut:#5f7391;
+  --blu:#1861ff; --cyan:#38c6ff; --grn:#0eb981; --red:#e94b6a;
+  --glass:rgba(255,255,255,.62); --gline:rgba(255,255,255,.85);
+  --shadow:0 12px 30px rgba(31,71,125,.12);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--ink);font-family:Onest,system-ui,sans-serif;overflow-x:hidden}
+.blob{position:fixed;border-radius:50%;pointer-events:none;z-index:0;animation:float 16s ease-in-out infinite alternate}
+.b1{width:820px;height:820px;background:radial-gradient(closest-side,rgba(143,210,255,.55),transparent 70%);top:-260px;left:-220px}
+.b2{width:740px;height:740px;background:radial-gradient(closest-side,rgba(185,168,255,.5),transparent 70%);top:40px;right:-260px;animation-delay:-6s}
+.b3{width:660px;height:660px;background:radial-gradient(closest-side,rgba(138,255,217,.5),transparent 70%);bottom:-280px;left:30%;animation-delay:-11s}
+@keyframes float{from{transform:translate(0,0)}to{transform:translate(40px,30px)}}
+.wrap{max-width:1100px;margin:0 auto;padding:0 22px;position:relative;z-index:1}
+button{font-family:inherit}
 
+header{position:sticky;top:12px;z-index:50}
+.nav{display:flex;align-items:center;gap:18px;padding:12px 20px;background:rgba(255,255,255,.82);border:1px solid var(--gline);border-radius:20px;box-shadow:var(--shadow);flex-wrap:wrap}
+.logo{display:flex;align-items:center;gap:9px;font-weight:900;font-size:19px;letter-spacing:-.3px;text-decoration:none;color:var(--ink)}
+.logo-badge{width:34px;height:34px;border-radius:50%;overflow:hidden;background:#fff;flex-shrink:0;box-shadow:0 4px 12px rgba(31,71,125,.14)}
+.logo-badge img{width:100%;height:100%;object-fit:cover;transform:scale(1.72);transform-origin:50% 38%}
+.logo em{font-style:normal;background:linear-gradient(100deg,var(--blu),var(--cyan));-webkit-background-clip:text;background-clip:text;color:transparent}
+.nav a{color:var(--mut);text-decoration:none;font-weight:600;font-size:14px}
+.nav a:hover{color:var(--ink)}
+#city{position:relative}
+.kv-city{display:flex;align-items:center;gap:6px;border:none;background:#fff;color:var(--ink);padding:8px 13px;border-radius:12px;font-weight:800;font-size:13px;cursor:pointer;font-family:inherit;box-shadow:0 4px 12px rgba(31,71,125,.12)}
+.kv-city-pin{color:var(--blu);font-size:9px}
+.kv-city-car{color:var(--mut);font-size:10px}
+.kv-city-menu{position:absolute;top:calc(100% + 8px);left:0;z-index:60;background:#fff;border:1px solid var(--gline);border-radius:14px;padding:6px;min-width:170px;box-shadow:0 16px 36px rgba(31,71,125,.2)}
+.kv-city-menu[hidden]{display:none}
+.kv-city-menu button{display:block;width:100%;text-align:left;background:none;border:none;color:var(--ink);padding:10px 12px;border-radius:9px;font-weight:700;font-size:13.5px;cursor:pointer;font-family:inherit}
+.kv-city-menu button:hover{background:var(--bg)}
+.kv-city-menu button.on{color:var(--blu)}
+@media(max-width:640px){#navStock,#navContact{display:none}}
+#lang{display:flex;gap:4px;margin-left:auto}
+.kv-lang{border:1px solid transparent;background:transparent;color:var(--mut);padding:6px 10px;border-radius:10px;font-size:12px;font-weight:800;cursor:pointer}
+.kv-lang.on{background:#fff;color:var(--blu);box-shadow:0 4px 12px rgba(31,71,125,.12)}
+.kv-theme{border:none;background:#fff;color:var(--ink);width:34px;height:33px;border-radius:12px;font-size:14px;cursor:pointer;box-shadow:0 4px 12px rgba(31,71,125,.12)}
+.cartbtn{border:none;background:#fff;color:var(--ink);padding:10px 16px;border-radius:14px;font-weight:800;font-size:13.5px;cursor:pointer;box-shadow:0 4px 14px rgba(31,71,125,.14)}
+.cartbtn b{color:var(--blu)}
+.nav .cta{color:#fff;background:linear-gradient(100deg,var(--blu),var(--cyan));padding:10px 20px;border-radius:14px;font-weight:800;box-shadow:0 8px 20px rgba(24,97,255,.35)}
+
+.hero{padding:70px 0 46px;max-width:660px}
+.hero h1{font-size:clamp(36px,5.8vw,62px);font-weight:900;line-height:1.05;letter-spacing:-1.5px}
+.hero h1 span{background:linear-gradient(100deg,var(--blu),var(--cyan));-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero p{color:var(--mut);font-size:17px;margin:18px 0 26px;line-height:1.65}
+.stats{display:flex;gap:12px;flex-wrap:wrap}
+.stat{background:var(--glass);border:1px solid var(--gline);border-radius:16px;padding:12px 18px;font-size:13.5px;color:var(--mut);box-shadow:var(--shadow)}
+.stat b{color:var(--ink);font-size:20px;display:block;font-weight:900}
+
+.panel-head{display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;margin-bottom:20px}
+.panel-head h2{font-size:28px;font-weight:900;letter-spacing:-.5px}
+.upd{color:var(--mut);font-size:13px}
+.upd i{color:var(--blu);font-style:normal;font-weight:700}
+
+.controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:20px}
+.chip{border:1px solid var(--gline);background:var(--glass);color:var(--mut);padding:10px 17px;border-radius:14px;cursor:pointer;font-size:13.5px;font-weight:700}
+.chip.on{background:linear-gradient(100deg,var(--blu),var(--cyan));border-color:transparent;color:#fff;box-shadow:0 8px 20px rgba(24,97,255,.3)}
+.search{flex:1;min-width:190px;background:#fff;border:1px solid var(--gline);border-radius:14px;color:var(--ink);padding:11px 18px;font-family:inherit;font-size:14px;outline:none;box-shadow:0 4px 14px rgba(31,71,125,.08)}
+.only{display:flex;align-items:center;gap:8px;color:var(--mut);font-size:13.5px;font-weight:600;cursor:pointer;user-select:none}
+.only input{accent-color:var(--blu);width:16px;height:16px}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px;padding-bottom:80px;align-items:start}
+.card{background:var(--glass);border:1px solid var(--gline);border-radius:22px;overflow:hidden;cursor:pointer;box-shadow:var(--shadow);transition:transform .15s}
+.card:hover{transform:translateY(-3px)}
+.card.is-out{opacity:.55}
+.kv-photo{position:relative;height:150px;background:linear-gradient(150deg,#ffffff,#dcebfb);display:grid;place-items:center}
+.kv-photo span{font-size:44px;font-weight:900;color:#c3d8ef}
+.kv-photo img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.card-body{padding:14px 17px 16px;display:flex;flex-direction:column;gap:9px}
+.card .cat{font-size:11px;letter-spacing:1.4px;text-transform:uppercase;color:var(--mut);font-weight:800}
+.card .name{font-weight:800;font-size:15.5px;line-height:1.35}
+.card .meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.price{font-weight:900;font-size:15px}
+.pill{font-size:11.5px;font-weight:800;padding:4px 11px;border-radius:99px}
+.pill.in{background:rgba(14,185,129,.13);color:var(--grn)}
+.pill.out{background:rgba(233,75,106,.12);color:var(--red)}
+.pill.new{background:rgba(24,97,255,.12);color:var(--blu)}
+.qtytag{font-size:11.5px;color:var(--mut);font-weight:700}
+
+.kv-details{display:none;border-top:1px solid rgba(31,71,125,.12);padding:12px 17px 16px}
+.card.open .kv-details{display:block}
+.card.open{transform:none}
+.kvf-meta{font-size:12px;color:var(--mut);margin-bottom:10px}
+.kvf-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px dashed rgba(31,71,125,.15);font-size:13px}
+.kvf-row:last-child{border-bottom:none}
+.kvf-row.off{opacity:.5}
+.kvf-name{flex:1;font-weight:700}
+.kvf-qty{color:var(--mut);font-size:11.5px}
+.kvf-add{border:none;background:linear-gradient(100deg,var(--blu),var(--cyan));color:#fff;border-radius:99px;padding:5px 13px;font-size:11.5px;font-weight:800;cursor:pointer;box-shadow:0 4px 12px rgba(24,97,255,.3)}
+.kvf-res{margin-top:12px;width:100%;border:1px solid var(--blu);background:transparent;color:var(--blu);border-radius:12px;padding:9px;font-size:12.5px;font-weight:800;cursor:pointer}
+.kvf-res:hover{background:var(--blu);color:#fff}
+.empty{color:var(--mut);grid-column:1/-1}
+
+footer{padding:10px 0 50px;color:var(--mut);font-size:13.5px;line-height:2}
+footer .box{background:var(--glass);border:1px solid var(--gline);border-radius:22px;padding:24px 28px;box-shadow:var(--shadow)}
+footer a{color:var(--blu);text-decoration:none;font-weight:700}
+.age18{display:inline-block;background:rgba(233,75,106,.12);color:var(--red);border-radius:8px;padding:2px 9px;font-weight:800;margin-right:10px}
+
+.gate{position:fixed;inset:0;z-index:100;background:rgba(228,238,250,.94);display:flex;align-items:center;justify-content:center;padding:20px}
+.gate[hidden]{display:none}
+.gate .box{background:#fff;border-radius:26px;padding:40px;max-width:430px;text-align:center;box-shadow:0 24px 60px rgba(31,71,125,.25)}
+.gate h2{font-size:46px;font-weight:900;background:linear-gradient(100deg,var(--blu),var(--cyan));-webkit-background-clip:text;background-clip:text;color:transparent;margin-bottom:12px}
+.gate p{color:var(--mut);margin-bottom:26px;line-height:1.6}
+.gate .row{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.gate button{font-weight:800;font-size:14.5px;padding:13px 24px;border-radius:14px;cursor:pointer;border:1px solid #dbe7f5;background:#fff;color:var(--mut)}
+.gate button.yes{background:linear-gradient(100deg,var(--blu),var(--cyan));border:none;color:#fff;box-shadow:0 8px 20px rgba(24,97,255,.35)}
+
+.kvd{position:fixed;inset:0;z-index:90;background:rgba(20,40,70,.4)}
+.kvd[hidden]{display:none}
+.kvd-box{position:absolute;top:12px;right:12px;bottom:12px;width:min(400px,calc(100% - 24px));background:#fff;border-radius:24px;padding:24px;display:flex;flex-direction:column;gap:14px;overflow-y:auto;box-shadow:0 24px 60px rgba(31,71,125,.3)}
+.kvd-head{display:flex;align-items:center;justify-content:space-between}
+.kvd-title{font-size:19px;font-weight:900}
+.kvd-x{border:none;background:none;color:var(--mut);font-size:26px;cursor:pointer}
+.kvd-items{flex:1}
+.kvd-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px dashed rgba(31,71,125,.15);font-size:13.5px}
+.kvd-name{flex:1;font-weight:700}
+.kvd-name small{display:block;color:var(--mut);font-weight:400}
+.kvd-ctr{display:flex;align-items:center;gap:8px}
+.kvd-ctr button{width:26px;height:26px;border-radius:9px;border:1px solid #dbe7f5;background:#fff;color:var(--ink);cursor:pointer;font-size:15px}
+.kvd-sum{color:var(--blu);font-weight:800;min-width:52px;text-align:right}
+.kvd-empty{color:var(--mut)}
+.kvd-total{font-size:16px;font-weight:900}
+.kvd-go{background:linear-gradient(100deg,var(--blu),var(--cyan));color:#fff;border:none;border-radius:14px;padding:14px;font-weight:800;font-size:14px;cursor:pointer;box-shadow:0 8px 20px rgba(24,97,255,.35)}
+.kvd-clear{background:none;border:none;color:var(--mut);font-size:12.5px;cursor:pointer}
+
+.kv-toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,20px);background:var(--ink);color:#fff;font-weight:700;font-size:13.5px;padding:12px 22px;border-radius:99px;opacity:0;pointer-events:none;transition:.25s;z-index:120;max-width:90vw;text-align:center}
+.kv-toast.show{opacity:1;transform:translate(-50%,0)}
+
+/* тёмная тема: общий переключатель в шапке */
+html[data-theme="dark"]{--bg:#0b1220;--ink:#e7edf7;--mut:#8fa0bd;--glass:rgba(255,255,255,.05);--gline:rgba(255,255,255,.12);--shadow:0 14px 34px rgba(0,0,0,.5)}
+html[data-theme="dark"] .nav{background:rgba(20,30,50,.6)}
+html[data-theme="dark"] .kv-lang.on{background:rgba(255,255,255,.12);color:#7fb0ff}
+html[data-theme="dark"] .kv-theme,
+html[data-theme="dark"] .cartbtn{background:rgba(255,255,255,.08);color:var(--ink)}
+html[data-theme="dark"] .search{background:rgba(255,255,255,.06);color:var(--ink)}
+html[data-theme="dark"] .kv-photo{background:linear-gradient(150deg,#182338,#0f1728)}
+html[data-theme="dark"] .kv-photo span{color:#31415e}
+html[data-theme="dark"] .gate{background:rgba(8,14,26,.92)}
+html[data-theme="dark"] .gate .box{background:#141d30;box-shadow:0 24px 60px rgba(0,0,0,.6)}
+html[data-theme="dark"] .gate button{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.14);color:var(--mut)}
+html[data-theme="dark"] .kvd-box{background:#131c2e}
+html[data-theme="dark"] .kvd-ctr button{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.14)}
+html[data-theme="dark"] .kv-toast{background:#eaf0ff;color:#0b1220}
+html[data-theme="dark"] .kv-city{background:rgba(255,255,255,.08);color:var(--ink)}
+html[data-theme="dark"] .kv-city-menu{background:#141d30;border-color:rgba(255,255,255,.12)}
+html[data-theme="dark"] .kv-city-menu button{color:var(--ink)}
+html[data-theme="dark"] .kv-city-menu button:hover{background:rgba(255,255,255,.06)}
+</style>
+</head>
+<body>
+
+<div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div>
+
+<div class="gate" id="gate" hidden>
+  <div class="box">
+    <h2>18+</h2>
+    <p id="gateText"></p>
+    <div class="row">
+      <button class="yes" id="gateYes" onclick="sessionStorage.setItem('kv_age','1');gate.hidden=true"></button>
+      <button id="gateNo" onclick="location.href='https://www.google.com'"></button>
+    </div>
+  </div>
+</div>
+
+<header>
+  <div class="wrap">
+    <div class="nav">
+      <a class="logo" href="#"><span class="logo-badge"><img id="logoImg" src="../../../data/photos/cat.png" alt="KatoVape"></span>Kato<em>Vape</em></a>
+      <div id="city"></div>
+      <a href="#stock" id="navStock"></a>
+      <a href="#contact" id="navContact"></a>
+      <div id="lang"></div>
+      <div id="theme"></div>
+      <button class="cartbtn" id="cartFab" onclick="KV.openCart()"></button>
+      <a class="cta" id="navCta" href="https://t.me/KatoManager" target="_blank"></a>
+    </div>
+  </div>
+</header>
+
+<section class="wrap hero">
+  <h1 id="heroT"></h1>
+  <p id="heroP"></p>
+  <div class="stats" id="stats"></div>
+</section>
+
+<section class="wrap" id="stock">
+  <div class="panel-head">
+    <h2 id="stockT"></h2>
+    <span class="upd" id="upd"></span>
+  </div>
+  <div class="controls" id="chips"></div>
+  <div class="controls">
+    <input class="search" id="q" type="search">
+    <label class="only"><input type="checkbox" id="only"> <span id="onlyT"></span></label>
+  </div>
+  <div class="grid" id="list"></div>
+</section>
+
+<footer id="contact">
+  <div class="wrap">
+    <div class="box">
+      <p><span class="age18">18+</span><span id="fAdult"></span></p>
+      <p><span id="fPickup"></span> · <span id="fPay"></span></p>
+      <p><span id="fWrite"></span>: <a href="https://t.me/KatoManager" target="_blank">@KatoManager</a> · KatoVape 2026</p>
+    </div>
+  </div>
+</footer>
+
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="../../../shared/core.js?v=5"></script>
+<script>
+const L = {
+  ru: {
+    navStock: 'Наличие', navContact: 'Контакты', cta: 'Заказать', stock: 'Наличие',
+    heroT: 'Свежий пар <span>из Украины</span>',
+    heroP: 'Chaser, Elf Bar, Vaporesso, Oxva. Страница читает базу выбранного города напрямую: остатки и цены всегда настоящие.',
+    statCats: 'категорий', statUA: 'оригинал из Украины', updFrom: 'обновлено'
+  },
+  uk: {
+    navStock: 'Наявність', navContact: 'Контакти', cta: 'Замовити', stock: 'Наявність',
+    heroT: 'Свіжа пара <span>з України</span>',
+    heroP: 'Chaser, Elf Bar, Vaporesso, Oxva. Сторінка читає базу обраного міста напряму: залишки і ціни завжди справжні.',
+    statCats: 'категорій', statUA: 'оригінал з України', updFrom: 'оновлено'
+  },
+  pl: {
+    navStock: 'Asortyment', navContact: 'Kontakt', cta: 'Zamów', stock: 'Asortyment',
+    heroT: 'Świeża para <span>z Ukrainy</span>',
+    heroP: 'Chaser, Elf Bar, Vaporesso, Oxva. Strona czyta bazę wybranego miasta na żywo: stany i ceny są zawsze prawdziwe.',
+    statCats: 'kategorii', statUA: 'oryginał z Ukrainy', updFrom: 'aktualizacja'
+  }
+};
+const p = k => (L[KV.lang] || L.ru)[k];
+
+let cat = 'all', q = '', only = false;
+
+if (!sessionStorage.getItem('kv_age')) gate.hidden = false;
+
+function render() {
+  const db = KV.db;
+  navStock.textContent = p('navStock');
+  navContact.textContent = p('navContact');
+  navCta.textContent = p('cta');
+  stockT.textContent = p('stock');
+  heroT.innerHTML = p('heroT');
+  heroP.textContent = p('heroP');
+  gateText.textContent = KV.t('gateText');
+  gateYes.textContent = KV.t('gateYes');
+  gateNo.textContent = KV.t('gateNo');
+  fAdult.textContent = KV.t('adult');
+  fPickup.textContent = KV.pickup();
+  fPay.textContent = KV.t('pay');
+  fWrite.textContent = KV.t('write');
+  document.getElementById('q').placeholder = KV.t('search');
+  onlyT.textContent = KV.t('only');
+  document.getElementById('logoImg').src = KV.cityLogo();
+
+  const all = db.categories.flatMap(c => c.items);
+  const have = all.filter(i => KV.status(i) !== 'out').length;
+  stats.innerHTML =
+    '<div class="stat"><b>' + have + '</b>' + KV.t('inStockN') + '</div>' +
+    '<div class="stat"><b>' + db.categories.length + '</b>' + p('statCats') + '</div>' +
+    '<div class="stat"><b>UA</b>' + p('statUA') + '</div>';
+  upd.innerHTML = p('updFrom') + ': <i>' + KV.fmtDate(db.updated) + '</i>';
+
+  const cats = [{ id: 'all', name: null }, ...db.categories];
+  chips.innerHTML = cats.map(c =>
+    '<button class="chip' + (c.id === cat ? ' on' : '') + '" data-c="' + c.id + '">' +
+    (c.name ? KV.catName(c) : { ru: 'Все', uk: 'Всі', pl: 'Wszystko' }[KV.lang]) + '</button>').join('');
+
+  drawGrid();
+}
+
+function drawGrid() {
+  const db = KV.db, rows = [];
+  for (const c of db.categories) {
+    if (cat !== 'all' && c.id !== cat) continue;
+    for (const it of c.items) {
+      const st = KV.status(it);
+      if (only && st === 'out') continue;
+      if (!KV.match(it, q)) continue;
+      rows.push({ it, st, cname: KV.catName(c) });
+    }
+  }
+  list.innerHTML = rows.map(r =>
+    '<div class="card' + (r.st === 'out' ? ' is-out' : '') + '" data-id="' + r.it.id + '">' +
+    KV.photo(r.it) +
+    '<div class="card-body">' +
+      '<span class="cat">' + r.cname + '</span>' +
+      '<span class="name">' + r.it.name + '</span>' +
+      '<div class="meta">' +
+        '<span class="price">' + KV.price(r.it) + '</span>' +
+        '<span class="pill ' + r.st + '">' + KV.t(r.st === 'in' ? 'in' : r.st === 'new' ? 'new' : 'out') + '</span>' +
+        (r.st !== 'out' ? '<span class="qtytag">' + KV.qty(r.it) + ' ' + KV.t('pcs') + '</span>' : '') +
+      '</div>' +
+    '</div>' +
+    KV.detailsHTML(r.it) +
+    '</div>').join('') || '<p class="empty">' + KV.t('empty') + '</p>';
+}
+
+chips.onclick = e => {
+  const b = e.target.closest('.chip'); if (!b) return;
+  cat = b.dataset.c;
+  chips.querySelectorAll('.chip').forEach(x => x.classList.toggle('on', x === b));
+  drawGrid();
+};
+document.getElementById('q').oninput = e => { q = e.target.value.trim().toLowerCase(); drawGrid(); };
+document.getElementById('only').onchange = e => { only = e.target.checked; drawGrid(); };
+list.onclick = e => {
+  if (e.target.closest('button')) return;
+  const card = e.target.closest('.card');
+  if (card) card.classList.toggle('open');
+};
+
+function cartHook() {
+  const n = KV.cartCount();
+  cartFab.innerHTML = KV.t('cart') + (n ? ' <b>' + n + '</b>' : '');
+}
+
+KV.init({
+  render, cart: cartHook,
+  fail: () => { list.innerHTML = '<p class="empty">Базу не удалось загрузить, открой демо через локальный сервер.</p>'; }
+});
+</script>
+</body>
+</html>
