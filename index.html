@@ -10,66 +10,138 @@
 <meta property="og:description" content="Три стиля сайта и мини-приложения Telegram с живым наличием по городам Польши.">
 <meta property="og:image" content="https://nexlyy.github.io/KatoVape/data/photos/cat.png">
 <meta property="og:type" content="website">
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;800&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#101014;--panel:#17171d;--line:#26262f;--txt:#f0f0f5;--mut:#8f8fa3;--acc:#c8ff2e}
+:root{
+  --bg:#0d0d11; --panel:#16161d; --panel2:#1c1c25; --line:#26262f;
+  --txt:#f2f2f6; --mut:#9195a8; --acc:#c8ff2e;
+  --sp:clamp(20px,5vw,40px);
+}
 *{margin:0;padding:0;box-sizing:border-box}
-body{background:var(--bg);color:var(--txt);font-family:Manrope,system-ui,sans-serif;padding:50px 22px 70px}
-.wrap{max-width:900px;margin:0 auto}
-h1{font-size:30px;font-weight:800}
-h1 span{color:var(--acc)}
-.sub{color:var(--mut);margin:12px 0 8px;line-height:1.7;max-width:660px}
-.sub a{color:var(--acc)}
-.note{color:var(--mut);font-size:13.5px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 18px;margin:22px 0 36px;line-height:1.7}
-.style{margin-bottom:34px}
-.style h2{font-size:19px;margin-bottom:4px}
-.style .desc{color:var(--mut);font-size:14px;margin-bottom:14px;line-height:1.6}
-.links{display:flex;gap:12px;flex-wrap:wrap}
-.links a{flex:1;min-width:220px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 20px;color:var(--txt);text-decoration:none;font-weight:600;font-size:14.5px;transition:.15s}
-.links a:hover{border-color:var(--acc)}
-.links a small{display:block;color:var(--mut);font-weight:400;font-size:12.5px;margin-top:4px}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--txt);font-family:Manrope,system-ui,sans-serif;line-height:1.55;-webkit-font-smoothing:antialiased}
+.bg{position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:radial-gradient(600px 400px at 85% -5%,rgba(200,255,46,.10),transparent 70%),
+             radial-gradient(600px 500px at -5% 20%,rgba(120,120,255,.10),transparent 70%)}
+.wrap{position:relative;z-index:1;max-width:960px;margin:0 auto;padding:var(--sp) 22px 64px}
+
+header{display:flex;align-items:center;gap:12px;margin-bottom:44px}
+.badge{width:44px;height:44px;border-radius:50%;overflow:hidden;background:#fff;flex-shrink:0;box-shadow:0 0 0 1px var(--line)}
+.badge img{width:100%;height:100%;object-fit:cover;transform:scale(1.72);transform-origin:50% 38%}
+header b{font-size:17px;font-weight:800;letter-spacing:.2px}
+header b em{font-style:normal;color:var(--acc)}
+header .tag{margin-left:auto;font-size:11px;font-weight:800;color:var(--mut);border:1px solid var(--line);border-radius:99px;padding:5px 11px}
+
+.hero{margin-bottom:34px}
+h1{font-size:clamp(30px,6vw,46px);font-weight:800;line-height:1.08;letter-spacing:-.02em}
+h1 span{background:linear-gradient(100deg,var(--acc),#7ad0ff);-webkit-background-clip:text;background-clip:text;color:transparent}
+.lead{color:var(--mut);font-size:clamp(15px,2.5vw,17px);margin-top:16px;max-width:60ch}
+.lead a{color:var(--acc);text-decoration:none;border-bottom:1px solid rgba(200,255,46,.35)}
+
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px}
+.chip{font-size:12.5px;font-weight:600;color:var(--txt);background:var(--panel);border:1px solid var(--line);border-radius:99px;padding:7px 13px}
+.chip i{font-style:normal;color:var(--acc);margin-right:5px}
+
+.note{color:var(--mut);font-size:13px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 18px;margin:26px 0 44px;max-width:70ch}
+.note b{color:var(--txt);font-weight:600}
+
+.grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(270px,1fr))}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;overflow:hidden;transition:border-color .15s,transform .15s}
+.card:hover{border-color:#3a3a46;transform:translateY(-2px)}
+.swatch{height:78px;position:relative;display:flex;align-items:flex-end;padding:12px 16px;font-weight:800;font-size:13px}
+.swatch.neon{background:#0a0a10;color:#c8ff2e}
+.swatch.neon::after{content:"";position:absolute;top:14px;right:14px;width:38px;height:38px;border-radius:50%;background:radial-gradient(circle,#c8ff2e,#8f6bff)}
+.swatch.frost{background:linear-gradient(120deg,#dff0ff,#e7e2ff 60%,#dcfff0);color:#1861ff}
+.swatch.frost::after{content:"";position:absolute;top:16px;right:16px;width:34px;height:34px;border-radius:12px;background:linear-gradient(120deg,#1861ff,#38c6ff);box-shadow:0 6px 16px rgba(24,97,255,.35)}
+.swatch.street{background:#ffd500;color:#0d0d0d}
+.swatch.street::after{content:"UA→PL";position:absolute;top:14px;right:12px;background:#0057b7;color:#fff;font-family:monospace;font-size:11px;padding:4px 8px;border:2px solid #0d0d0d;transform:rotate(4deg)}
+.card-body{padding:16px 18px 18px}
+.card h2{font-size:16px;font-weight:800;margin-bottom:6px}
+.card .desc{color:var(--mut);font-size:13px;line-height:1.55;margin-bottom:14px}
+.links{display:flex;gap:9px}
+.links a{flex:1;background:var(--panel2);border:1px solid var(--line);border-radius:11px;padding:11px 13px;color:var(--txt);text-decoration:none;font-weight:600;font-size:13px;transition:.15s}
+.links a:hover{border-color:var(--acc);color:var(--acc)}
+.links a small{display:block;color:var(--mut);font-weight:400;font-size:11px;margin-top:3px}
+.links a:hover small{color:var(--mut)}
+
+footer{margin-top:48px;padding-top:22px;border-top:1px solid var(--line);color:var(--mut);font-size:12.5px;display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center}
+footer a{color:var(--acc);text-decoration:none}
+.age{border:1px solid var(--mut);border-radius:7px;padding:2px 8px;font-weight:800;color:var(--txt)}
 </style>
 </head>
 <body>
+<div class="bg"></div>
 <div class="wrap">
-  <h1>KatoVape <span>демо-витрины</span></h1>
-  <p class="sub">Три стиля, в каждом сайт и мини-приложение для Telegram. Все шесть страниц читают одну базу
-  <a href="data/products.json">data/products.json</a>: там лежат остатки по вкусам, цены и крепость.
-  Поменяешь число в файле, обновишь страницу, и маркеры с остатками изменятся везде сразу.
-  В каждой витрине работает выбор города (Катовице, Гливице, Варшава) со своим наличием и логотипом,
-  корзина с автозаказом (жмёшь «Заказать», и в Telegram уже готовое сообщение со всей корзиной),
-  бронь товара, поиск по вкусам, характеристики в раскрытой карточке, переключатель светлой и тёмной темы
-  и три языка (русский, украинский, польский) с переводом даже названий вкусов.</p>
-  <p class="note">Мини-аппы смотри в узком окне или в мобильном режиме браузера (F12, значок телефона).
-  В Telegram нижняя кнопка станет нативной кнопкой мессенджера: она показывает корзину и сумму.
-  Фото товаров кладутся в папку data/photos по инструкции из файла «КАК ДОБАВИТЬ ФОТО.txt», карточки подхватят их сами.</p>
 
-  <div class="style">
-    <h2>1. Неон</h2>
-    <p class="desc">Тёмный, кислотно-зелёный, с котом-логотипом в шапке и на бейдже в герое. Есть светлая тема. Когда в data/photos появится cat.png, кот в герое заменится на фото.</p>
-    <div class="links">
-      <a href="demos/neon/site/">Сайт<small>карточки с фото, вкусы раскрываются по клику</small></a>
-      <a href="demos/neon/app/">Мини-приложение<small>тёмная лента, корзина в нижней кнопке</small></a>
+  <header>
+    <span class="badge"><img src="data/photos/cat.png" alt="KatoVape"></span>
+    <b>KATO<em>VAPE</em></b>
+    <span class="tag">демо</span>
+  </header>
+
+  <section class="hero">
+    <h1>Три стиля витрины,<br><span>один движок наличия</span></h1>
+    <p class="lead">В каждом стиле сайт и мини-приложение Telegram. Все шесть страниц читают одну базу
+      <a href="data/products.json">products.json</a>: поменяешь остаток в файле — маркеры меняются везде сразу.</p>
+    <div class="chips">
+      <span class="chip"><i>◍</i>3 города</span>
+      <span class="chip"><i>◍</i>корзина + автозаказ</span>
+      <span class="chip"><i>◍</i>промокоды и бронь</span>
+      <span class="chip"><i>◍</i>фильтры и поиск</span>
+      <span class="chip"><i>◍</i>RU / UA / PL</span>
+      <span class="chip"><i>◍</i>светлая и тёмная тема</span>
+    </div>
+  </section>
+
+  <p class="note"><b>Как смотреть.</b> Мини-приложения открывай в мобильном режиме браузера (F12, значок телефона).
+    Внутри Telegram нижняя кнопка становится нативной и показывает корзину с суммой.</p>
+
+  <div class="grid">
+    <div class="card">
+      <div class="swatch neon">НЕОН</div>
+      <div class="card-body">
+        <h2>Неон</h2>
+        <p class="desc">Тёмный, кислотно-зелёный, кот-логотип в шапке. Есть светлая тема.</p>
+        <div class="links">
+          <a href="demos/neon/site/">Сайт<small>карточки с фото</small></a>
+          <a href="demos/neon/app/">Мини-апп<small>тёмная лента</small></a>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="swatch frost">ФРОСТ</div>
+      <div class="card-body">
+        <h2>Фрост</h2>
+        <p class="desc">Светлое морозное стекло, синий акцент, плавающие пятна цвета.</p>
+        <div class="links">
+          <a href="demos/frost/site/">Сайт<small>стеклянные карточки</small></a>
+          <a href="demos/frost/app/">Мини-апп<small>светлая лента</small></a>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="swatch street">СТРИТ</div>
+      <div class="card-body">
+        <h2>Стрит</h2>
+        <p class="desc">Жёлто-синие цвета Украины, толстые рамки, штампы, бегущая строка.</p>
+        <div class="links">
+          <a href="demos/street/site/">Сайт<small>карточки-стикеры</small></a>
+          <a href="demos/street/app/">Мини-апп<small>лента со штампами</small></a>
+        </div>
+      </div>
     </div>
   </div>
 
-  <div class="style">
-    <h2>2. Фрост</h2>
-    <p class="desc">Светлое морозное стекло: аврора-градиенты, полупрозрачные карточки, синий акцент. Холодный пар как он есть.</p>
-    <div class="links">
-      <a href="demos/frost/site/">Сайт<small>стеклянные карточки, плавающие пятна цвета</small></a>
-      <a href="demos/frost/app/">Мини-приложение<small>лёгкая светлая лента</small></a>
-    </div>
-  </div>
+  <footer>
+    <span class="age">18+</span>
+    <span>Продажа только совершеннолетним.</span>
+    <span>Заказ: <a href="https://t.me/KatoManager" target="_blank" rel="noopener">@KatoManager</a></span>
+    <span>Код: <a href="https://github.com/nexlyy/KatoVape" target="_blank" rel="noopener">github.com/nexlyy/KatoVape</a></span>
+  </footer>
 
-  <div class="style">
-    <h2>3. Стрит</h2>
-    <p class="desc">Стикер-бомба: жёлто-синие украинские цвета, толстые рамки, штампы «ЕСТЬ / НЕТ», бегущая строка.</p>
-    <div class="links">
-      <a href="demos/street/site/">Сайт<small>плакатный герой, карточки-стикеры</small></a>
-      <a href="demos/street/app/">Мини-приложение<small>лента со штампами и тикером</small></a>
-    </div>
-  </div>
 </div>
 </body>
 </html>
