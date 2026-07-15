@@ -467,6 +467,21 @@ window.KV = (function () {
     if (hooks.cart) hooks.cart();
   }
 
+  // шапка прячется при скролле вниз и возвращается при скролле вверх.
+  // acc копит движение в одну сторону, чтобы шапку не дёргало на мелких рывках
+  function autoHideHeader(el) {
+    if (!el) return;
+    let last = window.scrollY, acc = 0;
+    window.addEventListener('scroll', () => {
+      const y = Math.max(window.scrollY, 0);
+      const d = y - last; last = y;
+      if (document.querySelector('.kv-city-menu:not([hidden])')) return;
+      acc = (d >= 0) === (acc >= 0) ? acc + d : d;
+      if (y < 90 || acc < -14) el.classList.remove('kv-hidden');
+      else if (acc > 18 && y > 160) el.classList.add('kv-hidden');
+    }, { passive: true });
+  }
+
   // тема: дефолт берём из <html data-theme>, выбор пользователя из localStorage.
   // общий для всех витрин: выставил светлую на одной, видишь светлую везде.
   function themeSwitch(el) {
@@ -534,7 +549,7 @@ window.KV = (function () {
   return {
     init, t, catName, cityName, pickup, cityLogo, flavorName, specOf, qty, status,
     isNew, match, find, price, plural, fmtDate, photo, detailsHTML, openCart, checkout,
-    cartCount, cartTotal, toast,
+    cartCount, cartTotal, toast, autoHideHeader,
     get db() { return db; }, get lang() { return lang; }, get city() { return city; },
     manager: MANAGER
   };

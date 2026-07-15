@@ -21,7 +21,8 @@ button{font-family:inherit}
 .ticker span{display:inline-block;font-family:'Rubik Mono One';font-size:12px;padding:9px 0;animation:mq 22s linear infinite}
 @keyframes mq{from{transform:translateX(0)}to{transform:translateX(-50%)}}
 
-header{background:var(--yel);border-bottom:3px solid var(--ink)}
+header{position:sticky;top:0;z-index:50;background:var(--yel);border-bottom:3px solid var(--ink);transition:transform .28s ease}
+header.kv-hidden{transform:translateY(-110%)}
 .nav{display:flex;align-items:center;gap:16px;padding:14px 0;flex-wrap:wrap}
 .nav .logo{display:flex;align-items:center;gap:9px;font-family:'Rubik Mono One';font-size:18px;color:var(--ink);text-decoration:none}
 .logo-badge{width:34px;height:34px;border-radius:50%;overflow:hidden;background:#fff;border:2.5px solid var(--ink);flex-shrink:0}
@@ -331,6 +332,7 @@ KV.init({
   render, cart: cartHook,
   fail: () => { list.innerHTML = '<p class="empty">Базу не удалось загрузить, открой демо через локальный сервер.</p>'; }
 });
+KV.autoHideHeader(document.querySelector('header'));
 </script>
 </body>
 </html>

@@ -23,7 +23,8 @@ body{background:var(--bg);color:var(--ink);font-family:Onest,system-ui,sans-seri
 .wrap{max-width:1100px;margin:0 auto;padding:0 22px;position:relative;z-index:1}
 button{font-family:inherit}
 
-header{position:sticky;top:12px;z-index:50}
+header{position:sticky;top:12px;z-index:50;transition:transform .28s ease}
+header.kv-hidden{transform:translateY(calc(-100% - 20px))}
 .nav{display:flex;align-items:center;gap:18px;padding:12px 20px;background:rgba(255,255,255,.82);border:1px solid var(--gline);border-radius:20px;box-shadow:var(--shadow);flex-wrap:wrap}
 .logo{display:flex;align-items:center;gap:9px;font-weight:900;font-size:19px;letter-spacing:-.3px;text-decoration:none;color:var(--ink)}
 .logo-badge{width:34px;height:34px;border-radius:50%;overflow:hidden;background:#fff;flex-shrink:0;box-shadow:0 4px 12px rgba(31,71,125,.14)}
@@ -333,6 +334,7 @@ KV.init({
   render, cart: cartHook,
   fail: () => { list.innerHTML = '<p class="empty">Базу не удалось загрузить, открой демо через локальный сервер.</p>'; }
 });
+KV.autoHideHeader(document.querySelector('header'));
 </script>
 </body>
 </html>
