@@ -255,7 +255,7 @@ window.KV = (function () {
     const letter = item.name.replace(/[^A-Za-zА-Яа-я]/g, '')[0] || '?';
     return '<div class="kv-photo"><span>' + letter + '</span>' +
       '<img src="' + ROOT + 'data/photos/' + item.id + '.jpg" alt="" ' +
-      'onerror="this.remove()"></div>';
+      'loading="lazy" decoding="async" onerror="this.remove()"></div>';
   }
 
   // раскрытая часть карточки: характеристика, вкусы с остатками, кнопки
