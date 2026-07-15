@@ -289,7 +289,7 @@ function drawGrid() {
   const db = KV.db, rows = [];
   for (const c of db.categories) {
     if (cat !== 'all' && c.id !== cat) continue;
-    for (const it of c.items) {
+    for (const it of KV.sortItems(c.items)) {
       const st = KV.status(it);
       if (only && st === 'out') continue;
       if (!KV.match(it, q)) continue;

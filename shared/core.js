@@ -222,6 +222,12 @@ window.KV = (function () {
     return isNew(item) ? 'new' : 'in';
   }
 
+  // порядок показа: новинки, потом в наличии, закончившиеся в конце
+  function sortItems(items) {
+    const w = { new: 0, in: 1, out: 2 };
+    return items.slice().sort((a, b) => w[status(a)] - w[status(b)]);
+  }
+
   function match(item, q) {
     if (!q) return true;
     if (item.name.toLowerCase().includes(q)) return true;
@@ -566,7 +572,7 @@ window.KV = (function () {
   return {
     init, t, catName, cityName, pickup, cityLogo, flavorName, specOf, qty, status,
     isNew, match, find, price, plural, fmtDate, photo, detailsHTML, openCart, checkout,
-    cartCount, cartTotal, toast, autoHideHeader,
+    cartCount, cartTotal, toast, autoHideHeader, sortItems,
     get db() { return db; }, get lang() { return lang; }, get city() { return city; },
     manager: MANAGER
   };

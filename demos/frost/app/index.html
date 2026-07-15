@@ -155,7 +155,7 @@ function drawList() {
   const db = KV.db, out = [];
   for (const c of db.categories) {
     if (cat !== 'all' && c.id !== cat) continue;
-    const items = c.items.filter(i => KV.match(i, q));
+    const items = KV.sortItems(c.items).filter(i => KV.match(i, q));
     if (!items.length) continue;
     const have = items.filter(i => KV.status(i) !== 'out').length;
     out.push('<div class="sec"><h2>' + KV.catName(c) + ' <b>' + have + '/' + items.length + '</b></h2>' +
