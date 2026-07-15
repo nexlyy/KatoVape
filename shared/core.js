@@ -23,6 +23,7 @@ window.KV = (function () {
       gateYes: 'Мне есть 18', gateNo: 'Мне нет 18',
       empty: 'Ничего не нашлось', updated: 'наличие на',
       inStockN: 'позиций в наличии', qtyNone: 'закончился', pcs: 'шт',
+      maxQty: 'Больше нет на складе',
       ml: 'мл', vol: 'объём', saltnic: 'солевой никотин',
       puffs: 'затяжек', recharge: 'перезаряжаемая', mesh: 'mesh-испаритель'
     },
@@ -42,6 +43,7 @@ window.KV = (function () {
       gateYes: 'Мені є 18', gateNo: 'Мені немає 18',
       empty: 'Нічого не знайшлось', updated: 'наявність на',
       inStockN: 'позицій в наявності', qtyNone: 'закінчився', pcs: 'шт',
+      maxQty: 'Більше немає на складі',
       ml: 'мл', vol: 'об’єм', saltnic: 'сольовий нікотин',
       puffs: 'затяжок', recharge: 'перезаряджувана', mesh: 'mesh-випарник'
     },
@@ -61,6 +63,7 @@ window.KV = (function () {
       gateYes: 'Mam 18 lat', gateNo: 'Nie mam 18',
       empty: 'Nic nie znaleziono', updated: 'stan na',
       inStockN: 'pozycji dostępnych', qtyNone: 'wyprzedany', pcs: 'szt',
+      maxQty: 'Nie ma więcej na stanie',
       ml: 'ml', vol: 'pojemność', saltnic: 'sól nikotynowa',
       puffs: 'buchów', recharge: 'z ładowaniem', mesh: 'grzałka mesh'
     }
@@ -282,10 +285,20 @@ window.KV = (function () {
   }
 
   // корзина хранится как "id::вкус" -> штук
+  // сколько штук позиции реально есть на складе
+  function availFor(key) {
+    const [id, fl] = key.split('::');
+    const item = find(id); if (!item) return 0;
+    if (fl !== '' && item.flavors) return item.flavors[+fl] ? item.flavors[+fl].qty : 0;
+    return qty(item);
+  }
+
   function cartAdd(id, fl) {
     const key = id + '::' + (fl === undefined ? '' : fl);
+    if ((cart[key] || 0) >= availFor(key)) return false;   // больше, чем есть, не продать
     cart[key] = (cart[key] || 0) + 1;
     saveCart();
+    return true;
   }
   function cartSet(key, n) {
     if (n <= 0) delete cart[key]; else cart[key] = n;
@@ -379,7 +392,11 @@ window.KV = (function () {
       const minus = e.target.closest('[data-minus]');
       if (minus) cartSet(minus.dataset.minus, (cart[minus.dataset.minus] || 0) - 1);
       const plus = e.target.closest('[data-plus]');
-      if (plus) cartSet(plus.dataset.plus, (cart[plus.dataset.plus] || 0) + 1);
+      if (plus) {
+        const k = plus.dataset.plus;
+        if ((cart[k] || 0) >= availFor(k)) toast(t('maxQty'));
+        else cartSet(k, (cart[k] || 0) + 1);
+      }
       if (e.target.closest('.kvd-go')) checkout();
       if (e.target.closest('.kvd-clear')) { cart = {}; saveCart(); }
     };
@@ -505,8 +522,8 @@ window.KV = (function () {
   document.addEventListener('click', e => {
     const add = e.target.closest('[data-add]');
     if (add) {
-      cartAdd(add.dataset.add, add.dataset.fl !== undefined ? +add.dataset.fl : undefined);
-      toast(t('added'));
+      const ok = cartAdd(add.dataset.add, add.dataset.fl !== undefined ? +add.dataset.fl : undefined);
+      toast(t(ok ? 'added' : 'maxQty'));
     }
     const res = e.target.closest('[data-res]');
     if (res) reserve(res.dataset.res);
