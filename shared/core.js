@@ -348,14 +348,14 @@ window.KV = (function () {
     ta.select(); document.execCommand('copy'); ta.remove();
   }
 
-  // открываем Telegram так, чтобы сообщение уже было набрано. t.me/share/url
-  // прокидывает текст в окно "поделиться", клиент выбирает чат менеджера и жмёт
-  // отправить. Заодно кладём текст в буфер как запасной вариант.
+  // открываем сразу чат менеджера: t.me/<username>?text= подставляет текст
+  // черновиком в поле ввода, клиенту остаётся нажать отправить. share/url не
+  // годился: он показывал окно "Переслать", где менеджера ещё найти надо.
+  // В буфер текст тоже кладём, на случай старого клиента без поддержки драфта.
   function tgSend(text, note) {
     copyText(text);
     toast(note);
-    const url = 'https://t.me/share/url?url=' + encodeURIComponent(MANAGER) +
-      '&text=' + encodeURIComponent(text);
+    const url = MANAGER + '?text=' + encodeURIComponent(text);
     const tg = window.Telegram && window.Telegram.WebApp;
     setTimeout(() => {
       if (tg && tg.initData) tg.openTelegramLink(url);
