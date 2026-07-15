@@ -1,1 +1,409 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KatoVape</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Manrope:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a0a10; --panel:#12121d; --panel2:#171725; --line:#242439;
+  --acid:#c8ff2e; --violet:#8f6bff; --pink:#ff5ce1; --cyan:#4de1ff; --red:#ff5c7a;
+  --txt:#eef0ff; --mut:#8a8db0;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--txt);font-family:Manrope,system-ui,sans-serif;overflow-x:hidden}
+body::before,body::after{content:"";position:fixed;border-radius:50%;pointer-events:none;z-index:0}
+body::before{width:900px;height:900px;background:radial-gradient(closest-side,rgba(143,107,255,.20),transparent 70%);top:-320px;right:-260px}
+body::after{width:760px;height:760px;background:radial-gradient(closest-side,rgba(200,255,46,.10),transparent 70%);bottom:-340px;left:-280px}
+.wrap{max-width:1100px;margin:0 auto;padding:0 22px;position:relative;z-index:1}
+h1,h2,.logo{font-family:Unbounded,sans-serif}
+button{font-family:inherit}
 
+header{position:sticky;top:0;z-index:50;background:rgba(10,10,16,.85);backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+.nav{display:flex;align-items:center;justify-content:space-between;gap:12px 14px;padding:12px 0;flex-wrap:wrap}
+.nav-left,.nav-right{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.logo{display:flex;align-items:center;gap:10px;font-size:19px;font-weight:900;letter-spacing:.5px;text-decoration:none;color:var(--txt)}
+.logo-badge{width:36px;height:36px;border-radius:50%;overflow:hidden;background:#fff;flex-shrink:0;box-shadow:0 0 0 1px var(--line)}
+.logo-badge img{width:100%;height:100%;object-fit:cover;transform:scale(1.72);transform-origin:50% 38%}
+.logo em{font-style:normal;color:var(--acid)}
+.nav-links{display:flex;gap:18px}
+.nav-links a{color:var(--mut);text-decoration:none;font-weight:600;font-size:14px}
+.nav-links a:hover{color:var(--txt)}
+#city{position:relative}
+.kv-city{display:flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--panel);color:var(--txt);padding:8px 13px;border-radius:99px;font-weight:800;font-size:13px;cursor:pointer;font-family:inherit}
+.kv-city:hover{border-color:var(--acid)}
+.kv-city-pin{color:var(--acid);font-size:9px}
+.kv-city-car{color:var(--mut);font-size:10px}
+.kv-city-menu{position:absolute;top:calc(100% + 8px);left:0;z-index:60;background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:6px;min-width:172px;box-shadow:0 16px 36px rgba(0,0,0,.45)}
+.kv-city-menu[hidden]{display:none}
+.kv-city-menu button{display:block;width:100%;text-align:left;background:none;border:none;color:var(--txt);padding:10px 12px;border-radius:9px;font-weight:700;font-size:13.5px;cursor:pointer;font-family:inherit}
+.kv-city-menu button:hover{background:var(--panel)}
+.kv-city-menu button.on{color:var(--acid)}
+@media(max-width:700px){.nav-links{display:none}}
+#lang{display:flex;gap:4px}
+.kv-lang{border:1px solid var(--line);background:transparent;color:var(--mut);padding:6px 10px;border-radius:8px;font-size:12px;font-weight:800;cursor:pointer}
+.kv-lang.on{background:var(--panel2);color:var(--acid);border-color:var(--acid)}
+.kv-theme{border:1px solid var(--line);background:transparent;color:var(--mut);width:34px;height:31px;border-radius:8px;font-size:14px;cursor:pointer}
+.kv-theme:hover{color:var(--acid);border-color:var(--acid)}
+.cartbtn{border:1px solid var(--line);background:var(--panel);color:var(--txt);padding:9px 16px;border-radius:99px;font-weight:800;font-size:13.5px;cursor:pointer}
+.cartbtn b{color:var(--acid)}
+.nav .cta{color:#0a0a10;background:var(--acid);padding:10px 20px;border-radius:99px;font-weight:800;box-shadow:0 0 24px rgba(200,255,46,.35)}
+.nav .cta:hover{filter:brightness(1.08)}
+
+.hero{display:grid;grid-template-columns:1.3fr 1fr;gap:30px;align-items:center;padding:64px 0 50px}
+.hero h1{font-size:clamp(34px,5.5vw,62px);font-weight:900;line-height:1.06}
+.hero h1 span{background:linear-gradient(100deg,var(--acid),var(--cyan) 55%,var(--violet));-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero p{color:var(--mut);font-size:16.5px;margin:18px 0 26px;max-width:480px;line-height:1.65}
+.stats{display:flex;gap:12px;flex-wrap:wrap}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 18px;font-size:13.5px;color:var(--mut)}
+.stat b{color:var(--acid);font-size:19px;display:block;font-family:Unbounded}
+.cat-art{justify-self:center;position:relative;width:270px;height:270px}
+.cat-art img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:26px;background:#fff;z-index:2;box-shadow:0 14px 44px rgba(0,0,0,.45)}
+.cat-art svg{position:absolute;inset:0}
+@media(max-width:820px){.hero{grid-template-columns:1fr}.cat-art{display:none}}
+
+.panel-head{display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;margin-bottom:20px}
+.panel-head h2{font-size:26px}
+.upd{color:var(--mut);font-size:13px}
+.upd i{color:var(--acid);font-style:normal}
+
+.controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:20px}
+.chip{border:1px solid var(--line);background:var(--panel);color:var(--mut);padding:9px 16px;border-radius:99px;cursor:pointer;font-size:13.5px;font-weight:700;transition:.15s}
+.chip:hover{color:var(--txt)}
+.chip.on{background:var(--acid);border-color:var(--acid);color:#0a0a10;box-shadow:0 0 18px rgba(200,255,46,.3)}
+.search{flex:1;min-width:180px;background:var(--panel);border:1px solid var(--line);border-radius:99px;color:var(--txt);padding:10px 18px;font-family:inherit;font-size:14px;outline:none}
+.search:focus{border-color:var(--violet)}
+.only{display:flex;align-items:center;gap:8px;color:var(--mut);font-size:13.5px;font-weight:600;cursor:pointer;user-select:none}
+.only input{accent-color:var(--acid);width:16px;height:16px}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px;padding-bottom:70px;align-items:start}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;overflow:hidden;cursor:pointer;transition:border-color .15s}
+.card:hover{border-color:var(--violet)}
+.card.open{border-color:var(--acid)}
+.card.is-out{opacity:.5}
+.kv-photo{position:relative;height:150px;background:linear-gradient(140deg,#1a1a2c,#121220);display:grid;place-items:center}
+.kv-photo span{font-family:Unbounded;font-size:44px;font-weight:900;color:#262640}
+.kv-photo img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.card-body{padding:14px 16px 16px;display:flex;flex-direction:column;gap:9px}
+.card .cat{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--mut);font-weight:800}
+.card .name{font-weight:800;font-size:15.5px;line-height:1.35}
+.card .meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.price{font-family:Unbounded;font-size:14px;color:var(--txt)}
+.pill{font-size:11.5px;font-weight:800;padding:4px 11px;border-radius:99px;letter-spacing:.4px}
+.pill.in{background:rgba(200,255,46,.12);color:var(--acid);box-shadow:inset 0 0 0 1px rgba(200,255,46,.45)}
+.pill.out{background:rgba(255,92,122,.1);color:var(--red);box-shadow:inset 0 0 0 1px rgba(255,92,122,.35)}
+.pill.new{background:rgba(77,225,255,.12);color:var(--cyan);box-shadow:inset 0 0 0 1px rgba(77,225,255,.45)}
+.qtytag{font-size:11.5px;color:var(--mut);font-weight:700}
+
+.kv-details{display:none;border-top:1px solid var(--line);padding:12px 16px 16px}
+.card.open .kv-details{display:block}
+.kvf-meta{font-size:12px;color:var(--mut);margin-bottom:10px}
+.kvf-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px dashed var(--line);font-size:13px}
+.kvf-row:last-child{border-bottom:none}
+.kvf-row.off{opacity:.45}
+.kvf-name{flex:1;font-weight:700}
+.kvf-qty{color:var(--mut);font-size:11.5px}
+.kvf-add{border:1px solid var(--acid);background:transparent;color:var(--acid);border-radius:99px;padding:4px 12px;font-size:11.5px;font-weight:800;cursor:pointer}
+.kvf-add:hover{background:var(--acid);color:#0a0a10}
+.kvf-res{margin-top:12px;width:100%;border:1px solid var(--violet);background:transparent;color:var(--violet);border-radius:10px;padding:9px;font-size:12.5px;font-weight:800;cursor:pointer}
+.kvf-res:hover{background:var(--violet);color:#fff}
+.empty{color:var(--red);grid-column:1/-1}
+
+footer{border-top:1px solid var(--line);padding:32px 0 46px;color:var(--mut);font-size:13.5px;line-height:2}
+footer a{color:var(--acid);text-decoration:none}
+.age18{display:inline-block;border:1px solid var(--red);color:var(--red);border-radius:8px;padding:2px 9px;font-weight:800;margin-right:10px}
+
+.gate{position:fixed;inset:0;z-index:100;background:rgba(6,6,10,.96);display:flex;align-items:center;justify-content:center;padding:20px}
+.gate[hidden]{display:none}
+.gate .box{background:var(--panel2);border:1px solid var(--line);border-radius:20px;padding:40px;max-width:420px;text-align:center}
+.gate h2{font-size:44px;color:var(--acid);margin-bottom:12px}
+.gate p{color:var(--mut);margin-bottom:26px;line-height:1.6}
+.gate .row{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.gate button{font-weight:800;font-size:15px;padding:13px 24px;border-radius:99px;cursor:pointer;border:1px solid var(--line);background:transparent;color:var(--mut)}
+.gate button.yes{background:var(--acid);border-color:var(--acid);color:#0a0a10}
+
+.kvd{position:fixed;inset:0;z-index:90;background:rgba(6,6,10,.78)}
+.kvd[hidden]{display:none}
+.kvd-box{position:absolute;top:0;right:0;bottom:0;width:min(400px,100%);background:var(--panel2);border-left:1px solid var(--line);padding:22px;display:flex;flex-direction:column;gap:14px;overflow-y:auto}
+.kvd-head{display:flex;align-items:center;justify-content:space-between}
+.kvd-title{font-family:Unbounded;font-size:18px}
+.kvd-x{border:none;background:none;color:var(--mut);font-size:26px;cursor:pointer}
+.kvd-items{flex:1}
+.kvd-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px dashed var(--line);font-size:13.5px}
+.kvd-name{flex:1;font-weight:700}
+.kvd-name small{display:block;color:var(--mut);font-weight:400}
+.kvd-ctr{display:flex;align-items:center;gap:8px}
+.kvd-ctr button{width:26px;height:26px;border-radius:8px;border:1px solid var(--line);background:transparent;color:var(--txt);cursor:pointer;font-size:15px}
+.kvd-sum{color:var(--acid);font-weight:800;min-width:52px;text-align:right}
+.kvd-empty{color:var(--mut)}
+.kvd-total{font-family:Unbounded;font-size:16px}
+.kvd-go{background:var(--acid);color:#0a0a10;border:none;border-radius:12px;padding:14px;font-weight:800;font-size:14px;cursor:pointer}
+.kvd-clear{background:none;border:none;color:var(--mut);font-size:12.5px;cursor:pointer}
+
+.kv-toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,20px);background:var(--acid);color:#0a0a10;font-weight:800;font-size:13.5px;padding:12px 22px;border-radius:99px;opacity:0;pointer-events:none;transition:.25s;z-index:120;max-width:90vw;text-align:center}
+.kv-toast.show{opacity:1;transform:translate(-50%,0)}
+
+/* светлая тема: общий переключатель в шапке, выбор запоминается */
+html[data-theme="light"]{--bg:#eef0f7;--panel:#ffffff;--panel2:#ffffff;--line:#e3e5ef;--txt:#15151f;--mut:#5d6082}
+html[data-theme="light"] body::before{background:radial-gradient(closest-side,rgba(143,107,255,.16),transparent 70%)}
+html[data-theme="light"] body::after{background:radial-gradient(closest-side,rgba(200,255,46,.16),transparent 70%)}
+html[data-theme="light"] header{background:rgba(255,255,255,.85)}
+html[data-theme="light"] .logo em,
+html[data-theme="light"] .stat b,
+html[data-theme="light"] .upd i,
+html[data-theme="light"] .cartbtn b,
+html[data-theme="light"] .kvd-sum,
+html[data-theme="light"] footer a{color:#5f8f00}
+html[data-theme="light"] .pill.in{background:rgba(95,143,0,.12);color:#4e7a00;box-shadow:inset 0 0 0 1px rgba(95,143,0,.4)}
+html[data-theme="light"] .kvf-add{border-color:#5f8f00;color:#5f8f00}
+html[data-theme="light"] .kvf-add:hover{background:#5f8f00;color:#fff}
+html[data-theme="light"] .kv-photo{background:linear-gradient(140deg,#eef1fb,#dfe3f2)}
+html[data-theme="light"] .kv-photo span{color:#c4c8de}
+html[data-theme="light"] .gate{background:rgba(238,240,247,.96)}
+html[data-theme="light"] .kvd{background:rgba(40,44,70,.4)}
+html[data-theme="light"] .cartbtn,
+html[data-theme="light"] .chip,
+html[data-theme="light"] .search{background:#fff}
+html[data-theme="light"] .kv-city-menu{box-shadow:0 16px 36px rgba(31,71,125,.18)}
+
+@media(max-width:700px){
+  .nav{gap:10px}
+  .nav-left{gap:9px;flex:1 1 auto}
+  .nav-right{gap:8px}
+  .logo{font-size:17px}
+  .cta{padding:10px 15px}
+  .cartbtn{padding:9px 13px}
+  .kv-lang{padding:6px 9px}
+}
+@media(max-width:520px){
+  .hero h1{font-size:34px}
+  .stat{flex:1 1 40%}
+}
+</style>
+</head>
+<body>
+
+<div class="gate" id="gate" hidden>
+  <div class="box">
+    <h2>18+</h2>
+    <p id="gateText"></p>
+    <div class="row">
+      <button class="yes" id="gateYes" onclick="sessionStorage.setItem('kv_age','1');gate.hidden=true"></button>
+      <button id="gateNo" onclick="location.href='https://www.google.com'"></button>
+    </div>
+  </div>
+</div>
+
+<header>
+  <div class="wrap nav">
+    <div class="nav-left">
+      <a class="logo" href="#">
+        <span class="logo-badge"><img id="logoImg" src="../../../data/photos/cat.png" alt="KatoVape"></span>
+        KATO<em>VAPE</em>
+      </a>
+      <div id="city"></div>
+    </div>
+    <div class="nav-right">
+      <nav class="nav-links">
+        <a href="#stock" id="navStock"></a>
+        <a href="#contact" id="navContact"></a>
+      </nav>
+      <div id="lang"></div>
+      <div id="theme"></div>
+      <button class="cartbtn" id="cartFab" onclick="KV.openCart()"></button>
+      <a class="cta" id="navCta" href="https://t.me/KatoManager" target="_blank"></a>
+    </div>
+  </div>
+</header>
+
+<section class="wrap hero">
+  <div>
+    <h1 id="heroT"></h1>
+    <p id="heroP"></p>
+    <div class="stats" id="stats"></div>
+  </div>
+  <div class="cat-art">
+    <svg width="270" height="270" viewBox="0 0 240 240" aria-hidden="true">
+      <circle cx="120" cy="120" r="116" fill="#f5f3ef"/>
+      <circle cx="120" cy="120" r="116" fill="none" stroke="#0d0d0f" stroke-width="2" opacity=".1"/>
+      <g fill="none" stroke="#c2c7d0" stroke-width="5" stroke-linecap="round" opacity=".65">
+        <path d="M58 152 C38 140 52 122 40 110 C31 100 45 86 35 76"/>
+        <path d="M182 152 C202 140 188 122 200 110 C209 100 195 86 205 76"/>
+      </g>
+      <path d="M70 100 L52 30 L114 70 Z" fill="#0e0e11"/>
+      <path d="M170 100 L188 30 L126 70 Z" fill="#0e0e11"/>
+      <path d="M60 34 L56 44 L64 42 Z" fill="#0e0e11"/>
+      <path d="M52 46 L50 55 L59 52 Z" fill="#0e0e11"/>
+      <path d="M180 34 L184 44 L176 42 Z" fill="#0e0e11"/>
+      <path d="M188 46 L190 55 L181 52 Z" fill="#0e0e11"/>
+      <path d="M76 90 L68 54 L102 74 Z" fill="#3a2b2b" opacity=".55"/>
+      <path d="M164 90 L172 54 L138 74 Z" fill="#3a2b2b" opacity=".55"/>
+      <path d="M120 58 C158 58 182 84 184 118 C186 152 162 180 120 184 C78 180 54 152 56 118 C58 84 82 58 120 58 Z" fill="#0e0e11"/>
+      <ellipse cx="98" cy="114" rx="15" ry="18" fill="#ffb020"/>
+      <ellipse cx="142" cy="114" rx="15" ry="18" fill="#ffb020"/>
+      <ellipse cx="98" cy="114" rx="15" ry="18" fill="none" stroke="#c67a10" stroke-width="2"/>
+      <ellipse cx="142" cy="114" rx="15" ry="18" fill="none" stroke="#c67a10" stroke-width="2"/>
+      <ellipse cx="98" cy="115" rx="4.5" ry="13" fill="#140d00"/>
+      <ellipse cx="142" cy="115" rx="4.5" ry="13" fill="#140d00"/>
+      <circle cx="93" cy="107" r="2.6" fill="#fff" opacity=".9"/>
+      <circle cx="137" cy="107" r="2.6" fill="#fff" opacity=".9"/>
+      <polygon points="112,140 128,140 120,150" fill="#e98aa8"/>
+      <path d="M120 150 q0 7 -9 9 M120 150 q0 7 9 9" fill="none" stroke="#2f2f2f" stroke-width="2"/>
+      <g stroke="#4a4a4a" stroke-width="1.6" stroke-linecap="round" opacity=".7">
+        <line x1="78" y1="136" x2="44" y2="130"/><line x1="78" y1="144" x2="46" y2="152"/>
+        <line x1="162" y1="136" x2="196" y2="130"/><line x1="162" y1="144" x2="194" y2="152"/>
+      </g>
+      <path d="M92 178 Q120 192 148 178" fill="none" stroke="#111" stroke-width="8"/>
+      <rect x="97" y="177" width="46" height="15" rx="3" fill="#2a2a2a" stroke="#9a9a9a" stroke-width="1"/>
+      <text x="120" y="188" text-anchor="middle" font-family="Manrope,sans-serif" font-weight="800" font-size="7.5" fill="#eaeaea" letter-spacing=".5">KATOWICE</text>
+      <text x="120" y="214" text-anchor="middle" font-family="Unbounded,sans-serif" font-weight="900" font-size="19" fill="#0d0d0f" letter-spacing=".5">KATOVAPE</text>
+    </svg>
+    <img id="heroImg" src="../../../data/photos/cat.png" alt="" onerror="this.style.display='none'">
+  </div>
+</section>
+
+<section class="wrap" id="stock">
+  <div class="panel-head">
+    <h2 id="stockT"></h2>
+    <span class="upd" id="upd"></span>
+  </div>
+  <div class="controls" id="chips"></div>
+  <div class="controls">
+    <input class="search" id="q" type="search">
+    <label class="only"><input type="checkbox" id="only"> <span id="onlyT"></span></label>
+  </div>
+  <div class="grid" id="list"></div>
+</section>
+
+<footer id="contact">
+  <div class="wrap">
+    <p><span class="age18">18+</span><span id="fAdult"></span></p>
+    <p><span id="fPickup"></span> · <span id="fPay"></span></p>
+    <p><span id="fWrite"></span>: <a href="https://t.me/KatoManager" target="_blank">@KatoManager</a> · KatoVape 2026</p>
+  </div>
+</footer>
+
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="../../../shared/core.js?v=5"></script>
+<script>
+const L = {
+  ru: {
+    navStock: 'Наличие', navContact: 'Контакты', cta: 'Заказать', stock: 'Наличие',
+    heroT: 'Украинские вейпы <span>теперь в Польше</span>',
+    heroP: 'Chaser, Elf Bar, Vaporesso, Oxva. Оригинал из Украины. Наличие на странице живое, тянется из базы выбранного города.',
+    statCats: 'категорий', statUA: 'оригинал из Украины', updFrom: 'обновлено'
+  },
+  uk: {
+    navStock: 'Наявність', navContact: 'Контакти', cta: 'Замовити', stock: 'Наявність',
+    heroT: 'Українські вейпи <span>тепер у Польщі</span>',
+    heroP: 'Chaser, Elf Bar, Vaporesso, Oxva. Оригінал з України. Наявність на сторінці жива, тягнеться з бази обраного міста.',
+    statCats: 'категорій', statUA: 'оригінал з України', updFrom: 'оновлено'
+  },
+  pl: {
+    navStock: 'Asortyment', navContact: 'Kontakt', cta: 'Zamów', stock: 'Asortyment',
+    heroT: 'Ukraińskie vape <span>teraz w Polsce</span>',
+    heroP: 'Chaser, Elf Bar, Vaporesso, Oxva. Oryginał z Ukrainy. Stan magazynu na stronie jest żywy, czytany prosto z bazy wybranego miasta.',
+    statCats: 'kategorii', statUA: 'oryginał z Ukrainy', updFrom: 'aktualizacja'
+  }
+};
+const p = k => (L[KV.lang] || L.ru)[k];
+
+let cat = 'all', q = '', only = false;
+
+if (!sessionStorage.getItem('kv_age')) gate.hidden = false;
+
+function render() {
+  const db = KV.db;
+  navStock.textContent = p('navStock');
+  navContact.textContent = p('navContact');
+  navCta.textContent = p('cta');
+  stockT.textContent = p('stock');
+  heroT.innerHTML = p('heroT');
+  heroP.textContent = p('heroP');
+  gateText.textContent = KV.t('gateText');
+  gateYes.textContent = KV.t('gateYes');
+  gateNo.textContent = KV.t('gateNo');
+  fAdult.textContent = KV.t('adult');
+  fPickup.textContent = KV.pickup();
+  fPay.textContent = KV.t('pay');
+  fWrite.textContent = KV.t('write');
+  document.getElementById('q').placeholder = KV.t('search');
+  onlyT.textContent = KV.t('only');
+  document.getElementById('logoImg').src = KV.cityLogo();
+  const hero = document.getElementById('heroImg');
+  if (hero) { hero.style.display = ''; hero.src = KV.cityLogo(); }
+
+  const all = db.categories.flatMap(c => c.items);
+  const have = all.filter(i => KV.status(i) !== 'out').length;
+  stats.innerHTML =
+    '<div class="stat"><b>' + have + '</b>' + KV.t('inStockN') + '</div>' +
+    '<div class="stat"><b>' + db.categories.length + '</b>' + p('statCats') + '</div>' +
+    '<div class="stat"><b>UA</b>' + p('statUA') + '</div>';
+  upd.innerHTML = p('updFrom') + ': <i>' + KV.fmtDate(db.updated) + '</i>';
+
+  const cats = [{ id: 'all', name: null }, ...db.categories];
+  chips.innerHTML = cats.map(c =>
+    '<button class="chip' + (c.id === cat ? ' on' : '') + '" data-c="' + c.id + '">' +
+    (c.name ? KV.catName(c) : { ru: 'Все', uk: 'Всі', pl: 'Wszystko' }[KV.lang]) + '</button>').join('');
+
+  drawGrid();
+}
+
+function drawGrid() {
+  const db = KV.db, rows = [];
+  for (const c of db.categories) {
+    if (cat !== 'all' && c.id !== cat) continue;
+    for (const it of c.items) {
+      const st = KV.status(it);
+      if (only && st === 'out') continue;
+      if (!KV.match(it, q)) continue;
+      rows.push({ it, st, cname: KV.catName(c) });
+    }
+  }
+  list.innerHTML = rows.map(r =>
+    '<div class="card' + (r.st === 'out' ? ' is-out' : '') + '" data-id="' + r.it.id + '">' +
+    KV.photo(r.it) +
+    '<div class="card-body">' +
+      '<span class="cat">' + r.cname + '</span>' +
+      '<span class="name">' + r.it.name + '</span>' +
+      '<div class="meta">' +
+        '<span class="price">' + KV.price(r.it) + '</span>' +
+        '<span class="pill ' + r.st + '">' + KV.t(r.st === 'in' ? 'in' : r.st === 'new' ? 'new' : 'out') + '</span>' +
+        (r.st !== 'out' ? '<span class="qtytag">' + KV.qty(r.it) + ' ' + KV.t('pcs') + '</span>' : '') +
+      '</div>' +
+    '</div>' +
+    KV.detailsHTML(r.it) +
+    '</div>').join('') || '<p class="empty">' + KV.t('empty') + '</p>';
+}
+
+chips.onclick = e => {
+  const b = e.target.closest('.chip'); if (!b) return;
+  cat = b.dataset.c;
+  chips.querySelectorAll('.chip').forEach(x => x.classList.toggle('on', x === b));
+  drawGrid();
+};
+document.getElementById('q').oninput = e => { q = e.target.value.trim().toLowerCase(); drawGrid(); };
+document.getElementById('only').onchange = e => { only = e.target.checked; drawGrid(); };
+
+// клик по карточке раскрывает вкусы, кнопки внутри при этом не трогаем
+list.onclick = e => {
+  if (e.target.closest('button')) return;
+  const card = e.target.closest('.card');
+  if (card) card.classList.toggle('open');
+};
+
+function cartHook() {
+  const n = KV.cartCount();
+  cartFab.innerHTML = KV.t('cart') + (n ? ' <b>' + n + '</b>' : '');
+}
+
+KV.init({
+  render, cart: cartHook,
+  fail: () => { list.innerHTML = '<p class="empty">Базу не удалось загрузить, открой демо через локальный сервер.</p>'; }
+});
+</script>
+</body>
+</html>
