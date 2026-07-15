@@ -1026,9 +1026,12 @@ window.KV = (function () {
     opts.render();
     renderInfo();
     if (hooks.cart) hooks.cart();
-    ensureGate();
-    ensureCookie();
-    if (localStorage.getItem('kv_age')) maybeSubscribe();
+    // гейт, cookie и попап подписки только на сайте: в мини-аппе Telegram лишние
+    if (!opts.app) {
+      ensureGate();
+      ensureCookie();
+      if (localStorage.getItem('kv_age')) maybeSubscribe();
+    }
     track('view');
   }
 

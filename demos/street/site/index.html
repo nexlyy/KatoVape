@@ -15,6 +15,9 @@
 :root{
   --yel:#ffd500; --blu:#0057b7; --ink:#0d0d0d; --paper:#fffdf4;
   --grn:#19c161; --red:#ff2e4d;
+  --kv-surface:#fff; --kv-surface2:#fff; --kv-line:var(--ink); --kv-text:var(--ink);
+  --kv-muted:#6b6656; --kv-field:#fff; --kv-accent:var(--blu); --kv-accent-2:var(--blu);
+  --kv-accent-ink:#fff; --kv-radius:2px; --kv-shadow:4px 4px 0 var(--ink); --kv-gate-bg:var(--yel);
 }
 *{margin:0;padding:0;box-sizing:border-box}
 html{scroll-behavior:smooth}
@@ -159,15 +162,6 @@ html[data-theme="dark"] .kv-theme{background:var(--ink);color:var(--yel);box-sha
 </head>
 <body>
 
-<div class="gate" id="gate" hidden>
-  <div class="box">
-    <h2>18+</h2>
-    <p id="gateText"></p>
-    <button class="yes" id="gateYes" onclick="sessionStorage.setItem('kv_age','1');gate.hidden=true"></button>
-    <button id="gateNo" onclick="location.href='https://www.google.com'"></button>
-  </div>
-</div>
-
 <div class="ticker"><span id="tick"></span></div>
 
 <header>
@@ -197,11 +191,14 @@ html[data-theme="dark"] .kv-theme{background:var(--ink);color:var(--yel);box-sha
   <div class="stockbar" id="stats"></div>
   <div class="controls" id="chips"></div>
   <div class="controls">
+    <div id="filters"></div>
     <input class="search" id="q" type="search">
     <label class="only"><input type="checkbox" id="only"> <span id="onlyT"></span></label>
   </div>
   <div class="grid" id="list"></div>
 </section>
+
+<div id="kv-info"></div>
 
 <footer id="contact">
   <div class="wrap">
@@ -244,8 +241,6 @@ const p = k => (L[KV.lang] || L.ru)[k];
 
 let cat = 'all', q = '', only = false;
 
-if (!sessionStorage.getItem('kv_age')) gate.hidden = false;
-
 function render() {
   const db = KV.db;
   navStock.textContent = p('navStock');
@@ -256,9 +251,6 @@ function render() {
   heroBtn.textContent = p('heroBtn');
   stickTwo.textContent = KV.pickup();
   tick.textContent = p('tick').repeat(4);
-  gateText.textContent = KV.t('gateText');
-  gateYes.textContent = KV.t('gateYes');
-  gateNo.textContent = KV.t('gateNo');
   fAdult.textContent = KV.t('adult');
   fPickup.textContent = KV.pickup();
   fPay.textContent = KV.t('pay');
@@ -292,6 +284,7 @@ function drawGrid() {
     for (const it of KV.sortItems(c.items)) {
       const st = KV.status(it);
       if (only && st === 'out') continue;
+      if (!KV.filterPass(it)) continue;
       if (!KV.match(it, q)) continue;
       rows.push({ it, st, cname: KV.catName(c) });
     }
@@ -304,10 +297,12 @@ function drawGrid() {
     '<div class="card-body">' +
       '<span class="cat">' + r.cname + '</span>' +
       '<span class="name">' + r.it.name + '</span>' +
+      KV.badgesHTML(r.it) +
       '<div class="meta">' +
         '<span class="price">' + KV.price(r.it) + '</span>' +
         (r.st !== 'out' ? '<span class="qtytag">' + KV.qty(r.it) + ' ' + KV.t('pcs') + '</span>' : '') +
       '</div>' +
+      KV.starsHTML(r.it) +
     '</div>' +
     KV.detailsHTML(r.it) +
     '</div>').join('') || '<p class="empty">' + KV.t('empty').toUpperCase() + ' :(</p>';
@@ -321,6 +316,7 @@ chips.onclick = e => {
 };
 document.getElementById('q').oninput = e => { q = e.target.value.trim().toLowerCase(); drawGrid(); };
 document.getElementById('only').onchange = e => { only = e.target.checked; drawGrid(); };
+KV.searchSuggest(document.getElementById('q'), v => { q = v.trim().toLowerCase(); drawGrid(); });
 list.onclick = e => {
   if (e.target.closest('button')) return;
   const card = e.target.closest('.card');

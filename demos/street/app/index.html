@@ -12,6 +12,9 @@
 :root{
   --yel:#ffd500; --blu:#0057b7; --ink:#0d0d0d; --paper:#fffdf4;
   --grn:#19c161; --red:#ff2e4d;
+  --kv-surface:#fff; --kv-surface2:#fff; --kv-line:var(--ink); --kv-text:var(--ink);
+  --kv-muted:#6b6656; --kv-field:#fff; --kv-accent:var(--blu); --kv-accent-2:var(--blu);
+  --kv-accent-ink:#fff; --kv-radius:2px; --kv-shadow:4px 4px 0 var(--ink);
 }
 *{margin:0;padding:0;box-sizing:border-box}
 body{background:var(--yel);color:var(--ink);font-family:Rubik,system-ui,sans-serif;padding-bottom:96px}
@@ -179,6 +182,7 @@ function drawList() {
           '<div class="rhead">' + KV.photo(i) +
             '<div class="rmain">' +
               '<div class="rname">' + i.name + '</div>' +
+              KV.badgesHTML(i) +
               '<div class="rsub"><b>' + KV.price(i) + '</b>' +
                 (st !== 'out' ? ' · ' + KV.qty(i) + ' ' + KV.t('pcs') : '') + '</div>' +
             '</div>' +
@@ -196,6 +200,7 @@ chips.onclick = e => {
   drawList();
 };
 document.getElementById('q').oninput = e => { q = e.target.value.trim().toLowerCase(); drawList(); };
+KV.searchSuggest(document.getElementById('q'), v => { q = v.trim().toLowerCase(); drawList(); });
 list.onclick = e => {
   if (e.target.closest('button')) return;
   const row = e.target.closest('.row');
@@ -219,7 +224,7 @@ function cartHook() {
 }
 
 KV.init({
-  render, cart: cartHook,
+  render, cart: cartHook, app: true,
   fail: () => { list.innerHTML = '<p class="empty">Базу не удалось загрузить, открой демо через локальный сервер.</p>'; }
 });
 </script>

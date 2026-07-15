@@ -13,6 +13,9 @@
   --bg:#e9f1fa; --ink:#0f2136; --mut:#5f7391;
   --blu:#1861ff; --cyan:#38c6ff; --grn:#0eb981; --red:#e94b6a;
   --glass:rgba(255,255,255,.65); --gline:rgba(255,255,255,.85);
+  --kv-surface:#fff; --kv-surface2:#fff; --kv-line:var(--gline); --kv-text:var(--ink);
+  --kv-muted:var(--mut); --kv-field:#fff; --kv-accent:var(--blu); --kv-accent-2:var(--blu);
+  --kv-accent-ink:#fff; --kv-radius:14px; --kv-shadow:0 16px 36px rgba(31,71,125,.2);
 }
 *{margin:0;padding:0;box-sizing:border-box}
 body{background:var(--bg);color:var(--ink);font-family:Onest,system-ui,sans-serif;padding-bottom:92px;overflow-x:hidden}
@@ -165,6 +168,7 @@ function drawList() {
           '<div class="rhead">' + KV.photo(i) +
             '<div class="rmain">' +
               '<div class="rname">' + i.name + '</div>' +
+              KV.badgesHTML(i) +
               '<div class="rsub"><b>' + KV.price(i) + '</b>' +
                 (st !== 'out' ? ' · ' + KV.qty(i) + ' ' + KV.t('pcs') : ' · ' + KV.t('out')) +
                 (st === 'new' ? ' · ' + KV.t('new') : '') + '</div>' +
@@ -183,6 +187,7 @@ chips.onclick = e => {
   drawList();
 };
 document.getElementById('q').oninput = e => { q = e.target.value.trim().toLowerCase(); drawList(); };
+KV.searchSuggest(document.getElementById('q'), v => { q = v.trim().toLowerCase(); drawList(); });
 list.onclick = e => {
   if (e.target.closest('button')) return;
   const row = e.target.closest('.row');
@@ -206,7 +211,7 @@ function cartHook() {
 }
 
 KV.init({
-  render, cart: cartHook,
+  render, cart: cartHook, app: true,
   fail: () => { list.innerHTML = '<p class="empty">Базу не удалось загрузить, открой демо через локальный сервер.</p>'; }
 });
 </script>

@@ -17,6 +17,9 @@
   --blu:#1861ff; --cyan:#38c6ff; --grn:#0eb981; --red:#e94b6a;
   --glass:rgba(255,255,255,.62); --gline:rgba(255,255,255,.85);
   --shadow:0 12px 30px rgba(31,71,125,.12);
+  --kv-surface:#fff; --kv-surface2:#fff; --kv-line:var(--gline); --kv-text:var(--ink);
+  --kv-muted:var(--mut); --kv-field:#fff; --kv-accent:var(--blu); --kv-accent-2:var(--blu);
+  --kv-accent-ink:#fff; --kv-radius:14px; --kv-shadow:var(--shadow); --kv-gate-bg:rgba(228,238,250,.94);
 }
 *{margin:0;padding:0;box-sizing:border-box}
 html{scroll-behavior:smooth}
@@ -145,7 +148,7 @@ footer a{color:var(--blu);text-decoration:none;font-weight:700}
 .kv-toast.show{opacity:1;transform:translate(-50%,0)}
 
 /* тёмная тема: общий переключатель в шапке */
-html[data-theme="dark"]{--bg:#0b1220;--ink:#e7edf7;--mut:#8fa0bd;--glass:rgba(255,255,255,.05);--gline:rgba(255,255,255,.12);--shadow:0 14px 34px rgba(0,0,0,.5)}
+html[data-theme="dark"]{--bg:#0b1220;--ink:#e7edf7;--mut:#8fa0bd;--glass:rgba(255,255,255,.05);--gline:rgba(255,255,255,.12);--shadow:0 14px 34px rgba(0,0,0,.5);--kv-surface:#141d30;--kv-surface2:#141d30;--kv-line:rgba(255,255,255,.12);--kv-field:rgba(255,255,255,.06);--kv-gate-bg:rgba(8,14,26,.92)}
 html[data-theme="dark"] .nav{background:rgba(20,30,50,.6)}
 html[data-theme="dark"] #lang .kv-city{background:rgba(255,255,255,.08);color:var(--ink)}
 html[data-theme="dark"] .kv-theme,
@@ -166,17 +169,6 @@ html[data-theme="dark"] .kv-city-menu button:hover{background:rgba(255,255,255,.
 <body>
 
 <div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div>
-
-<div class="gate" id="gate" hidden>
-  <div class="box">
-    <h2>18+</h2>
-    <p id="gateText"></p>
-    <div class="row">
-      <button class="yes" id="gateYes" onclick="sessionStorage.setItem('kv_age','1');gate.hidden=true"></button>
-      <button id="gateNo" onclick="location.href='https://www.google.com'"></button>
-    </div>
-  </div>
-</div>
 
 <header>
   <div class="wrap">
@@ -206,11 +198,14 @@ html[data-theme="dark"] .kv-city-menu button:hover{background:rgba(255,255,255,.
   </div>
   <div class="controls" id="chips"></div>
   <div class="controls">
+    <div id="filters"></div>
     <input class="search" id="q" type="search">
     <label class="only"><input type="checkbox" id="only"> <span id="onlyT"></span></label>
   </div>
   <div class="grid" id="list"></div>
 </section>
+
+<div id="kv-info"></div>
 
 <footer id="contact">
   <div class="wrap">
@@ -249,8 +244,6 @@ const p = k => (L[KV.lang] || L.ru)[k];
 
 let cat = 'all', q = '', only = false;
 
-if (!sessionStorage.getItem('kv_age')) gate.hidden = false;
-
 function render() {
   const db = KV.db;
   navStock.textContent = p('navStock');
@@ -259,9 +252,6 @@ function render() {
   stockT.textContent = p('stock');
   heroT.innerHTML = p('heroT');
   heroP.textContent = p('heroP');
-  gateText.textContent = KV.t('gateText');
-  gateYes.textContent = KV.t('gateYes');
-  gateNo.textContent = KV.t('gateNo');
   fAdult.textContent = KV.t('adult');
   fPickup.textContent = KV.pickup();
   fPay.textContent = KV.t('pay');
@@ -293,6 +283,7 @@ function drawGrid() {
     for (const it of KV.sortItems(c.items)) {
       const st = KV.status(it);
       if (only && st === 'out') continue;
+      if (!KV.filterPass(it)) continue;
       if (!KV.match(it, q)) continue;
       rows.push({ it, st, cname: KV.catName(c) });
     }
@@ -303,11 +294,13 @@ function drawGrid() {
     '<div class="card-body">' +
       '<span class="cat">' + r.cname + '</span>' +
       '<span class="name">' + r.it.name + '</span>' +
+      KV.badgesHTML(r.it) +
       '<div class="meta">' +
         '<span class="price">' + KV.price(r.it) + '</span>' +
         '<span class="pill ' + r.st + '">' + KV.t(r.st === 'in' ? 'in' : r.st === 'new' ? 'new' : 'out') + '</span>' +
         (r.st !== 'out' ? '<span class="qtytag">' + KV.qty(r.it) + ' ' + KV.t('pcs') + '</span>' : '') +
       '</div>' +
+      KV.starsHTML(r.it) +
     '</div>' +
     KV.detailsHTML(r.it) +
     '</div>').join('') || '<p class="empty">' + KV.t('empty') + '</p>';
@@ -321,6 +314,7 @@ chips.onclick = e => {
 };
 document.getElementById('q').oninput = e => { q = e.target.value.trim().toLowerCase(); drawGrid(); };
 document.getElementById('only').onchange = e => { only = e.target.checked; drawGrid(); };
+KV.searchSuggest(document.getElementById('q'), v => { q = v.trim().toLowerCase(); drawGrid(); });
 list.onclick = e => {
   if (e.target.closest('button')) return;
   const card = e.target.closest('.card');
