@@ -1,1 +1,333 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KATO VAPE</title>
+<link href="https://fonts.googleapis.com/css2?family=Rubik+Mono+One&family=Rubik:wght@500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --yel:#ffd500; --blu:#0057b7; --ink:#0d0d0d; --paper:#fffdf4;
+  --grn:#19c161; --red:#ff2e4d;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--paper);color:var(--ink);font-family:Rubik,system-ui,sans-serif}
+.mono{font-family:'Rubik Mono One',sans-serif}
+.wrap{max-width:1080px;margin:0 auto;padding:0 22px}
+button{font-family:inherit}
 
+.ticker{background:var(--ink);color:var(--yel);overflow:hidden;white-space:nowrap;border-bottom:3px solid var(--ink)}
+.ticker span{display:inline-block;font-family:'Rubik Mono One';font-size:12px;padding:9px 0;animation:mq 22s linear infinite}
+@keyframes mq{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+header{background:var(--yel);border-bottom:3px solid var(--ink)}
+.nav{display:flex;align-items:center;gap:16px;padding:14px 0;flex-wrap:wrap}
+.nav .logo{display:flex;align-items:center;gap:9px;font-family:'Rubik Mono One';font-size:18px;color:var(--ink);text-decoration:none}
+.logo-badge{width:34px;height:34px;border-radius:50%;overflow:hidden;background:#fff;border:2.5px solid var(--ink);flex-shrink:0}
+.logo-badge img{width:100%;height:100%;object-fit:cover;transform:scale(1.72);transform-origin:50% 38%}
+.nav a{color:var(--ink);text-decoration:none;font-weight:700;font-size:14px}
+.nav a:hover{text-decoration:underline wavy}
+#city{position:relative}
+.kv-city{display:flex;align-items:center;gap:6px;border:3px solid var(--ink);background:#fff;color:var(--ink);padding:7px 12px;font-weight:900;font-size:12px;cursor:pointer;box-shadow:3px 3px 0 var(--ink);text-transform:uppercase;font-family:inherit}
+.kv-city:active{transform:translate(1px,1px);box-shadow:2px 2px 0 var(--ink)}
+.kv-city-pin{color:var(--blu);font-size:8px}
+.kv-city-car{font-size:9px}
+.kv-city-menu{position:absolute;top:calc(100% + 6px);left:0;z-index:60;background:#fff;border:3px solid var(--ink);box-shadow:5px 5px 0 var(--ink);padding:5px;min-width:172px}
+.kv-city-menu[hidden]{display:none}
+.kv-city-menu button{display:block;width:100%;text-align:left;background:none;border:none;color:var(--ink);padding:9px 10px;font-weight:900;font-size:12.5px;cursor:pointer;font-family:inherit;text-transform:uppercase}
+.kv-city-menu button:hover{background:var(--yel)}
+.kv-city-menu button.on{color:var(--blu)}
+@media(max-width:640px){#navStock,#navContact{display:none}}
+#lang{display:flex;gap:6px;margin-left:auto}
+.kv-lang{border:3px solid var(--ink);background:#fff;color:var(--ink);padding:5px 9px;font-size:11px;font-weight:900;cursor:pointer;box-shadow:3px 3px 0 var(--ink)}
+.kv-lang.on{background:var(--blu);color:#fff;transform:translate(1px,1px);box-shadow:2px 2px 0 var(--ink)}
+.kv-theme{border:3px solid var(--ink);background:#fff;color:var(--ink);width:36px;height:34px;font-size:14px;font-weight:900;cursor:pointer;box-shadow:3px 3px 0 var(--ink)}
+.kv-theme:active{transform:translate(1px,1px);box-shadow:2px 2px 0 var(--ink)}
+.cartbtn{border:3px solid var(--ink);background:#fff;color:var(--ink);padding:8px 14px;font-weight:900;font-size:13px;cursor:pointer;box-shadow:4px 4px 0 var(--ink)}
+.cartbtn b{color:var(--blu)}
+.nav .cta{background:var(--blu);color:#fff;border:3px solid var(--ink);box-shadow:4px 4px 0 var(--ink);padding:9px 16px;font-weight:900;transition:.1s}
+.nav .cta:hover{transform:translate(2px,2px);box-shadow:2px 2px 0 var(--ink);text-decoration:none}
+
+.hero{background:var(--yel);padding:56px 0 64px;border-bottom:3px solid var(--ink);position:relative;overflow:hidden}
+.hero h1{font-family:'Rubik Mono One';font-size:clamp(38px,7.5vw,88px);line-height:.97}
+.hero h1 .out{color:var(--yel);-webkit-text-stroke:3px var(--ink)}
+.hero p{font-size:17px;font-weight:700;max-width:520px;margin:22px 0 28px}
+.hero .btn{display:inline-block;background:var(--ink);color:var(--yel);padding:15px 26px;font-family:'Rubik Mono One';font-size:14px;text-decoration:none;border:3px solid var(--ink);box-shadow:6px 6px 0 rgba(13,13,13,.25);transition:.1s;cursor:pointer}
+.hero .btn:hover{transform:translate(2px,2px);box-shadow:3px 3px 0 rgba(13,13,13,.25)}
+.stick{position:absolute;background:var(--blu);color:#fff;border:3px solid var(--ink);padding:12px 18px;font-family:'Rubik Mono One';font-size:15px;transform:rotate(7deg);box-shadow:5px 5px 0 var(--ink);right:8%;top:56px}
+.stick.two{background:#fff;color:var(--ink);transform:rotate(-5deg);right:14%;top:150px;font-size:12px}
+@media(max-width:760px){.stick{display:none}}
+
+.stockbar{display:flex;gap:14px;flex-wrap:wrap;padding:26px 0}
+.sbox{border:3px solid var(--ink);background:#fff;box-shadow:5px 5px 0 var(--ink);padding:13px 19px;font-weight:900;font-size:14px}
+.sbox b{font-family:'Rubik Mono One';font-size:21px;display:block}
+.sbox.g b{color:var(--grn)} .sbox.b b{color:var(--blu)}
+
+.controls{display:flex;gap:10px;flex-wrap:wrap;align-items:stretch;padding:6px 0 24px}
+.chip{border:3px solid var(--ink);background:#fff;color:var(--ink);padding:10px 15px;cursor:pointer;font-weight:900;font-size:13px;box-shadow:4px 4px 0 var(--ink);transition:.1s;text-transform:uppercase}
+.chip:hover{transform:translate(1px,1px);box-shadow:3px 3px 0 var(--ink)}
+.chip.on{background:var(--blu);color:#fff;transform:translate(2px,2px);box-shadow:2px 2px 0 var(--ink)}
+.search{flex:1;min-width:200px;border:3px solid var(--ink);background:#fff;padding:10px 16px;font-family:inherit;font-weight:700;font-size:14px;outline:none;box-shadow:4px 4px 0 var(--ink)}
+.only{display:flex;align-items:center;gap:8px;font-weight:900;font-size:12.5px;cursor:pointer;user-select:none;text-transform:uppercase}
+.only input{width:18px;height:18px;accent-color:var(--blu)}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:20px;padding-bottom:80px;align-items:start}
+.card{position:relative;border:3px solid var(--ink);background:#fff;box-shadow:6px 6px 0 var(--ink);cursor:pointer;overflow:visible}
+.card:nth-child(3n){transform:rotate(.7deg)} .card:nth-child(3n+1){transform:rotate(-.6deg)}
+.card:hover,.card.open{transform:rotate(0)}
+.card.is-out{background:#efece1}
+.card.is-out .name{color:#9a958a;text-decoration:line-through;text-decoration-thickness:2px}
+.kv-photo{position:relative;height:140px;background:repeating-linear-gradient(45deg,#f4f0e2,#f4f0e2 12px,#ffffff 12px,#ffffff 24px);display:grid;place-items:center;border-bottom:3px solid var(--ink)}
+.kv-photo span{font-family:'Rubik Mono One';font-size:40px;color:#d9d2ba}
+.kv-photo img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.card-body{padding:14px 15px 15px;display:flex;flex-direction:column;gap:8px}
+.card .cat{font-size:10.5px;font-weight:900;letter-spacing:1px;text-transform:uppercase;color:var(--blu)}
+.card .name{font-weight:900;font-size:16px;line-height:1.3}
+.card .meta{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.price{font-family:'Rubik Mono One';font-size:14px}
+.qtytag{font-size:11.5px;font-weight:900;color:#6b6656}
+.stamp{position:absolute;top:-13px;right:-9px;border:3px solid var(--ink);padding:5px 10px;font-family:'Rubik Mono One';font-size:11px;transform:rotate(6deg);background:#fff;z-index:2}
+.stamp.in{background:var(--grn);color:#fff}
+.stamp.out{background:var(--red);color:#fff;transform:rotate(-7deg)}
+.stamp.new{background:var(--blu);color:var(--yel);transform:rotate(4deg)}
+.empty{grid-column:1/-1;font-weight:900;font-size:17px}
+
+.kv-details{display:none;border-top:3px solid var(--ink);padding:12px 15px 15px;background:#fffbe8}
+.card.open .kv-details{display:block}
+.kvf-meta{font-size:11.5px;font-weight:900;text-transform:uppercase;margin-bottom:8px;color:#6b6656}
+.kvf-row{display:flex;align-items:center;gap:9px;padding:7px 0;border-bottom:2px dashed #d9d2ba;font-size:13px}
+.kvf-row:last-child{border-bottom:none}
+.kvf-row.off{opacity:.45}
+.kvf-name{flex:1;font-weight:900}
+.kvf-qty{font-size:10.5px;font-weight:700;color:#6b6656}
+.kvf-add{border:2.5px solid var(--ink);background:var(--grn);color:#fff;padding:4px 10px;font-size:10.5px;font-weight:900;cursor:pointer;box-shadow:2px 2px 0 var(--ink)}
+.kvf-add:active{transform:translate(2px,2px);box-shadow:none}
+.kvf-res{margin-top:10px;width:100%;border:3px solid var(--ink);background:var(--yel);color:var(--ink);padding:8px;font-size:12px;font-weight:900;cursor:pointer;box-shadow:3px 3px 0 var(--ink);text-transform:uppercase}
+.kvf-res:active{transform:translate(2px,2px);box-shadow:none}
+
+footer{background:var(--ink);color:var(--paper);padding:34px 0 46px;font-weight:600;font-size:14px;line-height:2}
+footer a{color:var(--yel)}
+footer .age{display:inline-block;background:var(--red);color:#fff;border:2px solid var(--paper);padding:2px 10px;font-family:'Rubik Mono One';font-size:12px;margin-right:10px;transform:rotate(-3deg)}
+
+.gate{position:fixed;inset:0;z-index:100;background:var(--yel);display:flex;align-items:center;justify-content:center;padding:22px}
+.gate[hidden]{display:none}
+.gate .box{background:#fff;border:3px solid var(--ink);box-shadow:8px 8px 0 var(--ink);padding:38px 34px;max-width:430px;text-align:center;transform:rotate(-1deg)}
+.gate h2{font-family:'Rubik Mono One';font-size:52px;margin-bottom:10px}
+.gate p{font-weight:700;margin-bottom:26px;line-height:1.6}
+.gate button{font-family:'Rubik Mono One';font-size:12px;padding:14px 18px;cursor:pointer;border:3px solid var(--ink);box-shadow:4px 4px 0 var(--ink);background:#fff;margin:4px;transition:.1s}
+.gate button.yes{background:var(--grn);color:#fff}
+.gate button:hover{transform:translate(2px,2px);box-shadow:2px 2px 0 var(--ink)}
+
+.kvd{position:fixed;inset:0;z-index:90;background:rgba(13,13,13,.55)}
+.kvd[hidden]{display:none}
+.kvd-box{position:absolute;top:0;right:0;bottom:0;width:min(400px,100%);background:var(--paper);border-left:3px solid var(--ink);padding:22px;display:flex;flex-direction:column;gap:14px;overflow-y:auto}
+.kvd-head{display:flex;align-items:center;justify-content:space-between}
+.kvd-title{font-family:'Rubik Mono One';font-size:16px}
+.kvd-x{border:none;background:none;font-size:26px;cursor:pointer}
+.kvd-items{flex:1}
+.kvd-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:2px dashed #d9d2ba;font-size:13.5px}
+.kvd-name{flex:1;font-weight:900}
+.kvd-name small{display:block;color:#6b6656;font-weight:500}
+.kvd-ctr{display:flex;align-items:center;gap:8px}
+.kvd-ctr button{width:26px;height:26px;border:2.5px solid var(--ink);background:#fff;cursor:pointer;font-weight:900;box-shadow:2px 2px 0 var(--ink)}
+.kvd-ctr button:active{transform:translate(2px,2px);box-shadow:none}
+.kvd-sum{font-family:'Rubik Mono One';font-size:12px;min-width:56px;text-align:right}
+.kvd-empty{color:#6b6656;font-weight:700}
+.kvd-total{font-family:'Rubik Mono One';font-size:15px}
+.kvd-go{background:var(--blu);color:#fff;border:3px solid var(--ink);box-shadow:4px 4px 0 var(--ink);padding:13px;font-family:'Rubik Mono One';font-size:12px;cursor:pointer}
+.kvd-go:active{transform:translate(2px,2px);box-shadow:2px 2px 0 var(--ink)}
+.kvd-clear{background:none;border:none;color:#6b6656;font-size:12.5px;font-weight:700;cursor:pointer}
+
+.kv-toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,20px);background:var(--ink);color:var(--yel);font-weight:900;font-size:13px;padding:12px 22px;border:3px solid var(--ink);opacity:0;pointer-events:none;transition:.25s;z-index:120;max-width:90vw;text-align:center}
+.kv-toast.show{opacity:1;transform:translate(-50%,0)}
+
+/* тёмная тема: тёмная стена, жёлтый баннер и белые стикеры-карточки остаются */
+html[data-theme="dark"]{--paper:#17141b}
+html[data-theme="dark"] .only{color:#fffdf4}
+html[data-theme="dark"] .kvd-box{background:#fffdf4;color:var(--ink)}
+html[data-theme="dark"] .kv-theme{background:var(--ink);color:var(--yel);box-shadow:3px 3px 0 #000}
+</style>
+</head>
+<body>
+
+<div class="gate" id="gate" hidden>
+  <div class="box">
+    <h2>18+</h2>
+    <p id="gateText"></p>
+    <button class="yes" id="gateYes" onclick="sessionStorage.setItem('kv_age','1');gate.hidden=true"></button>
+    <button id="gateNo" onclick="location.href='https://www.google.com'"></button>
+  </div>
+</div>
+
+<div class="ticker"><span id="tick"></span></div>
+
+<header>
+  <div class="wrap nav">
+    <a class="logo" href="#"><span class="logo-badge"><img id="logoImg" src="../../../data/photos/cat.png" alt="KatoVape"></span>KATO&nbsp;VAPE</a>
+    <div id="city"></div>
+    <a href="#stock" id="navStock"></a>
+    <a href="#contact" id="navContact"></a>
+    <div id="lang"></div>
+    <div id="theme"></div>
+    <button class="cartbtn" id="cartFab" onclick="KV.openCart()"></button>
+    <a class="cta" id="navCta" href="https://t.me/KatoManager" target="_blank"></a>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="wrap">
+    <h1 id="heroT"></h1>
+    <p id="heroP"></p>
+    <a class="btn" href="#stock" id="heroBtn"></a>
+  </div>
+  <div class="stick">UA → PL</div>
+  <div class="stick two" id="stickTwo"></div>
+</section>
+
+<section class="wrap" id="stock">
+  <div class="stockbar" id="stats"></div>
+  <div class="controls" id="chips"></div>
+  <div class="controls">
+    <input class="search" id="q" type="search">
+    <label class="only"><input type="checkbox" id="only"> <span id="onlyT"></span></label>
+  </div>
+  <div class="grid" id="list"></div>
+</section>
+
+<footer id="contact">
+  <div class="wrap">
+    <p><span class="age">18+</span><span id="fAdult"></span></p>
+    <p><span id="fPickup"></span> · <span id="fPay"></span></p>
+    <p><span id="fWrite"></span>: <a href="https://t.me/KatoManager" target="_blank">@KatoManager</a> · KATO VAPE 2026</p>
+  </div>
+</footer>
+
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="../../../shared/core.js?v=5"></script>
+<script>
+const L = {
+  ru: {
+    navStock: 'Наличие', navContact: 'Контакты', cta: 'ЗАКАЗАТЬ',
+    heroT: 'UA ВЕЙПЫ<br><span class="out">В ПОЛЬШЕ</span>',
+    heroP: 'Chaser, Elf Bar, Vaporesso, Oxva. Оригинал из Украины. Наличие живое, тянется прямо из базы выбранного города.',
+    heroBtn: 'СМОТРЕТЬ НАЛИЧИЕ ↓',
+    tick: ' АКТУАЛЬНОЕ НАЛИЧИЕ ★ ОРИГИНАЛ ИЗ УКРАИНЫ ★ ЗАКАЗ: @KATOMANAGER ★',
+    statHave: 'позиций в наличии', statNew: 'новинки', statUpd: 'обновлено из базы'
+  },
+  uk: {
+    navStock: 'Наявність', navContact: 'Контакти', cta: 'ЗАМОВИТИ',
+    heroT: 'UA ВЕЙПИ<br><span class="out">В ПОЛЬЩІ</span>',
+    heroP: 'Chaser, Elf Bar, Vaporesso, Oxva. Оригінал з України. Наявність жива, тягнеться прямо з бази обраного міста.',
+    heroBtn: 'ДИВИТИСЬ НАЯВНІСТЬ ↓',
+    tick: ' АКТУАЛЬНА НАЯВНІСТЬ ★ ОРИГІНАЛ З УКРАЇНИ ★ ЗАМОВЛЕННЯ: @KATOMANAGER ★',
+    statHave: 'позицій в наявності', statNew: 'новинки', statUpd: 'оновлено з бази'
+  },
+  pl: {
+    navStock: 'Asortyment', navContact: 'Kontakt', cta: 'ZAMÓW',
+    heroT: 'UA VAPE<br><span class="out">W POLSCE</span>',
+    heroP: 'Chaser, Elf Bar, Vaporesso, Oxva. Oryginał z Ukrainy. Stany magazynowe na żywo, prosto z bazy wybranego miasta.',
+    heroBtn: 'ZOBACZ ASORTYMENT ↓',
+    tick: ' AKTUALNY ASORTYMENT ★ ORYGINAŁ Z UKRAINY ★ ZAMÓWIENIA: @KATOMANAGER ★',
+    statHave: 'pozycji dostępnych', statNew: 'nowości', statUpd: 'aktualizacja bazy'
+  }
+};
+const p = k => (L[KV.lang] || L.ru)[k];
+
+let cat = 'all', q = '', only = false;
+
+if (!sessionStorage.getItem('kv_age')) gate.hidden = false;
+
+function render() {
+  const db = KV.db;
+  navStock.textContent = p('navStock');
+  navContact.textContent = p('navContact');
+  navCta.textContent = p('cta');
+  heroT.innerHTML = p('heroT');
+  heroP.textContent = p('heroP');
+  heroBtn.textContent = p('heroBtn');
+  stickTwo.textContent = KV.pickup();
+  tick.textContent = p('tick').repeat(4);
+  gateText.textContent = KV.t('gateText');
+  gateYes.textContent = KV.t('gateYes');
+  gateNo.textContent = KV.t('gateNo');
+  fAdult.textContent = KV.t('adult');
+  fPickup.textContent = KV.pickup();
+  fPay.textContent = KV.t('pay');
+  fWrite.textContent = KV.t('write');
+  document.getElementById('q').placeholder = KV.t('search').toUpperCase();
+  onlyT.textContent = KV.t('only');
+  document.getElementById('logoImg').src = KV.cityLogo();
+
+  const all = db.categories.flatMap(c => c.items);
+  const have = all.filter(i => KV.status(i) !== 'out').length;
+  const fresh = all.filter(i => KV.status(i) === 'new').length;
+  const freshWord = KV.lang === 'pl'
+    ? KV.plural(fresh, 'nowość', 'nowości', 'nowości')
+    : KV.plural(fresh, 'новинка', 'новинки', 'новинок');
+  stats.innerHTML =
+    '<div class="sbox g"><b>' + have + '</b>' + p('statHave') + '</div>' +
+    '<div class="sbox b"><b>' + (fresh || '0') + '</b>' + freshWord + '</div>' +
+    '<div class="sbox"><b>' + KV.fmtDate(db.updated) + '</b>' + p('statUpd') + '</div>';
+
+  const cats = [{ id: 'all', name: null }, ...db.categories];
+  chips.innerHTML = cats.map(c =>
+    '<button class="chip' + (c.id === cat ? ' on' : '') + '" data-c="' + c.id + '">' +
+    (c.name ? KV.catName(c) : { ru: 'Все', uk: 'Всі', pl: 'Wszystko' }[KV.lang]) + '</button>').join('');
+  drawGrid();
+}
+
+function drawGrid() {
+  const db = KV.db, rows = [];
+  for (const c of db.categories) {
+    if (cat !== 'all' && c.id !== cat) continue;
+    for (const it of c.items) {
+      const st = KV.status(it);
+      if (only && st === 'out') continue;
+      if (!KV.match(it, q)) continue;
+      rows.push({ it, st, cname: KV.catName(c) });
+    }
+  }
+  const SL = { in: { ru: 'ЕСТЬ', uk: 'Є', pl: 'JEST' }, out: { ru: 'НЕТ', uk: 'НЕМА', pl: 'BRAK' }, new: { ru: 'NEW!', uk: 'NEW!', pl: 'NEW!' } };
+  list.innerHTML = rows.map(r =>
+    '<div class="card' + (r.st === 'out' ? ' is-out' : '') + '" data-id="' + r.it.id + '">' +
+    '<span class="stamp ' + r.st + '">' + SL[r.st][KV.lang] + '</span>' +
+    KV.photo(r.it) +
+    '<div class="card-body">' +
+      '<span class="cat">' + r.cname + '</span>' +
+      '<span class="name">' + r.it.name + '</span>' +
+      '<div class="meta">' +
+        '<span class="price">' + KV.price(r.it) + '</span>' +
+        (r.st !== 'out' ? '<span class="qtytag">' + KV.qty(r.it) + ' ' + KV.t('pcs') + '</span>' : '') +
+      '</div>' +
+    '</div>' +
+    KV.detailsHTML(r.it) +
+    '</div>').join('') || '<p class="empty">' + KV.t('empty').toUpperCase() + ' :(</p>';
+}
+
+chips.onclick = e => {
+  const b = e.target.closest('.chip'); if (!b) return;
+  cat = b.dataset.c;
+  chips.querySelectorAll('.chip').forEach(x => x.classList.toggle('on', x === b));
+  drawGrid();
+};
+document.getElementById('q').oninput = e => { q = e.target.value.trim().toLowerCase(); drawGrid(); };
+document.getElementById('only').onchange = e => { only = e.target.checked; drawGrid(); };
+list.onclick = e => {
+  if (e.target.closest('button')) return;
+  const card = e.target.closest('.card');
+  if (card) card.classList.toggle('open');
+};
+
+function cartHook() {
+  const n = KV.cartCount();
+  cartFab.innerHTML = KV.t('cart').toUpperCase() + (n ? ' <b>' + n + '</b>' : '');
+}
+
+KV.init({
+  render, cart: cartHook,
+  fail: () => { list.innerHTML = '<p class="empty">Базу не удалось загрузить, открой демо через локальный сервер.</p>'; }
+});
+</script>
+</body>
+</html>
