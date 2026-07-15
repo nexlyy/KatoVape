@@ -1,1 +1,214 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>KatoVape</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;900&family=Manrope:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a0a10; --panel:#12121d; --panel2:#171725; --line:#242439;
+  --acid:#c8ff2e; --violet:#8f6bff; --cyan:#4de1ff; --red:#ff5c7a;
+  --txt:#eef0ff; --mut:#8a8db0;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--txt);font-family:Manrope,system-ui,sans-serif;padding-bottom:92px}
+button{font-family:inherit}
+.top{padding:16px 16px 10px;display:flex;align-items:center;gap:12px}
+.cat-ico{width:40px;height:40px;border-radius:50%;background:#fff;border:1px solid var(--line);display:grid;place-items:center;overflow:hidden;flex-shrink:0}
+.cat-ico img{width:100%;height:100%;object-fit:cover;transform:scale(1.7);transform-origin:50% 38%}
+.top h1{font-family:Unbounded;font-size:17px;font-weight:900}
+.top h1 em{font-style:normal;color:var(--acid)}
+.top .upd{font-size:11.5px;color:var(--mut)}
+#lang{display:flex;gap:4px;margin-left:auto}
+.kv-lang{border:1px solid var(--line);background:transparent;color:var(--mut);padding:5px 8px;border-radius:8px;font-size:11px;font-weight:800;cursor:pointer}
+.kv-lang.on{color:var(--acid);border-color:var(--acid)}
+#city{position:relative;margin-bottom:8px}
+.kv-city{display:flex;align-items:center;gap:7px;width:100%;border:1px solid var(--line);background:var(--panel);color:var(--txt);padding:10px 14px;border-radius:12px;font-weight:800;font-size:13px;cursor:pointer;font-family:inherit}
+.kv-city-pin{color:var(--acid);font-size:9px}
+.kv-city-car{color:var(--mut);font-size:11px;margin-left:auto}
+.kv-city-menu{position:absolute;top:calc(100% + 6px);left:0;right:0;z-index:30;background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:6px;box-shadow:0 16px 36px rgba(0,0,0,.5)}
+.kv-city-menu[hidden]{display:none}
+.kv-city-menu button{display:block;width:100%;text-align:left;background:none;border:none;color:var(--txt);padding:11px 12px;border-radius:9px;font-weight:700;font-size:13.5px;cursor:pointer;font-family:inherit}
+.kv-city-menu button.on{color:var(--acid)}
 
+.sticky{position:sticky;top:0;z-index:10;background:rgba(10,10,16,.94);backdrop-filter:blur(12px);padding:8px 16px 10px;border-bottom:1px solid var(--line)}
+.srow{display:flex;gap:8px;margin-bottom:10px}
+.search{flex:1;background:var(--panel);border:1px solid var(--line);border-radius:12px;color:var(--txt);padding:11px 14px;font-family:inherit;font-size:14px;outline:none}
+.search:focus{border-color:var(--violet)}
+.cartbtn{border:1px solid var(--line);background:var(--panel);color:var(--txt);padding:0 14px;border-radius:12px;font-weight:800;font-size:13px;cursor:pointer;white-space:nowrap}
+.cartbtn b{color:var(--acid)}
+.chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:0 0 auto;border:1px solid var(--line);background:var(--panel);color:var(--mut);padding:8px 14px;border-radius:99px;font-size:13px;font-weight:700;cursor:pointer}
+.chip.on{background:var(--acid);border-color:var(--acid);color:#0a0a10}
+
+.sec{padding:16px 16px 4px}
+.sec h2{font-family:Unbounded;font-size:13px;letter-spacing:1px;text-transform:uppercase;color:var(--mut);margin-bottom:10px}
+.sec h2 b{color:var(--acid)}
+.row{background:var(--panel);border:1px solid var(--line);border-radius:14px;margin-bottom:8px;overflow:hidden}
+.row.is-out{opacity:.45}
+.row.open{border-color:var(--acid)}
+.rhead{display:flex;align-items:center;gap:11px;padding:11px 12px;cursor:pointer}
+.kv-photo{position:relative;width:44px;height:44px;border-radius:10px;background:linear-gradient(140deg,#1a1a2c,#121220);display:grid;place-items:center;overflow:hidden;flex-shrink:0}
+.kv-photo span{font-family:Unbounded;font-size:17px;font-weight:900;color:#2c2c4a}
+.kv-photo img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.rmain{flex:1;min-width:0}
+.rname{font-weight:700;font-size:14px;line-height:1.3}
+.rsub{font-size:11.5px;color:var(--mut);margin-top:2px}
+.rsub b{color:var(--txt)}
+.dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.dot.in{background:var(--acid);box-shadow:0 0 10px var(--acid)}
+.dot.out{background:var(--red)}
+.dot.new{background:var(--cyan);box-shadow:0 0 10px var(--cyan)}
+
+.kv-details{display:none;border-top:1px solid var(--line);padding:10px 12px 13px}
+.row.open .kv-details{display:block}
+.kvf-meta{font-size:11.5px;color:var(--mut);margin-bottom:8px}
+.kvf-row{display:flex;align-items:center;gap:9px;padding:7px 0;border-bottom:1px dashed var(--line);font-size:12.5px}
+.kvf-row:last-child{border-bottom:none}
+.kvf-row.off{opacity:.45}
+.kvf-name{flex:1;font-weight:700}
+.kvf-qty{color:var(--mut);font-size:10.5px}
+.kvf-add{border:1px solid var(--acid);background:transparent;color:var(--acid);border-radius:99px;padding:4px 11px;font-size:10.5px;font-weight:800;cursor:pointer}
+.kvf-res{margin-top:10px;width:100%;border:1px solid var(--violet);background:transparent;color:var(--violet);border-radius:10px;padding:8px;font-size:11.5px;font-weight:800;cursor:pointer}
+.empty{padding:30px 16px;color:var(--mut);text-align:center}
+
+.cta{position:fixed;left:16px;right:16px;bottom:16px;background:var(--acid);color:#0a0a10;text-align:center;border:none;font-weight:800;font-family:Unbounded;font-size:13px;padding:16px;border-radius:16px;box-shadow:0 0 30px rgba(200,255,46,.35);cursor:pointer;z-index:20}
+
+.kvd{position:fixed;inset:0;z-index:90;background:rgba(6,6,10,.7)}
+.kvd[hidden]{display:none}
+.kvd-box{position:absolute;left:0;right:0;bottom:0;max-height:80vh;background:var(--panel2);border-top:1px solid var(--line);border-radius:20px 20px 0 0;padding:20px 18px;display:flex;flex-direction:column;gap:12px;overflow-y:auto}
+.kvd-head{display:flex;align-items:center;justify-content:space-between}
+.kvd-title{font-family:Unbounded;font-size:16px}
+.kvd-x{border:none;background:none;color:var(--mut);font-size:24px;cursor:pointer}
+.kvd-row{display:flex;align-items:center;gap:9px;padding:9px 0;border-bottom:1px dashed var(--line);font-size:13px}
+.kvd-name{flex:1;font-weight:700}
+.kvd-name small{display:block;color:var(--mut);font-weight:400}
+.kvd-ctr{display:flex;align-items:center;gap:7px}
+.kvd-ctr button{width:25px;height:25px;border-radius:8px;border:1px solid var(--line);background:transparent;color:var(--txt);cursor:pointer}
+.kvd-sum{color:var(--acid);font-weight:800;min-width:48px;text-align:right;font-size:12.5px}
+.kvd-empty{color:var(--mut)}
+.kvd-total{font-family:Unbounded;font-size:14px}
+.kvd-go{background:var(--acid);color:#0a0a10;border:none;border-radius:12px;padding:13px;font-weight:800;font-size:13px;cursor:pointer}
+.kvd-clear{background:none;border:none;color:var(--mut);font-size:12px;cursor:pointer}
+
+.kv-toast{position:fixed;left:50%;bottom:90px;transform:translate(-50%,20px);background:var(--acid);color:#0a0a10;font-weight:800;font-size:12.5px;padding:11px 20px;border-radius:99px;opacity:0;pointer-events:none;transition:.25s;z-index:120;max-width:90vw;text-align:center}
+.kv-toast.show{opacity:1;transform:translate(-50%,0)}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <div class="cat-ico"><img id="logoImg" src="../../../data/photos/cat.png" alt="" onerror="this.style.display='none'"></div>
+  <div>
+    <h1>KATO<em>VAPE</em></h1>
+    <div class="upd" id="upd"></div>
+  </div>
+  <div id="lang"></div>
+</div>
+
+<div class="sticky">
+  <div id="city"></div>
+  <div class="srow">
+    <input class="search" id="q" type="search">
+    <button class="cartbtn" id="cartFab" onclick="KV.openCart()"></button>
+  </div>
+  <div class="chips" id="chips"></div>
+</div>
+
+<div id="list"></div>
+<button class="cta" id="cta"></button>
+
+<script src="../../../shared/core.js?v=5"></script>
+<script>
+let cat = 'all', q = '';
+const tg = window.Telegram && window.Telegram.WebApp;
+const inTg = !!(tg && tg.initData);
+
+if (inTg) {
+  tg.ready(); tg.expand();
+  tg.setHeaderColor('#0a0a10'); tg.setBackgroundColor('#0a0a10');
+  // внутри телеги нижнюю кнопку рисует сам клиент
+  document.getElementById('cta').style.display = 'none';
+  document.body.style.paddingBottom = '20px';
+  tg.MainButton.onClick(() => {
+    if (KV.cartCount()) KV.openCart(); else tg.openTelegramLink(KV.manager);
+  });
+}
+
+function render() {
+  const db = KV.db;
+  upd.textContent = KV.t('updated') + ' ' + KV.fmtDate(db.updated);
+  document.getElementById('q').placeholder = KV.t('search');
+  document.getElementById('logoImg').src = KV.cityLogo();
+
+  const cats = [{ id: 'all', name: null }, ...db.categories];
+  chips.innerHTML = cats.map(c =>
+    '<button class="chip' + (c.id === cat ? ' on' : '') + '" data-c="' + c.id + '">' +
+    (c.name ? KV.catName(c) : { ru: 'Все', uk: 'Всі', pl: 'Wszystko' }[KV.lang]) + '</button>').join('');
+  drawList();
+}
+
+function drawList() {
+  const db = KV.db, out = [];
+  for (const c of db.categories) {
+    if (cat !== 'all' && c.id !== cat) continue;
+    const items = c.items.filter(i => KV.match(i, q));
+    if (!items.length) continue;
+    const have = items.filter(i => KV.status(i) !== 'out').length;
+    out.push('<div class="sec"><h2>' + KV.catName(c) + ' <b>' + have + '/' + items.length + '</b></h2>' +
+      items.map(i => {
+        const st = KV.status(i);
+        return '<div class="row' + (st === 'out' ? ' is-out' : '') + '">' +
+          '<div class="rhead">' + KV.photo(i) +
+            '<div class="rmain">' +
+              '<div class="rname">' + i.name + '</div>' +
+              '<div class="rsub"><b>' + KV.price(i) + '</b>' +
+                (st !== 'out' ? ' · ' + KV.qty(i) + ' ' + KV.t('pcs') : ' · ' + KV.t('out')) +
+                (st === 'new' ? ' · ' + KV.t('new') : '') + '</div>' +
+            '</div>' +
+            '<span class="dot ' + st + '"></span>' +
+          '</div>' + KV.detailsHTML(i) + '</div>';
+      }).join('') + '</div>');
+  }
+  list.innerHTML = out.join('') || '<p class="empty">' + KV.t('empty') + '</p>';
+}
+
+chips.onclick = e => {
+  const b = e.target.closest('.chip'); if (!b) return;
+  cat = b.dataset.c;
+  chips.querySelectorAll('.chip').forEach(x => x.classList.toggle('on', x === b));
+  drawList();
+};
+document.getElementById('q').oninput = e => { q = e.target.value.trim().toLowerCase(); drawList(); };
+list.onclick = e => {
+  if (e.target.closest('button')) return;
+  const row = e.target.closest('.row');
+  if (row) row.classList.toggle('open');
+};
+
+function cartHook() {
+  const n = KV.cartCount();
+  cartFab.innerHTML = KV.t('cart') + (n ? ' <b>' + n + '</b>' : '');
+  const cta = document.getElementById('cta');
+  if (inTg) {
+    tg.MainButton.setParams({
+      text: n ? KV.t('cart') + ' (' + n + ') · ' + KV.cartTotal() + ' zł' : KV.t('write'),
+      color: '#c8ff2e', text_color: '#0a0a10'
+    });
+    tg.MainButton.show();
+  } else {
+    cta.textContent = n ? KV.t('cart') + ' (' + n + ') · ' + KV.cartTotal() + ' zł' : KV.t('write');
+    cta.onclick = () => { if (KV.cartCount()) KV.openCart(); else window.open(KV.manager, '_blank'); };
+  }
+}
+
+KV.init({
+  render, cart: cartHook,
+  fail: () => { list.innerHTML = '<p class="empty">Базу не удалось загрузить, открой демо через локальный сервер.</p>'; }
+});
+</script>
+</body>
+</html>
