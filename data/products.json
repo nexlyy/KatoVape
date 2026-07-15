@@ -1,0 +1,260 @@
+{
+  "shop": "KatoVape",
+  "manager": "https://t.me/KatoManager",
+  "channel": "https://t.me/c/2500101660",
+  "city": "katowice",
+  "cities": [
+    { "id": "katowice", "name": { "ru": "Катовице", "uk": "Катовіце", "pl": "Katowice" }, "main": true, "file": "data/products.json", "logo": "cat-katowice.png" },
+    { "id": "gliwice", "name": { "ru": "Гливице", "uk": "Глівіце", "pl": "Gliwice" }, "file": "data/gliwice.json", "logo": "cat-gliwice.png" },
+    { "id": "warszawa", "name": { "ru": "Варшава", "uk": "Варшава", "pl": "Warszawa" }, "file": "data/warszawa.json", "logo": "cat-warszawa.png" }
+  ],
+  "updated": "2026-07-14",
+  "categories": [
+    {
+      "id": "liquids",
+      "name": { "ru": "Жидкости", "uk": "Рідини", "pl": "Liquidy" },
+      "items": [
+        { "id": "hqd", "name": "HQD", "price": 40, "nic": "50 мг", "added": "2026-05-10", "post": 99,
+          "flavors": [
+            { "name": "Арбуз", "qty": 4 },
+            { "name": "Манго лёд", "qty": 3 },
+            { "name": "Виноград", "qty": 2 },
+            { "name": "Мята", "qty": 3 }
+          ] },
+        { "id": "puffy", "name": "Puffy", "price": 40, "nic": "50 мг", "added": "2026-06-28", "post": 132,
+          "flavors": [
+            { "name": "Клубника банан", "qty": 3 },
+            { "name": "Черника", "qty": 2 },
+            { "name": "Кола лёд", "qty": 2 }
+          ] },
+        { "id": "elf-liq", "name": "Elf Liq", "price": 45, "nic": "50 мг", "added": "2026-05-10", "post": 56,
+          "flavors": [
+            { "name": "Blue Razz Lemonade", "qty": 3 },
+            { "name": "Watermelon", "qty": 4 },
+            { "name": "Peach Ice", "qty": 2 },
+            { "name": "Grape", "qty": 1 }
+          ] },
+        { "id": "vozol-prime", "name": "Vozol Prime", "price": 45, "nic": "50 мг", "added": "2026-06-15", "post": 119,
+          "flavors": [
+            { "name": "Манго персик", "qty": 3 },
+            { "name": "Арбуз лёд", "qty": 2 },
+            { "name": "Ягодный микс", "qty": 2 }
+          ] },
+        { "id": "chaser-ice-shot", "name": "Chaser Ice Shot", "price": 50, "nic": "50 мг", "added": "2026-05-10", "post": 58,
+          "flavors": [
+            { "name": "Мята лёд", "qty": 4 },
+            { "name": "Арбуз лёд", "qty": 3 },
+            { "name": "Личи лёд", "qty": 2 }
+          ] },
+        { "id": "chaser-lux", "name": "Chaser Lux", "price": 55, "nic": "50 мг", "added": "2026-05-10", "post": 7,
+          "flavors": [
+            { "name": "Sour Apple", "qty": 3 },
+            { "name": "Малина", "qty": 3 },
+            { "name": "Энергетик", "qty": 4 },
+            { "name": "Манго", "qty": 2 },
+            { "name": "Личи", "qty": 2 }
+          ] },
+        { "id": "chaser-beat", "name": "Chaser Beat", "price": 50, "nic": "50 мг", "added": "2026-05-10", "post": 53,
+          "flavors": [
+            { "name": "Вишня", "qty": 0 },
+            { "name": "Тропик", "qty": 0 }
+          ] },
+        { "id": "chaser-nova", "name": "Chaser Nova", "price": 50, "nic": "50 мг", "added": "2026-05-10", "post": 90,
+          "flavors": [
+            { "name": "Дыня лёд", "qty": 0 },
+            { "name": "Ягоды", "qty": 0 }
+          ] },
+        { "id": "chaser-black", "name": "Chaser Black", "price": 50, "nic": "50 мг", "added": "2026-05-10", "post": 6,
+          "flavors": [
+            { "name": "Вишня", "qty": 4 },
+            { "name": "Смородина", "qty": 3 },
+            { "name": "Табак", "qty": 2 },
+            { "name": "Мята", "qty": 3 }
+          ] },
+        { "id": "chaser-special", "name": "Chaser Special", "price": 50, "nic": "50 мг", "added": "2026-05-10", "post": 10,
+          "flavors": [
+            { "name": "Барбарис", "qty": 3 },
+            { "name": "Дыня", "qty": 2 },
+            { "name": "Груша", "qty": 2 }
+          ] },
+        { "id": "chaser-7-years", "name": "Chaser 7 Years", "price": 55, "nic": "50 мг", "added": "2026-05-10", "post": 57,
+          "flavors": [
+            { "name": "Юбилейный микс", "qty": 0 }
+          ] },
+        { "id": "chaser-my-mint", "name": "Chaser My Mint", "price": 45, "nic": "50 мг", "added": "2026-05-10", "post": 71,
+          "flavors": [
+            { "name": "Peppermint", "qty": 4 },
+            { "name": "Жвачка мята", "qty": 3 }
+          ] },
+        { "id": "chaser-for-pods", "name": "Chaser For Pods", "price": 50, "nic": "50/65 мг", "added": "2026-05-10", "post": 9,
+          "flavors": [
+            { "name": "Мята", "qty": 3 },
+            { "name": "Кислая малина", "qty": 4 },
+            { "name": "Энергетик", "qty": 3 },
+            { "name": "Арбуз", "qty": 3 }
+          ] },
+        { "id": "chaser-mix-ultra", "name": "Chaser Mix Ultra", "price": 55, "nic": "50 мг", "added": "2026-05-10", "post": 20,
+          "flavors": [
+            { "name": "Арбуз яблоко", "qty": 3 },
+            { "name": "Клубника киви", "qty": 3 },
+            { "name": "Лимон лайм", "qty": 2 }
+          ] },
+        { "id": "chaser-squid-game", "name": "Chaser Squid Game", "price": 50, "nic": "50 мг", "added": "2026-05-10", "post": 41,
+          "flavors": [
+            { "name": "Сахарные соты", "qty": 0 }
+          ] },
+        { "id": "chaser-for-pods-10", "name": "Chaser For Pods 10ml", "price": 25, "nic": "50 мг", "vol": 10, "added": "2026-05-10", "post": 26,
+          "flavors": [
+            { "name": "Энергетик", "qty": 0 },
+            { "name": "Малина", "qty": 0 }
+          ] },
+        { "id": "chaser-hohoho", "name": "Chaser Hohoho Edition", "price": 55, "nic": "50 мг", "added": "2026-05-10", "post": 100,
+          "flavors": [
+            { "name": "Зимний микс", "qty": 0 }
+          ] }
+      ]
+    },
+    {
+      "id": "disposables",
+      "name": { "ru": "Одноразки", "uk": "Одноразки", "pl": "Jednorazówki" },
+      "items": [
+        { "id": "elf-bar-lux-2000", "name": "Elf Bar | Elf Bar Lux 2000", "price": 40, "nic": "5% / 50 мг", "added": "2026-06-20", "post": 120,
+          "flavors": [
+            { "name": "Клубника", "qty": 3 },
+            { "name": "Арбуз", "qty": 4 },
+            { "name": "Виноград", "qty": 2 }
+          ] },
+        { "id": "eonys-b300k", "name": "Eonys B300K", "price": 95, "nic": "5% / 50 мг", "added": "2026-05-10", "post": 80,
+          "flavors": [
+            { "name": "Манго лёд", "qty": 0 }
+          ] },
+        { "id": "funky-monkey-10000", "name": "Funky Monkey 10000", "price": 70, "nic": "5% / 50 мг", "added": "2026-05-10", "post": 12,
+          "flavors": [
+            { "name": "Банан клубника", "qty": 0 }
+          ] },
+        { "id": "lost-mary-bm-15000", "name": "Lost Mary BM 15000", "price": 90, "nic": "5% / 50 мг", "added": "2026-07-12", "post": 139,
+          "flavors": [
+            { "name": "Черника малина", "qty": 5 },
+            { "name": "Арбуз лёд", "qty": 4 },
+            { "name": "Манго персик", "qty": 3 }
+          ] },
+        { "id": "wga-crystal-15000", "name": "WGA Crystal 15000", "price": 85, "nic": "5% / 50 мг", "added": "2026-05-10", "post": 67,
+          "flavors": [
+            { "name": "Ягодный лёд", "qty": 0 }
+          ] },
+        { "id": "elf-bar-bc-20000", "name": "Elf Bar BC 20000", "price": 95, "nic": "5% / 50 мг", "added": "2026-05-10", "post": 68,
+          "flavors": [
+            { "name": "Клубника киви", "qty": 0 }
+          ] },
+        { "id": "elf-bar-d3-25000", "name": "Elf Bar D3 25000", "price": 105, "nic": "5% / 50 мг", "added": "2026-05-25", "post": 8,
+          "flavors": [
+            { "name": "Арбуз", "qty": 3 },
+            { "name": "Голубика", "qty": 2 },
+            { "name": "Двойное яблоко", "qty": 2 }
+          ] },
+        { "id": "elf-bar-king-30000", "name": "Elf Bar King 30000", "price": 115, "nic": "5% / 50 мг", "added": "2026-05-25", "post": 43,
+          "flavors": [
+            { "name": "Nic King (ананас питайя грейпфрут)", "qty": 2 },
+            { "name": "Ice King (манго персик арбуз)", "qty": 3 },
+            { "name": "Sweet King (ежевика клюква)", "qty": 2 },
+            { "name": "Sour King (черника арбуз)", "qty": 1 }
+          ] },
+        { "id": "elf-bar-gh-pro-33000", "name": "Elf Bar GH Pro 33000", "price": 125, "nic": "5% / 50 мг", "added": "2026-06-10", "post": 70,
+          "flavors": [
+            { "name": "Виноград", "qty": 3 },
+            { "name": "Клубника киви", "qty": 2 },
+            { "name": "Мята", "qty": 2 }
+          ] },
+        { "id": "elf-bar-moon-night-40000", "name": "Elf Bar Moon Night 40000", "price": 135, "nic": "5% / 50 мг", "added": "2026-05-10", "post": 44,
+          "flavors": [
+            { "name": "Ночной микс", "qty": 0 }
+          ] },
+        { "id": "elf-bar-trio-40000", "name": "Elf Bar Trio 40000", "price": 140, "nic": "5% / 50 мг", "added": "2026-06-18", "post": 106,
+          "flavors": [
+            { "name": "Арбуз + манго + мята", "qty": 3 },
+            { "name": "Ягоды + кола + лёд", "qty": 2 }
+          ] }
+      ]
+    },
+    {
+      "id": "snus",
+      "name": { "ru": "Снюс", "uk": "Снюс", "pl": "Snus" },
+      "items": [
+        { "id": "cuba", "name": "Cuba", "price": 27, "nic": "66 мг/г", "added": "2026-06-22", "post": 121,
+          "spec": {
+            "ru": "Никотиновые паучи · 66 мг/г · 20 порций · slim-формат",
+            "uk": "Нікотинові паучі · 66 мг/г · 20 порцій · slim-формат",
+            "pl": "Saszetki nikotynowe · 66 mg/g · 20 porcji · format slim"
+          },
+          "flavors": [
+            { "name": "Мята", "qty": 6 },
+            { "name": "Энергетик", "qty": 4 }
+          ] },
+        { "id": "baron", "name": "Baron", "price": 25, "nic": "50 мг/г", "added": "2026-06-22", "post": 122,
+          "spec": {
+            "ru": "Никотиновые паучи · 50 мг/г · 20 порций",
+            "uk": "Нікотинові паучі · 50 мг/г · 20 порцій",
+            "pl": "Saszetki nikotynowe · 50 mg/g · 20 porcji"
+          },
+          "flavors": [
+            { "name": "Мята", "qty": 5 },
+            { "name": "Вишня", "qty": 3 }
+          ] }
+      ]
+    },
+    {
+      "id": "cartridges",
+      "name": { "ru": "Картриджи", "uk": "Картриджі", "pl": "Kartridże" },
+      "items": [
+        { "id": "vaporesso-04", "name": "Vaporesso Cartridge 0.4 Ом", "price": 28, "qty": 8, "added": "2026-05-10", "post": 61,
+          "spec": {
+            "ru": "Картридж для серии XROS · 0.4 Ом · mesh · 2 мл · верхняя заправка",
+            "uk": "Картридж для серії XROS · 0.4 Ом · mesh · 2 мл · верхнє заправлення",
+            "pl": "Kartridż do serii XROS · 0.4 Ω · mesh · 2 ml · napełnianie od góry"
+          } },
+        { "id": "vaporesso-06-08", "name": "Vaporesso Cartridge 0.6 | 0.8 Ом", "price": 28, "qty": 10, "added": "2026-05-10", "post": 62,
+          "spec": {
+            "ru": "Картридж для серии XROS · 0.6 и 0.8 Ом · 2 мл · верхняя заправка",
+            "uk": "Картридж для серії XROS · 0.6 та 0.8 Ом · 2 мл · верхнє заправлення",
+            "pl": "Kartridż do serii XROS · 0.6 i 0.8 Ω · 2 ml · napełnianie od góry"
+          } },
+        { "id": "oxva-xlim-04", "name": "Oxva Xlim 0.4 Ом", "price": 30, "qty": 6, "added": "2026-05-10", "post": 82,
+          "spec": {
+            "ru": "Картридж для Oxva Xlim / Xlim Pro · 0.4 Ом · mesh · 2 мл",
+            "uk": "Картридж для Oxva Xlim / Xlim Pro · 0.4 Ом · mesh · 2 мл",
+            "pl": "Kartridż do Oxva Xlim / Xlim Pro · 0.4 Ω · mesh · 2 ml"
+          } },
+        { "id": "oxva-xlim-06-08-12", "name": "Oxva Xlim 0.6 | 0.8 | 1.2 Ом", "price": 30, "qty": 9, "added": "2026-05-10", "post": 83,
+          "spec": {
+            "ru": "Картридж для серии Xlim · 0.6 / 0.8 / 1.2 Ом · 2 мл · верхняя заправка",
+            "uk": "Картридж для серії Xlim · 0.6 / 0.8 / 1.2 Ом · 2 мл · верхнє заправлення",
+            "pl": "Kartridż do serii Xlim · 0.6 / 0.8 / 1.2 Ω · 2 ml · napełnianie od góry"
+          } }
+      ]
+    },
+    {
+      "id": "pods",
+      "name": { "ru": "Под-системы", "uk": "Под-системи", "pl": "Pod systemy" },
+      "items": [
+        { "id": "oxva-xlim-go-2", "name": "Oxva Xlim Go 2", "price": 150, "qty": 0, "added": "2026-05-10", "post": 81,
+          "spec": {
+            "ru": "Аккумулятор 1000 мАч · мощность до 25 Вт · картридж 2 мл · зарядка Type-C · затяжка и кнопка",
+            "uk": "Акумулятор 1000 мА·год · потужність до 25 Вт · картридж 2 мл · заряджання Type-C · затяжка і кнопка",
+            "pl": "Bateria 1000 mAh · moc do 25 W · kartridż 2 ml · ładowanie Type-C · zaciąg i przycisk"
+          } },
+        { "id": "vaporesso-xros-5", "name": "Vaporesso Xros 5", "price": 145, "qty": 4, "added": "2026-06-05", "post": 60,
+          "spec": {
+            "ru": "Аккумулятор 1000 мАч · мощность до 30 Вт · картридж 2 мл · зарядка Type-C · регулировка обдува",
+            "uk": "Акумулятор 1000 мА·год · потужність до 30 Вт · картридж 2 мл · заряджання Type-C · регулювання обдуву",
+            "pl": "Bateria 1000 mAh · moc do 30 W · kartridż 2 ml · ładowanie Type-C · regulacja airflow"
+          } },
+        { "id": "vaporesso-xros-5-mini", "name": "Vaporesso Xros 5 Mini", "price": 125, "qty": 3, "added": "2026-06-05", "post": 59,
+          "spec": {
+            "ru": "Аккумулятор 1000 мАч · затяжечная активация · картридж 2 мл · зарядка Type-C · компактный корпус",
+            "uk": "Акумулятор 1000 мА·год · активація затяжкою · картридж 2 мл · заряджання Type-C · компактний корпус",
+            "pl": "Bateria 1000 mAh · aktywacja zaciągiem · kartridż 2 ml · ładowanie Type-C · kompaktowa obudowa"
+          } }
+      ]
+    }
+  ]
+}

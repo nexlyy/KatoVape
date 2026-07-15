@@ -1,0 +1,108 @@
+{
+  "shop": "KatoVape",
+  "city": "gliwice",
+  "channel": "https://t.me/c/3356451652",
+  "updated": "2026-07-14",
+  "categories": [
+    {
+      "id": "liquids",
+      "name": { "ru": "Жидкости", "uk": "Рідини", "pl": "Liquidy" },
+      "items": [
+        { "id": "puffy", "name": "Puffy", "price": 40, "nic": "50 мг", "added": "2026-06-01", "post": 21,
+          "flavors": [
+            { "name": "Клубника банан", "qty": 4 },
+            { "name": "Черника", "qty": 3 },
+            { "name": "Кола лёд", "qty": 2 }
+          ] },
+        { "id": "elf-liq", "name": "Elf Liq", "price": 45, "nic": "50 мг", "added": "2026-06-01", "post": 20,
+          "flavors": [
+            { "name": "Blue Razz Lemonade", "qty": 4 },
+            { "name": "Watermelon", "qty": 3 },
+            { "name": "Peach Ice", "qty": 2 },
+            { "name": "Grape", "qty": 2 }
+          ] },
+        { "id": "vozol-prime", "name": "Vozol Prime", "price": 45, "nic": "50 мг", "added": "2026-06-01", "post": 22,
+          "flavors": [
+            { "name": "Манго персик", "qty": 3 },
+            { "name": "Арбуз лёд", "qty": 3 },
+            { "name": "Ягодный микс", "qty": 2 }
+          ] }
+      ]
+    },
+    {
+      "id": "disposables",
+      "name": { "ru": "Одноразки", "uk": "Одноразки", "pl": "Jednorazówki" },
+      "items": [
+        { "id": "wga-crystal-15000", "name": "WGA Crystal 15000", "price": 85, "nic": "5% / 50 мг", "added": "2026-06-01", "post": 23,
+          "flavors": [
+            { "name": "Blue Razz Ice", "qty": 3 },
+            { "name": "Watermelon Ice", "qty": 4 }
+          ] },
+        { "id": "elf-bar-king-30000", "name": "Elf Bar Nic King 30000", "price": 115, "nic": "5% / 50 мг", "added": "2026-06-01", "post": 25,
+          "flavors": [
+            { "name": "Nic King (ананас питайя грейпфрут)", "qty": 3 },
+            { "name": "Ice King (манго персик арбуз)", "qty": 3 },
+            { "name": "Sweet King (ежевика клюква)", "qty": 2 },
+            { "name": "Sour King (черника арбуз)", "qty": 2 }
+          ] },
+        { "id": "elf-bar-trio-40000", "name": "Elf Bar Trio 40000", "price": 140, "nic": "5% / 50 мг", "added": "2026-06-01", "post": 24,
+          "flavors": [
+            { "name": "Арбуз + манго + мята", "qty": 3 },
+            { "name": "Ягоды + кола + лёд", "qty": 2 }
+          ] }
+      ]
+    },
+    {
+      "id": "snus",
+      "name": { "ru": "Снюс", "uk": "Снюс", "pl": "Snus" },
+      "items": [
+        { "id": "cuba", "name": "Cuba", "price": 27, "nic": "66 мг/г", "added": "2026-06-01", "post": 30,
+          "spec": {
+            "ru": "Никотиновые паучи · 66 мг/г · 20 порций · slim-формат",
+            "uk": "Нікотинові паучі · 66 мг/г · 20 порцій · slim-формат",
+            "pl": "Saszetki nikotynowe · 66 mg/g · 20 porcji · format slim"
+          },
+          "flavors": [
+            { "name": "Мята", "qty": 5 },
+            { "name": "Энергетик", "qty": 4 }
+          ] }
+      ]
+    },
+    {
+      "id": "cartridges",
+      "name": { "ru": "Картриджи", "uk": "Картриджі", "pl": "Kartridże" },
+      "items": [
+        { "id": "vaporesso-06-08", "name": "Vaporesso Cartridge 0.6 | 0.8 Ом", "price": 28, "qty": 9, "added": "2026-06-01", "post": 29,
+          "spec": {
+            "ru": "Картридж для серии XROS · 0.6 и 0.8 Ом · 2 мл · верхняя заправка",
+            "uk": "Картридж для серії XROS · 0.6 та 0.8 Ом · 2 мл · верхнє заправлення",
+            "pl": "Kartridż do serii XROS · 0.6 i 0.8 Ω · 2 ml · napełnianie od góry"
+          } }
+      ]
+    },
+    {
+      "id": "pods",
+      "name": { "ru": "Под-системы", "uk": "Под-системи", "pl": "Pod systemy" },
+      "items": [
+        { "id": "oxva-xlim-go-2", "name": "Oxva Xlim Go 2", "price": 150, "qty": 3, "added": "2026-06-01", "post": 28,
+          "spec": {
+            "ru": "Аккумулятор 1000 мАч · мощность до 25 Вт · картридж 2 мл · зарядка Type-C · затяжка и кнопка",
+            "uk": "Акумулятор 1000 мА·год · потужність до 25 Вт · картридж 2 мл · заряджання Type-C · затяжка і кнопка",
+            "pl": "Bateria 1000 mAh · moc do 25 W · kartridż 2 ml · ładowanie Type-C · zaciąg i przycisk"
+          } },
+        { "id": "vaporesso-xros-5", "name": "Vaporesso Xros 5", "price": 145, "qty": 4, "added": "2026-06-01", "post": 26,
+          "spec": {
+            "ru": "Аккумулятор 1000 мАч · мощность до 30 Вт · картридж 2 мл · зарядка Type-C · регулировка обдува",
+            "uk": "Акумулятор 1000 мА·год · потужність до 30 Вт · картридж 2 мл · заряджання Type-C · регулювання обдуву",
+            "pl": "Bateria 1000 mAh · moc do 30 W · kartridż 2 ml · ładowanie Type-C · regulacja airflow"
+          } },
+        { "id": "vaporesso-xros-5-mini", "name": "Vaporesso Xros 5 Mini", "price": 125, "qty": 3, "added": "2026-06-01", "post": 27,
+          "spec": {
+            "ru": "Аккумулятор 1000 мАч · затяжечная активация · картридж 2 мл · зарядка Type-C · компактный корпус",
+            "uk": "Акумулятор 1000 мА·год · активація затяжкою · картридж 2 мл · заряджання Type-C · компактний корпус",
+            "pl": "Bateria 1000 mAh · aktywacja zaciągiem · kartridż 2 ml · ładowanie Type-C · kompaktowa obudowa"
+          } }
+      ]
+    }
+  ]
+}

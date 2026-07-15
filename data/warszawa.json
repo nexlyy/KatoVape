@@ -1,0 +1,55 @@
+{
+  "shop": "KatoVape",
+  "city": "warszawa",
+  "channel": "https://t.me/c/3970053048",
+  "updated": "2026-07-14",
+  "categories": [
+    {
+      "id": "liquids",
+      "name": { "ru": "Жидкости", "uk": "Рідини", "pl": "Liquidy" },
+      "items": [
+        { "id": "hqd", "name": "HQD", "price": 40, "nic": "50 мг", "added": "2026-06-01", "post": 9,
+          "flavors": [
+            { "name": "Арбуз", "qty": 4 },
+            { "name": "Манго лёд", "qty": 3 },
+            { "name": "Виноград", "qty": 2 },
+            { "name": "Мята", "qty": 3 }
+          ] },
+        { "id": "vozol-prime", "name": "Vozol Prime", "price": 45, "nic": "50 мг", "added": "2026-06-01", "post": 10,
+          "flavors": [
+            { "name": "Манго персик", "qty": 3 },
+            { "name": "Арбуз лёд", "qty": 2 },
+            { "name": "Ягодный микс", "qty": 2 }
+          ] }
+      ]
+    },
+    {
+      "id": "snus",
+      "name": { "ru": "Снюс", "uk": "Снюс", "pl": "Snus" },
+      "items": [
+        { "id": "cuba", "name": "Cuba", "price": 27, "nic": "66 мг/г", "added": "2026-06-01", "post": 12,
+          "spec": {
+            "ru": "Никотиновые паучи · 66 мг/г · 20 порций · slim-формат",
+            "uk": "Нікотинові паучі · 66 мг/г · 20 порцій · slim-формат",
+            "pl": "Saszetki nikotynowe · 66 mg/g · 20 porcji · format slim"
+          },
+          "flavors": [
+            { "name": "Мята", "qty": 5 },
+            { "name": "Энергетик", "qty": 3 }
+          ] }
+      ]
+    },
+    {
+      "id": "cartridges",
+      "name": { "ru": "Картриджи", "uk": "Картриджі", "pl": "Kartridże" },
+      "items": [
+        { "id": "vaporesso-06-08", "name": "Vaporesso Cartridge 0.6 | 0.8 Ом", "price": 28, "qty": 6, "added": "2026-06-01", "post": 11,
+          "spec": {
+            "ru": "Картридж для серии XROS · 0.6 и 0.8 Ом · 2 мл · верхняя заправка",
+            "uk": "Картридж для серії XROS · 0.6 та 0.8 Ом · 2 мл · верхнє заправлення",
+            "pl": "Kartridż do serii XROS · 0.6 i 0.8 Ω · 2 ml · napełnianie od góry"
+          } }
+      ]
+    }
+  ]
+}
