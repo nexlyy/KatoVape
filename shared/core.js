@@ -94,12 +94,31 @@ window.KV = (function () {
     }
   };
 
+  // язык при первом заходе: сохранённый выбор, иначе язык Telegram или браузера
+  function detectLang() {
+    const saved = localStorage.getItem('kv_lang');
+    if (saved) return saved;
+    const tg = window.Telegram && window.Telegram.WebApp;
+    const cand = [];
+    if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.language_code)
+      cand.push(tg.initDataUnsafe.user.language_code);
+    if (navigator.languages) cand.push.apply(cand, navigator.languages);
+    cand.push(navigator.language || '');
+    for (const c of cand) {
+      const p = String(c).toLowerCase().slice(0, 2);
+      if (p === 'uk') return 'uk';
+      if (p === 'pl') return 'pl';
+      if (p === 'ru' || p === 'be') return 'ru';
+    }
+    return 'ru';
+  }
+
   let db = null;
   let master = null;                 // мастер-каталог (главный город) + список городов
   let cities = [];
   let city = localStorage.getItem('kv_city') || 'katowice';
   let currentCity = null;
-  let lang = localStorage.getItem('kv_lang') || 'ru';
+  let lang = detectLang();
   let cart = {};
   try { cart = JSON.parse(localStorage.getItem('kv_cart') || '{}'); } catch (e) {}
   let hooks = { render: null, cart: null };
