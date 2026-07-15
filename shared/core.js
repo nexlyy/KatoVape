@@ -377,13 +377,29 @@ window.KV = (function () {
 
   function openCart() { ensureDrawer(); drawDrawer(); document.getElementById('kvd').hidden = false; }
 
-  // переключатель языка: страница даёт контейнер, ядро рисует три кнопки
+  // все выпадашки шапки в одном стиле, открыта максимум одна
+  function closeMenus(except) {
+    document.querySelectorAll('.kv-city-menu').forEach(m => { if (m !== except) m.hidden = true; });
+  }
+
+  // переключатель языка: та же выпадашка, что и город, чтобы шапка не пухла
   function langSwitch(el) {
-    el.innerHTML = ['ru', 'uk', 'pl'].map(l =>
-      '<button class="kv-lang' + (l === lang ? ' on' : '') + '" data-lang="' + l + '">' +
-      { ru: 'RU', uk: 'UA', pl: 'PL' }[l] + '</button>').join('');
-    el.onclick = e => {
+    const SHORT = { ru: 'RU', uk: 'UA', pl: 'PL' };
+    const FULL = { ru: 'Русский', uk: 'Українська', pl: 'Polski' };
+    el.innerHTML =
+      '<button class="kv-city" type="button">' + SHORT[lang] + '<span class="kv-city-car">▾</span></button>' +
+      '<div class="kv-city-menu" hidden>' + ['ru', 'uk', 'pl'].map(l =>
+        '<button data-lang="' + l + '"' + (l === lang ? ' class="on"' : '') + '>' + FULL[l] + '</button>').join('') + '</div>';
+    const menu = el.querySelector('.kv-city-menu');
+    el.querySelector('.kv-city').onclick = e => {
+      e.stopPropagation();
+      closeMenus(menu);
+      menu.hidden = !menu.hidden;
+    };
+    menu.onclick = e => {
       const b = e.target.closest('[data-lang]'); if (!b) return;
+      menu.hidden = true;
+      if (b.dataset.lang === lang) return;
       lang = b.dataset.lang;
       localStorage.setItem('kv_lang', lang);
       langSwitch(el);
@@ -405,7 +421,7 @@ window.KV = (function () {
         '<button data-city="' + c.id + '"' + (c.id === city ? ' class="on"' : '') + '>' +
         cityName(c) + (c.main ? ' ★' : '') + '</button>').join('') + '</div>';
     const menu = el.querySelector('.kv-city-menu');
-    el.querySelector('.kv-city').onclick = e => { e.stopPropagation(); menu.hidden = !menu.hidden; };
+    el.querySelector('.kv-city').onclick = e => { e.stopPropagation(); closeMenus(menu); menu.hidden = !menu.hidden; };
     menu.onclick = async e => {
       const b = e.target.closest('[data-city]'); if (!b) return;
       menu.hidden = true;
@@ -451,11 +467,8 @@ window.KV = (function () {
     }
     const res = e.target.closest('[data-res]');
     if (res) reserve(res.dataset.res);
-    // клик мимо меню города закрывает его
-    if (!e.target.closest('#city')) {
-      const m = document.querySelector('.kv-city-menu');
-      if (m) m.hidden = true;
-    }
+    // клик мимо выпадашек закрывает их
+    if (!e.target.closest('#city') && !e.target.closest('#lang')) closeMenus();
   });
 
   async function init(opts) {

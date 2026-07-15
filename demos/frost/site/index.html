@@ -40,12 +40,13 @@ header{position:sticky;top:12px;z-index:50}
 .kv-city-menu button{display:block;width:100%;text-align:left;background:none;border:none;color:var(--ink);padding:10px 12px;border-radius:9px;font-weight:700;font-size:13.5px;cursor:pointer;font-family:inherit}
 .kv-city-menu button:hover{background:var(--bg)}
 .kv-city-menu button.on{color:var(--blu)}
-@media(max-width:640px){#navStock,#navContact{display:none}}
-#lang{display:flex;gap:4px;margin-left:auto}
-.kv-lang{border:1px solid transparent;background:transparent;color:var(--mut);padding:6px 10px;border-radius:10px;font-size:12px;font-weight:800;cursor:pointer}
-.kv-lang.on{background:#fff;color:var(--blu);box-shadow:0 4px 12px rgba(31,71,125,.12)}
+@media(max-width:700px){#navStock,#navContact{display:none}.nav .cta{display:none}.cart-label{display:none}.nav{gap:10px}}
+@media(max-width:520px){.logo-text{display:none}}
+#lang{position:relative;margin-left:auto}
+#lang .kv-city-menu{left:auto;right:0;min-width:150px}
 .kv-theme{border:none;background:#fff;color:var(--ink);width:34px;height:33px;border-radius:12px;font-size:14px;cursor:pointer;box-shadow:0 4px 12px rgba(31,71,125,.12)}
-.cartbtn{border:none;background:#fff;color:var(--ink);padding:10px 16px;border-radius:14px;font-weight:800;font-size:13.5px;cursor:pointer;box-shadow:0 4px 14px rgba(31,71,125,.14)}
+.cartbtn{display:inline-flex;align-items:center;gap:7px;border:none;background:#fff;color:var(--ink);padding:10px 15px;border-radius:14px;font-weight:800;font-size:13.5px;cursor:pointer;box-shadow:0 4px 14px rgba(31,71,125,.14)}
+.cartbtn svg{width:15px;height:15px;flex-shrink:0}
 .cartbtn b{color:var(--blu)}
 .nav .cta{color:#fff;background:linear-gradient(100deg,var(--blu),var(--cyan));padding:10px 20px;border-radius:14px;font-weight:800;box-shadow:0 8px 20px rgba(24,97,255,.35)}
 
@@ -139,7 +140,7 @@ footer a{color:var(--blu);text-decoration:none;font-weight:700}
 /* тёмная тема: общий переключатель в шапке */
 html[data-theme="dark"]{--bg:#0b1220;--ink:#e7edf7;--mut:#8fa0bd;--glass:rgba(255,255,255,.05);--gline:rgba(255,255,255,.12);--shadow:0 14px 34px rgba(0,0,0,.5)}
 html[data-theme="dark"] .nav{background:rgba(20,30,50,.6)}
-html[data-theme="dark"] .kv-lang.on{background:rgba(255,255,255,.12);color:#7fb0ff}
+html[data-theme="dark"] #lang .kv-city{background:rgba(255,255,255,.08);color:var(--ink)}
 html[data-theme="dark"] .kv-theme,
 html[data-theme="dark"] .cartbtn{background:rgba(255,255,255,.08);color:var(--ink)}
 html[data-theme="dark"] .search{background:rgba(255,255,255,.06);color:var(--ink)}
@@ -175,7 +176,7 @@ html[data-theme="dark"] .kv-city-menu button:hover{background:rgba(255,255,255,.
 <header>
   <div class="wrap">
     <div class="nav">
-      <a class="logo" href="#"><span class="logo-badge"><img id="logoImg" src="../../../data/photos/cat.png" alt="KatoVape"></span>Kato<em>Vape</em></a>
+      <a class="logo" href="#"><span class="logo-badge"><img id="logoImg" src="../../../data/photos/cat.png" alt="KatoVape"></span><span class="logo-text">Kato<em>Vape</em></span></a>
       <div id="city"></div>
       <a href="#stock" id="navStock"></a>
       <a href="#contact" id="navContact"></a>
@@ -217,7 +218,7 @@ html[data-theme="dark"] .kv-city-menu button:hover{background:rgba(255,255,255,.
 </footer>
 
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
-<script src="../../../shared/core.js?v=5"></script>
+<script src="../../../shared/core.js?v=6"></script>
 <script>
 const L = {
   ru: {
@@ -321,9 +322,11 @@ list.onclick = e => {
   if (card) card.classList.toggle('open');
 };
 
+const CART_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="20" r="1.6"/><circle cx="17" cy="20" r="1.6"/><path d="M3 4h2l2.6 11.2a1.5 1.5 0 0 0 1.5 1.1h7.9a1.5 1.5 0 0 0 1.5-1.2L20 8H6"/></svg>';
+
 function cartHook() {
   const n = KV.cartCount();
-  cartFab.innerHTML = KV.t('cart') + (n ? ' <b>' + n + '</b>' : '');
+  cartFab.innerHTML = CART_ICON + '<span class="cart-label">' + KV.t('cart') + '</span>' + (n ? '<b>' + n + '</b>' : '');
 }
 
 KV.init({

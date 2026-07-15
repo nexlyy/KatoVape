@@ -38,13 +38,14 @@ header{background:var(--yel);border-bottom:3px solid var(--ink)}
 .kv-city-menu button{display:block;width:100%;text-align:left;background:none;border:none;color:var(--ink);padding:9px 10px;font-weight:900;font-size:12.5px;cursor:pointer;font-family:inherit;text-transform:uppercase}
 .kv-city-menu button:hover{background:var(--yel)}
 .kv-city-menu button.on{color:var(--blu)}
-@media(max-width:640px){#navStock,#navContact{display:none}}
-#lang{display:flex;gap:6px;margin-left:auto}
-.kv-lang{border:3px solid var(--ink);background:#fff;color:var(--ink);padding:5px 9px;font-size:11px;font-weight:900;cursor:pointer;box-shadow:3px 3px 0 var(--ink)}
-.kv-lang.on{background:var(--blu);color:#fff;transform:translate(1px,1px);box-shadow:2px 2px 0 var(--ink)}
+@media(max-width:700px){#navStock,#navContact{display:none}.nav .cta{display:none}.cart-label{display:none}.nav{gap:10px}}
+@media(max-width:520px){.logo-text{display:none}}
+#lang{position:relative;margin-left:auto}
+#lang .kv-city-menu{left:auto;right:0;min-width:150px}
 .kv-theme{border:3px solid var(--ink);background:#fff;color:var(--ink);width:36px;height:34px;font-size:14px;font-weight:900;cursor:pointer;box-shadow:3px 3px 0 var(--ink)}
 .kv-theme:active{transform:translate(1px,1px);box-shadow:2px 2px 0 var(--ink)}
-.cartbtn{border:3px solid var(--ink);background:#fff;color:var(--ink);padding:8px 14px;font-weight:900;font-size:13px;cursor:pointer;box-shadow:4px 4px 0 var(--ink)}
+.cartbtn{display:inline-flex;align-items:center;gap:7px;border:3px solid var(--ink);background:#fff;color:var(--ink);padding:8px 13px;font-weight:900;font-size:13px;cursor:pointer;box-shadow:4px 4px 0 var(--ink)}
+.cartbtn svg{width:15px;height:15px;flex-shrink:0}
 .cartbtn b{color:var(--blu)}
 .nav .cta{background:var(--blu);color:#fff;border:3px solid var(--ink);box-shadow:4px 4px 0 var(--ink);padding:9px 16px;font-weight:900;transition:.1s}
 .nav .cta:hover{transform:translate(2px,2px);box-shadow:2px 2px 0 var(--ink);text-decoration:none}
@@ -164,7 +165,7 @@ html[data-theme="dark"] .kv-theme{background:var(--ink);color:var(--yel);box-sha
 
 <header>
   <div class="wrap nav">
-    <a class="logo" href="#"><span class="logo-badge"><img id="logoImg" src="../../../data/photos/cat.png" alt="KatoVape"></span>KATO&nbsp;VAPE</a>
+    <a class="logo" href="#"><span class="logo-badge"><img id="logoImg" src="../../../data/photos/cat.png" alt="KatoVape"></span><span class="logo-text">KATO&nbsp;VAPE</span></a>
     <div id="city"></div>
     <a href="#stock" id="navStock"></a>
     <a href="#contact" id="navContact"></a>
@@ -204,7 +205,7 @@ html[data-theme="dark"] .kv-theme{background:var(--ink);color:var(--yel);box-sha
 </footer>
 
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
-<script src="../../../shared/core.js?v=5"></script>
+<script src="../../../shared/core.js?v=6"></script>
 <script>
 const L = {
   ru: {
@@ -319,9 +320,11 @@ list.onclick = e => {
   if (card) card.classList.toggle('open');
 };
 
+const CART_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="20" r="1.6"/><circle cx="17" cy="20" r="1.6"/><path d="M3 4h2l2.6 11.2a1.5 1.5 0 0 0 1.5 1.1h7.9a1.5 1.5 0 0 0 1.5-1.2L20 8H6"/></svg>';
+
 function cartHook() {
   const n = KV.cartCount();
-  cartFab.innerHTML = KV.t('cart').toUpperCase() + (n ? ' <b>' + n + '</b>' : '');
+  cartFab.innerHTML = CART_ICON + '<span class="cart-label">' + KV.t('cart').toUpperCase() + '</span>' + (n ? '<b>' + n + '</b>' : '');
 }
 
 KV.init({
