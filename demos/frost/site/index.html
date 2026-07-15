@@ -75,9 +75,9 @@ header.kv-hidden{transform:translateY(calc(-100% - 20px))}
 .card{background:var(--glass);border:1px solid var(--gline);border-radius:22px;overflow:hidden;cursor:pointer;box-shadow:var(--shadow);transition:transform .15s}
 .card:hover{transform:translateY(-3px)}
 .card.is-out{opacity:.55}
-.kv-photo{position:relative;height:150px;background:linear-gradient(150deg,#ffffff,#dcebfb);display:grid;place-items:center}
-.kv-photo span{font-size:44px;font-weight:900;color:#c3d8ef}
-.kv-photo img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.kv-photo{position:relative;aspect-ratio:1/1;background:#fff;display:grid;place-items:center}
+.kv-photo span{font-size:44px;font-weight:900;color:#dbe6f2}
+.kv-photo img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
 .card-body{padding:14px 17px 16px;display:flex;flex-direction:column;gap:9px}
 .card .cat{font-size:11px;letter-spacing:1.4px;text-transform:uppercase;color:var(--mut);font-weight:800}
 .card .name{font-weight:800;font-size:15.5px;line-height:1.35}
@@ -145,8 +145,6 @@ html[data-theme="dark"] #lang .kv-city{background:rgba(255,255,255,.08);color:va
 html[data-theme="dark"] .kv-theme,
 html[data-theme="dark"] .cartbtn{background:rgba(255,255,255,.08);color:var(--ink)}
 html[data-theme="dark"] .search{background:rgba(255,255,255,.06);color:var(--ink)}
-html[data-theme="dark"] .kv-photo{background:linear-gradient(150deg,#182338,#0f1728)}
-html[data-theme="dark"] .kv-photo span{color:#31415e}
 html[data-theme="dark"] .gate{background:rgba(8,14,26,.92)}
 html[data-theme="dark"] .gate .box{background:#141d30;box-shadow:0 24px 60px rgba(0,0,0,.6)}
 html[data-theme="dark"] .gate button{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.14);color:var(--mut)}

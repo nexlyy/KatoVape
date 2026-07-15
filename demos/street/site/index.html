@@ -80,9 +80,9 @@ header.kv-hidden{transform:translateY(-110%)}
 .card:hover,.card.open{transform:rotate(0)}
 .card.is-out{background:#efece1}
 .card.is-out .name{color:#9a958a;text-decoration:line-through;text-decoration-thickness:2px}
-.kv-photo{position:relative;height:140px;background:repeating-linear-gradient(45deg,#f4f0e2,#f4f0e2 12px,#ffffff 12px,#ffffff 24px);display:grid;place-items:center;border-bottom:3px solid var(--ink)}
-.kv-photo span{font-family:'Rubik Mono One';font-size:40px;color:#d9d2ba}
-.kv-photo img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.kv-photo{position:relative;aspect-ratio:1/1;background:#fff;display:grid;place-items:center;border-bottom:3px solid var(--ink)}
+.kv-photo span{font-family:'Rubik Mono One';font-size:40px;color:#e3ddc9}
+.kv-photo img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
 .card-body{padding:14px 15px 15px;display:flex;flex-direction:column;gap:8px}
 .card .cat{font-size:10.5px;font-weight:900;letter-spacing:1px;text-transform:uppercase;color:var(--blu)}
 .card .name{font-weight:900;font-size:16px;line-height:1.3}
