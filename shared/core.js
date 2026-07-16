@@ -581,7 +581,7 @@ window.KV = (function () {
   }
 
   // ==== рейтинг и отзывы (8) ====
-  // если рейтинга в meta нет, генерим стабильный по id: 4.3–4.9, чтобы демо
+  // если рейтинга в meta нет, генерим стабильный по id: 4.3-4.9, чтобы демо
   // не выглядело пустым, но одна позиция всегда показывала одно и то же
   function hashId(s) { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0; return h; }
   function ratingOf(item) {
@@ -710,7 +710,7 @@ window.KV = (function () {
     localStorage.setItem('kv_invited', n);
     copyText(referralLink());
     const url = 'https://t.me/share/url?url=' + encodeURIComponent(referralLink()) +
-      '&text=' + encodeURIComponent('KatoVape — украинские вейпы в Польше');
+      '&text=' + encodeURIComponent('KatoVape, украинские вейпы в Польше');
     const tg = window.Telegram && window.Telegram.WebApp;
     if (tg && tg.initData) tg.openTelegramLink(url); else window.open(url, '_blank');
     toast(n >= r.need ? loc(r.done) : loc(r.progress).replace('{n}', n).replace('{need}', r.need));
@@ -974,7 +974,7 @@ window.KV = (function () {
     const faq = e.target.closest('.kv-q button');
     if (faq) {
       const a = faq.parentNode.querySelector('.kv-a');
-      a.hidden = !a.hidden; faq.querySelector('span').textContent = a.hidden ? '+' : '–';
+      a.hidden = !a.hidden; faq.querySelector('span').textContent = a.hidden ? '+' : '-';
     }
     // клик мимо выпадашек и панели фильтров закрывает их
     if (!e.target.closest('#city') && !e.target.closest('#lang')) closeMenus();

@@ -1,5 +1,5 @@
 {
-  "_note": "Контент разделов и промо. Адреса самовывоза и промокоды — демо-заглушки, заменить на реальные.",
+  "_note": "Контент разделов и промо. Адреса самовывоза и промокоды, демо-заглушки, заменить на реальные.",
 
   "promos": [
     { "code": "KATO10", "type": "percent", "value": 10, "note": { "ru": "-10% на весь заказ", "uk": "-10% на все замовлення", "pl": "-10% na całe zamówienie" } },
@@ -9,7 +9,7 @@
   "referral": {
     "need": 5,
     "reward": 5,
-    "title": { "ru": "Пригласи 5 друзей — минус 5 zł", "uk": "Запроси 5 друзів — мінус 5 zł", "pl": "Zaproś 5 znajomych — minus 5 zł" },
+    "title": { "ru": "Пригласи 5 друзей, минус 5 zł", "uk": "Запроси 5 друзів, мінус 5 zł", "pl": "Zaproś 5 znajomych, minus 5 zł" },
     "text": { "ru": "Отправь друзьям свою ссылку. Как только по ней зайдут пятеро, скидка 5 zł применится к заказу.", "uk": "Надішли друзям своє посилання. Щойно за ним зайдуть п'ятеро, знижка 5 zł застосується до замовлення.", "pl": "Wyślij znajomym swój link. Gdy wejdzie przez niego pięć osób, rabat 5 zł doda się do zamówienia." },
     "invite": { "ru": "Пригласить друга", "uk": "Запросити друга", "pl": "Zaproś znajomego" },
     "progress": { "ru": "приглашено {n} из {need}", "uk": "запрошено {n} з {need}", "pl": "zaproszono {n} z {need}" },
@@ -32,16 +32,16 @@
       { "q": { "ru": "Есть ли доставка?", "uk": "Чи є доставка?", "pl": "Czy jest dostawa?" }, "a": { "ru": "Пока только самовывоз в выбранном городе. Точку и часы смотри в разделе контактов.", "uk": "Поки лише самовивіз у вибраному місті. Точку й години дивись у контактах.", "pl": "Na razie tylko odbiór osobisty w wybranym mieście. Punkt i godziny w kontaktach." } },
       { "q": { "ru": "Что такое солевой никотин?", "uk": "Що таке сольовий нікотин?", "pl": "Czym jest sól nikotynowa?" }, "a": { "ru": "Более мягкая форма никотина: бьёт по горлу слабее обычного, подходит для под-систем и малой мощности.", "uk": "М'якша форма нікотину: б'є по горлу слабше за звичайний, підходить для под-систем і малої потужності.", "pl": "Łagodniejsza forma nikotyny: mniej drapie w gardło, pasuje do pod systemów i niskiej mocy." } },
       { "q": { "ru": "Наличие точное?", "uk": "Наявність точна?", "pl": "Czy stany są dokładne?" }, "a": { "ru": "Да, страница читает базу магазина напрямую. Дата обновления показана рядом с заголовком.", "uk": "Так, сторінка читає базу магазину напряму. Дата оновлення показана біля заголовка.", "pl": "Tak, strona czyta bazę sklepu na żywo. Data aktualizacji jest przy nagłówku." } },
-      { "q": { "ru": "Можно забронировать товар?", "uk": "Чи можна забронювати товар?", "pl": "Czy można zarezerwować towar?" }, "a": { "ru": "Да, в карточке есть кнопка «Бронь» — она откроет чат с менеджером и готовым сообщением.", "uk": "Так, у картці є кнопка «Бронь» — вона відкриє чат з менеджером і готовим повідомленням.", "pl": "Tak, w karcie jest przycisk «Rezerwacja» — otworzy czat z managerem i gotową wiadomością." } }
+      { "q": { "ru": "Можно забронировать товар?", "uk": "Чи можна забронювати товар?", "pl": "Czy można zarezerwować towar?" }, "a": { "ru": "Да, в карточке есть кнопка «Бронь», она откроет чат с менеджером и готовым сообщением.", "uk": "Так, у картці є кнопка «Бронь», вона відкриє чат з менеджером і готовим повідомленням.", "pl": "Tak, w karcie jest przycisk «Rezerwacja», otworzy czat z managerem i gotową wiadomością." } }
     ]
   },
 
   "about": {
     "title": { "ru": "О магазине", "uk": "Про магазин", "pl": "O sklepie" },
     "text": {
-      "ru": "KatoVape — украинские вейпы, жидкости и снюс в Польше. Возим оригинал: Chaser, Elf Bar, Vaporesso, Oxva и другие. Работаем в трёх городах, наличие ведём честно и обновляем каждый день. Вопросы и заказы — в Telegram.",
-      "uk": "KatoVape — українські вейпи, рідини та снюс у Польщі. Возимо оригінал: Chaser, Elf Bar, Vaporesso, Oxva та інші. Працюємо в трьох містах, наявність ведемо чесно й оновлюємо щодня. Питання й замовлення — в Telegram.",
-      "pl": "KatoVape — ukraińskie vape, liquidy i snus w Polsce. Wozimy oryginał: Chaser, Elf Bar, Vaporesso, Oxva i inne. Działamy w trzech miastach, stany prowadzimy uczciwie i aktualizujemy codziennie. Pytania i zamówienia — na Telegramie."
+      "ru": "KatoVape, украинские вейпы, жидкости и снюс в Польше. Возим оригинал: Chaser, Elf Bar, Vaporesso, Oxva и другие. Работаем в трёх городах, наличие ведём честно и обновляем каждый день. Вопросы и заказы, в Telegram.",
+      "uk": "KatoVape, українські вейпи, рідини та снюс у Польщі. Возимо оригінал: Chaser, Elf Bar, Vaporesso, Oxva та інші. Працюємо в трьох містах, наявність ведемо чесно й оновлюємо щодня. Питання й замовлення, в Telegram.",
+      "pl": "KatoVape, ukraińskie vape, liquidy i snus w Polsce. Wozimy oryginał: Chaser, Elf Bar, Vaporesso, Oxva i inne. Działamy w trzech miastach, stany prowadzimy uczciwie i aktualizujemy codziennie. Pytania i zamówienia, na Telegramie."
     }
   },
 
@@ -50,15 +50,15 @@
     "hoursLabel": { "ru": "Часы работы", "uk": "Години роботи", "pl": "Godziny pracy" },
     "mapLabel": { "ru": "Открыть на карте", "uk": "Відкрити на карті", "pl": "Otwórz na mapie" },
     "cities": {
-      "katowice": { "addr": "Katowice, ul. Mariacka 12", "hours": { "ru": "Пн–Сб 11:00–20:00, Вс 12:00–18:00", "uk": "Пн–Сб 11:00–20:00, Нд 12:00–18:00", "pl": "Pn–Sb 11:00–20:00, Nd 12:00–18:00" }, "map": "https://www.google.com/maps/search/?api=1&query=Katowice%20Mariacka%2012" },
-      "gliwice": { "addr": "Gliwice, ul. Zwycięstwa 30", "hours": { "ru": "Пн–Сб 11:00–19:00, Вс выходной", "uk": "Пн–Сб 11:00–19:00, Нд вихідний", "pl": "Pn–Sb 11:00–19:00, Nd nieczynne" }, "map": "https://www.google.com/maps/search/?api=1&query=Gliwice%20Zwyciestwa%2030" },
-      "warszawa": { "addr": "Warszawa, ul. Marszałkowska 84", "hours": { "ru": "Ежедневно 10:00–21:00", "uk": "Щодня 10:00–21:00", "pl": "Codziennie 10:00–21:00" }, "map": "https://www.google.com/maps/search/?api=1&query=Warszawa%20Marszalkowska%2084" }
+      "katowice": { "addr": "Katowice, ul. Mariacka 12", "hours": { "ru": "Пн-Сб 11:00-20:00, Вс 12:00-18:00", "uk": "Пн-Сб 11:00-20:00, Нд 12:00-18:00", "pl": "Pn-Sb 11:00-20:00, Nd 12:00-18:00" }, "map": "https://www.google.com/maps/search/?api=1&query=Katowice%20Mariacka%2012" },
+      "gliwice": { "addr": "Gliwice, ul. Zwycięstwa 30", "hours": { "ru": "Пн-Сб 11:00-19:00, Вс выходной", "uk": "Пн-Сб 11:00-19:00, Нд вихідний", "pl": "Pn-Sb 11:00-19:00, Nd nieczynne" }, "map": "https://www.google.com/maps/search/?api=1&query=Gliwice%20Zwyciestwa%2030" },
+      "warszawa": { "addr": "Warszawa, ul. Marszałkowska 84", "hours": { "ru": "Ежедневно 10:00-21:00", "uk": "Щодня 10:00-21:00", "pl": "Codziennie 10:00-21:00" }, "map": "https://www.google.com/maps/search/?api=1&query=Warszawa%20Marszalkowska%2084" }
     }
   },
 
   "subscribe": {
     "url": "https://t.me/KatoManager",
-    "title": { "ru": "Новинки — в Telegram", "uk": "Новинки — в Telegram", "pl": "Nowości — na Telegramie" },
+    "title": { "ru": "Новинки, в Telegram", "uk": "Новинки, в Telegram", "pl": "Nowości, na Telegramie" },
     "text": { "ru": "Подпишись, чтобы первым видеть поступления и акции.", "uk": "Підпишись, щоб першим бачити надходження та акції.", "pl": "Zasubskrybuj, aby pierwszy widzieć dostawy i promocje." },
     "btn": { "ru": "Открыть в Telegram", "uk": "Відкрити в Telegram", "pl": "Otwórz na Telegramie" },
     "later": { "ru": "Позже", "uk": "Пізніше", "pl": "Później" }
@@ -66,8 +66,8 @@
 
   "legal": {
     "warn": {
-      "ru": "18+. Продукция содержит никотин — вещество, вызывающее сильную зависимость. Продажа несовершеннолетним запрещена законом Республики Польша.",
-      "uk": "18+. Продукція містить нікотин — речовину, що викликає сильну залежність. Продаж неповнолітнім заборонено законом Республіки Польща.",
+      "ru": "18+. Продукция содержит никотин, вещество, вызывающее сильную зависимость. Продажа несовершеннолетним запрещена законом Республики Польша.",
+      "uk": "18+. Продукція містить нікотин, речовину, що викликає сильну залежність. Продаж неповнолітнім заборонено законом Республіки Польща.",
       "pl": "18+. Produkty zawierają nikotynę, substancję silnie uzależniającą. Sprzedaż osobom niepełnoletnim jest zakazana prawem RP."
     }
   },
