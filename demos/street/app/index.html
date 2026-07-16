@@ -147,6 +147,7 @@ const TICK = {
 if (inTg) {
   tg.ready(); tg.expand();
   tg.setHeaderColor('#ffd500'); tg.setBackgroundColor('#ffd500');
+  tg.BackButton.onClick(() => history.back()); tg.BackButton.show();  // назад к выбору стиля
   document.getElementById('cta').style.display = 'none';
   document.body.style.paddingBottom = '20px';
   tg.MainButton.onClick(() => {

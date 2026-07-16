@@ -135,6 +135,7 @@ const inTg = !!(tg && tg.initData);
 if (inTg) {
   tg.ready(); tg.expand();
   tg.setHeaderColor('#e9f1fa'); tg.setBackgroundColor('#e9f1fa');
+  tg.BackButton.onClick(() => history.back()); tg.BackButton.show();  // назад к выбору стиля
   document.getElementById('cta').style.display = 'none';
   document.body.style.paddingBottom = '20px';
   tg.MainButton.onClick(() => {

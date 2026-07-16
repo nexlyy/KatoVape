@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>KatoVape</title>
+<link rel="icon" type="image/png" href="../../data/photos/cat.png">
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0d0d11;--panel:#16161d;--panel2:#1c1c25;--line:#26262f;--txt:#f2f2f6;--mut:#9195a8;--acc:#c8ff2e}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--txt);font-family:Manrope,system-ui,sans-serif;line-height:1.5;-webkit-font-smoothing:antialiased;padding:18px 16px 28px}
+.bg{position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:radial-gradient(500px 340px at 90% -10%,rgba(200,255,46,.12),transparent 70%),
+             radial-gradient(500px 420px at -10% 15%,rgba(120,120,255,.12),transparent 70%)}
+.wrap{position:relative;z-index:1;max-width:520px;margin:0 auto}
+header{display:flex;align-items:center;gap:11px;margin-bottom:22px}
+.badge{width:42px;height:42px;border-radius:50%;overflow:hidden;background:#fff;flex-shrink:0;box-shadow:0 0 0 1px var(--line)}
+.badge img{width:100%;height:100%;object-fit:cover;transform:scale(1.72);transform-origin:50% 38%}
+header b{font-size:16px;font-weight:800}
+header b em{font-style:normal;color:var(--acc)}
+h1{font-size:22px;font-weight:800;letter-spacing:-.01em;line-height:1.15}
+.lead{color:var(--mut);font-size:14px;margin:8px 0 20px}
+.grid{display:grid;gap:12px}
+.card{display:block;background:var(--panel);border:1px solid var(--line);border-radius:16px;overflow:hidden;text-decoration:none;color:var(--txt);transition:border-color .15s,transform .1s}
+.card:active{transform:scale(.99)}
+.card:hover{border-color:#3a3a46}
+.swatch{height:64px;position:relative;display:flex;align-items:flex-end;padding:11px 15px;font-weight:800;font-size:12.5px}
+.swatch.neon{background:#0a0a10;color:#c8ff2e}
+.swatch.neon::after{content:"";position:absolute;top:13px;right:14px;width:34px;height:34px;border-radius:50%;background:radial-gradient(circle,#c8ff2e,#8f6bff)}
+.swatch.frost{background:linear-gradient(120deg,#dff0ff,#e7e2ff 60%,#dcfff0);color:#1861ff}
+.swatch.frost::after{content:"";position:absolute;top:15px;right:16px;width:30px;height:30px;border-radius:11px;background:linear-gradient(120deg,#1861ff,#38c6ff)}
+.swatch.street{background:#ffd500;color:#0d0d0d}
+.swatch.street::after{content:"UA→PL";position:absolute;top:13px;right:12px;background:#0057b7;color:#fff;font-family:monospace;font-size:10.5px;padding:3px 7px;border:2px solid #0d0d0d;transform:rotate(4deg)}
+.body{display:flex;align-items:center;gap:12px;padding:13px 15px}
+.body .txt{flex:1;min-width:0}
+.body h2{font-size:15px;font-weight:800}
+.body p{color:var(--mut);font-size:12.5px;margin-top:2px}
+.body .go{color:var(--acc);font-size:20px;font-weight:800;flex-shrink:0}
+footer{margin-top:22px;color:var(--mut);font-size:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.age{border:1px solid var(--mut);border-radius:6px;padding:1px 7px;font-weight:800;color:var(--txt)}
+</style>
+</head>
+<body>
+<div class="bg"></div>
+<div class="wrap">
+  <header>
+    <span class="badge"><img src="../../data/photos/cat.png" alt=""></span>
+    <b>KATO<em>VAPE</em></b>
+  </header>
+
+  <h1>Выбери стиль витрины</h1>
+  <p class="lead">Три оформления, каталог и логика одинаковые. Открой любое, потом вернёшься кнопкой «Назад».</p>
+
+  <div class="grid">
+    <a class="card" data-app="../neon/app/">
+      <div class="swatch neon">НЕОН</div>
+      <div class="body"><div class="txt"><h2>Неон</h2><p>тёмный, кислотно-зелёный</p></div><span class="go">→</span></div>
+    </a>
+    <a class="card" data-app="../frost/app/">
+      <div class="swatch frost">ФРОСТ</div>
+      <div class="body"><div class="txt"><h2>Фрост</h2><p>светлое морозное стекло</p></div><span class="go">→</span></div>
+    </a>
+    <a class="card" data-app="../street/app/">
+      <div class="swatch street">СТРИТ</div>
+      <div class="body"><div class="txt"><h2>Стрит</h2><p>жёлто-синий стикер-стиль</p></div><span class="go">→</span></div>
+    </a>
+  </div>
+
+  <footer>
+    <span class="age">18+</span>
+    <span>Демо. Продажа только совершеннолетним.</span>
+  </footer>
+</div>
+
+<script>
+  const tg = window.Telegram && window.Telegram.WebApp;
+  if (tg) { tg.ready(); tg.expand(); tg.setHeaderColor('#0d0d11'); tg.setBackgroundColor('#0d0d11'); tg.MainButton.hide(); tg.BackButton.hide(); }
+
+  // прокидываем Telegram-контекст (hash с initData) в выбранную витрину,
+  // иначе под-страница откроется без нативного режима мини-приложения
+  const ctx = location.hash;
+  document.querySelectorAll('.card').forEach(a => {
+    a.href = a.dataset.app + ctx;
+  });
+</script>
+</body>
+</html>
