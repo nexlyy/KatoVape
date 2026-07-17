@@ -22,5 +22,12 @@ window.KV_CONFIG = {
   SUPABASE_URL: '',
   SUPABASE_ANON_KEY: '',
   FUNCTIONS_URL: '',
-  TELEGRAM_BOT: ''
+
+  // username бота без @ для кнопки "Войти через Telegram" на публичном сайте.
+  // Виджет Telegram работает ТОЛЬКО на домене, заданном боту в BotFather (/setdomain),
+  // на localhost он не отрисуется — там показываем демо-вход.
+  TELEGRAM_BOT: 'test_syncae_bot',
+
+  // Telegram ID тех, кому открыта админка (проверяется на сервере).
+  ADMIN_IDS: [5301671230]
 };

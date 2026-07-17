@@ -348,6 +348,7 @@ window.KVAuth = (function () {
       if (e.target === d || e.target.closest('.kva-x')) { closeModal(); return; }
       const tb = e.target.closest('[data-tab]');
       if (tb) { tab = tb.dataset.tab; renderModal(); return; }
+      if (e.target.closest('.kva-tg-demo')) { demoTelegramLogin(); return; }
       if (e.target.closest('.kva-submit')) { submit(); return; }
     });
     d.addEventListener('keydown', e => { if (e.key === 'Enter') submit(); });
@@ -373,12 +374,34 @@ window.KVAuth = (function () {
     }
     const tg = window.Telegram && window.Telegram.WebApp;
     const inTg = !!(tg && tg.initData);
-    const tgBlock = (CFG.TELEGRAM_BOT && !inTg)
-      ? '<div class="kva-or"><span>' + tr('or') + '</span></div><div class="kva-tg" id="kva-tg-widget"></div>'
-      : '';
+    const localHost = /^(127\.0\.0\.1|localhost|0\.0\.0\.0|\[::1\])$/.test(location.hostname);
+    const localDemo = LOCAL() && localHost;                       // локальный бэкенд на локальном хосте
+    const realWidget = !!CFG.TELEGRAM_BOT && !inTg && !localDemo;  // виджет только на реальном домене бота
+    let tgBlock = '';
+    if (!inTg && (realWidget || localDemo)) {
+      tgBlock = '<div class="kva-or"><span>' + tr('or') + '</span></div>' +
+        (localDemo
+          ? '<button class="kva-tg-demo" type="button">✈ ' + tr('tgLogin') + '</button>'
+          : '<div class="kva-tg" id="kva-tg-widget"></div>');
+    }
     d.querySelector('.kva-body').innerHTML = notCfg + '<div class="kva-form">' + form + '</div>' +
       '<div class="kva-err" hidden></div>' + tgBlock;
-    if (CFG.TELEGRAM_BOT && !inTg) mountTgWidget();
+    if (realWidget) mountTgWidget();
+  }
+  // демо-вход через Telegram для локального показа (реальный виджет требует публичный домен).
+  // Заводит стабильный демо-аккаунт с аватаром, чтобы показать поток и аватарку в шапке.
+  function demoTelegramLogin() {
+    let id = +localStorage.getItem('kv_demo_tg') || 0;
+    if (!id) { id = 900000000 + Math.floor(Math.random() * 89999999); localStorage.setItem('kv_demo_tg', String(id)); }
+    // аватар генерим локально (без внешних сервисов), чтобы всегда показывался
+    const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128">' +
+      '<rect width="128" height="128" rx="64" fill="#2aabee"/>' +
+      '<text x="64" y="86" font-size="58" text-anchor="middle" fill="#fff" font-family="Arial">✈</text></svg>';
+    const u = { id: id, first_name: 'Telegram', username: 'demo_' + String(id).slice(-4),
+      photo_url: 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svg))) };
+    telegramExchange({ mode: 'widget', payload: u })
+      .then(() => { closeModal(); if (window.KV) KV.toast(tr('welcome')); })
+      .catch(showErr);
   }
   function mountTgWidget() {
     const box = document.getElementById('kva-tg-widget'); if (!box) return;
@@ -459,6 +482,8 @@ window.KVAuth = (function () {
 .kva-or{display:flex;align-items:center;gap:10px;margin:16px 0 12px;color:var(--kv-muted);font-size:12px}
 .kva-or::before,.kva-or::after{content:"";flex:1;height:1px;background:var(--kv-line)}
 .kva-tg{display:flex;justify-content:center;min-height:34px}
+.kva-tg-demo{width:100%;background:#2aabee;color:#fff;border:none;border-radius:12px;padding:13px;font-weight:800;font-size:13.5px;cursor:pointer;font-family:inherit}
+.kva-tg-demo:hover{filter:brightness(1.06)}
 .kva-acc{border:1px solid var(--kv-line);border-radius:12px;padding:14px 15px;background:var(--kv-surface)}
 .kva-acc>b{font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:var(--kv-muted);display:block;margin-bottom:9px}
 .kva-acc-rows{display:flex;flex-direction:column;gap:4px;margin-bottom:12px}

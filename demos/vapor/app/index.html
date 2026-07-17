@@ -19,7 +19,9 @@
 }
 *{margin:0;padding:0;box-sizing:border-box}
 body{background:var(--bg);color:var(--txt);font-family:Sora,system-ui,sans-serif;padding-bottom:92px;overflow-x:hidden}
-#vapor{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.9}
+#vapor{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:1}
+body::before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;background:radial-gradient(75% 45% at 85% -5%,rgba(95,243,208,.16),transparent 60%),radial-gradient(70% 40% at 0% 20%,rgba(101,223,255,.12),transparent 60%)}
+.top,.sticky,#app,.cta{position:relative;z-index:1}
 button{font-family:inherit}
 .top{position:relative;z-index:1;padding:16px 16px 8px;display:flex;align-items:center;gap:10px}
 .cat-ico{width:40px;height:40px;border-radius:50%;overflow:hidden;background:#fff;box-shadow:0 0 0 1px var(--line),0 0 18px rgba(95,243,208,.3)}
@@ -68,6 +70,26 @@ button{font-family:inherit}
 .empty{padding:30px 16px;color:var(--mut);text-align:center;position:relative;z-index:1}
 .cta{position:fixed;left:16px;right:16px;bottom:16px;background:linear-gradient(100deg,var(--mint),var(--cyan));color:#04120e;text-align:center;border:none;font-weight:800;font-family:'Space Grotesk';font-size:14px;padding:16px;border-radius:15px;box-shadow:0 12px 30px rgba(95,243,208,.35);cursor:pointer;z-index:20}
 @media(prefers-reduced-motion:reduce){.row{animation:none;opacity:1;transform:none}}
+/* корзина (нижний лист) и тост */
+.kvd{position:fixed;inset:0;z-index:90;background:rgba(4,7,11,.72)}
+.kvd[hidden]{display:none}
+.kvd-box{position:absolute;left:0;right:0;bottom:0;max-height:82vh;background:var(--panel2);border-top:1px solid var(--line);border-radius:20px 20px 0 0;padding:20px 18px;display:flex;flex-direction:column;gap:12px;overflow-y:auto;box-shadow:0 -14px 40px rgba(0,0,0,.5)}
+.kvd-head{display:flex;align-items:center;justify-content:space-between}
+.kvd-title{font-family:'Space Grotesk';font-size:16px;font-weight:700}
+.kvd-x{border:none;background:none;color:var(--mut);font-size:24px;cursor:pointer}
+.kvd-items{display:flex;flex-direction:column}
+.kvd-row{display:flex;align-items:center;gap:9px;padding:9px 0;border-bottom:1px dashed var(--line);font-size:13px}
+.kvd-name{flex:1;font-weight:700}.kvd-name small{display:block;color:var(--mut);font-weight:400}
+.kvd-ctr{display:flex;align-items:center;gap:7px}
+.kvd-ctr button{width:25px;height:25px;border-radius:8px;border:1px solid var(--line);background:transparent;color:var(--txt);cursor:pointer}
+.kvd-sum{color:var(--mint);font-weight:800;min-width:48px;text-align:right;font-size:12.5px}
+.kvd-empty{color:var(--mut)}
+.kvd-total{font-family:'Space Grotesk';font-size:14px;font-weight:700}
+.kvd-total s{color:var(--mut);font-weight:400;margin-right:6px}
+.kvd-go{background:linear-gradient(100deg,var(--mint),var(--cyan));color:#04120e;border:none;border-radius:12px;padding:13px;font-weight:800;font-size:13px;cursor:pointer}
+.kvd-clear{background:none;border:none;color:var(--mut);font-size:12px;cursor:pointer}
+.kv-toast{position:fixed;left:50%;bottom:90px;transform:translate(-50%,20px);background:linear-gradient(100deg,var(--mint),var(--cyan));color:#04120e;font-weight:800;font-size:12.5px;padding:11px 20px;border-radius:99px;opacity:0;pointer-events:none;transition:.25s;z-index:120;max-width:90vw;text-align:center}
+.kv-toast.show{opacity:1;transform:translate(-50%,0)}
 </style>
 </head>
 <body>
@@ -90,17 +112,17 @@ button{font-family:inherit}
 <div id="app"></div>
 <button class="cta" id="cta"></button>
 
-<script src="../../../shared/config.js?v=2"></script>
-<script src="../../../shared/core.js?v=14"></script>
-<script src="../../../shared/auth.js?v=3"></script>
+<script src="../../../shared/config.js?v=3"></script>
+<script src="../../../shared/core.js?v=16"></script>
+<script src="../../../shared/auth.js?v=5"></script>
 <script>
 (function(){
   const cv=document.getElementById('vapor'), ctx=cv.getContext('2d');
   let W,H,parts,raf; const reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
   const HUES=['95,243,208','101,223,255','157,139,255'];
   function resize(){ W=cv.width=innerWidth; H=cv.height=innerHeight; }
-  function mk(any){ return { x:Math.random()*W, y:any?Math.random()*H:H+70, r:60+Math.random()*120,
-    v:.22+Math.random()*.5, a:.05+Math.random()*.06, hue:HUES[(Math.random()*HUES.length)|0] }; }
+  function mk(any){ return { x:Math.random()*W, y:any?Math.random()*H:H+70, r:70+Math.random()*130,
+    v:.22+Math.random()*.5, a:.07+Math.random()*.09, hue:HUES[(Math.random()*HUES.length)|0] }; }
   function frame(){ ctx.clearRect(0,0,W,H); ctx.globalCompositeOperation='lighter';
     for(const p of parts){ p.y-=p.v; p.x+=Math.sin(p.y*.008)*.3; if(p.y<-p.r) Object.assign(p,mk(false));
       const g=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,p.r);
@@ -109,7 +131,7 @@ button{font-family:inherit}
     raf=requestAnimationFrame(frame); }
   addEventListener('resize',resize);
   document.addEventListener('visibilitychange',()=>{ if(document.hidden) cancelAnimationFrame(raf); else if(!reduce) frame(); });
-  resize(); parts=Array.from({length:30},()=>mk(true)); frame();
+  resize(); parts=Array.from({length:40},()=>mk(true)); frame();
 })();
 </script>
 

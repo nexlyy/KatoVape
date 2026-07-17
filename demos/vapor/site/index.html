@@ -24,8 +24,10 @@ html[data-theme="light"]{
 *{margin:0;padding:0;box-sizing:border-box}
 html{scroll-behavior:smooth}
 body{background:var(--bg);color:var(--txt);font-family:Sora,system-ui,sans-serif;overflow-x:hidden;min-height:100vh}
-#vapor{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.9}
+#vapor{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:1}
+body::before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;background:radial-gradient(70% 55% at 82% -5%,rgba(95,243,208,.16),transparent 60%),radial-gradient(55% 45% at -5% 25%,rgba(101,223,255,.12),transparent 60%),radial-gradient(55% 45% at 50% 112%,rgba(157,139,255,.12),transparent 60%)}
 .wrap{max-width:1100px;margin:0 auto;padding:0 22px;position:relative;z-index:1}
+header,main,footer{position:relative;z-index:1}
 h1,h2,.logo{font-family:'Space Grotesk',sans-serif}
 button{font-family:inherit}
 a{color:inherit}
@@ -95,6 +97,26 @@ footer{border-top:1px solid var(--line);padding:28px 0 44px;color:var(--mut);fon
 footer a{color:var(--mint);text-decoration:none}
 .age18{border:1px solid var(--red);color:var(--red);border-radius:7px;padding:2px 8px;font-weight:800;margin-right:8px}
 @media(prefers-reduced-motion:reduce){.card{animation:none;opacity:1;transform:none}.hero h1 span{animation:none}}
+/* корзина (выдвижная справа) и тост — свои, как у остальных стилей */
+.kvd{position:fixed;inset:0;z-index:90;background:rgba(4,7,11,.72)}
+.kvd[hidden]{display:none}
+.kvd-box{position:absolute;top:0;right:0;bottom:0;width:min(410px,100%);background:var(--panel2);border-left:1px solid var(--line);padding:22px;display:flex;flex-direction:column;gap:14px;overflow-y:auto;box-shadow:var(--kv-shadow)}
+.kvd-head{display:flex;align-items:center;justify-content:space-between}
+.kvd-title{font-family:'Space Grotesk';font-size:18px;font-weight:700}
+.kvd-x{border:none;background:none;color:var(--mut);font-size:26px;cursor:pointer}
+.kvd-items{display:flex;flex-direction:column}
+.kvd-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px dashed var(--line);font-size:13.5px}
+.kvd-name{flex:1;font-weight:700}.kvd-name small{display:block;color:var(--mut);font-weight:400}
+.kvd-ctr{display:flex;align-items:center;gap:8px}
+.kvd-ctr button{width:26px;height:26px;border-radius:8px;border:1px solid var(--line);background:transparent;color:var(--txt);cursor:pointer;font-size:15px}
+.kvd-sum{color:var(--mint);font-weight:800;min-width:54px;text-align:right}
+.kvd-empty{color:var(--mut)}
+.kvd-total{font-family:'Space Grotesk';font-size:16px;font-weight:700}
+.kvd-total s{color:var(--mut);font-weight:400;margin-right:6px}
+.kvd-go{background:linear-gradient(100deg,var(--mint),var(--cyan));color:#04120e;border:none;border-radius:12px;padding:14px;font-weight:800;font-size:14px;cursor:pointer}
+.kvd-clear{background:none;border:none;color:var(--mut);font-size:12.5px;cursor:pointer}
+.kv-toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,20px);background:linear-gradient(100deg,var(--mint),var(--cyan));color:#04120e;font-weight:800;font-size:13.5px;padding:12px 22px;border-radius:99px;opacity:0;pointer-events:none;transition:.25s;z-index:120;max-width:90vw;text-align:center}
+.kv-toast.show{opacity:1;transform:translate(-50%,0)}
 </style>
 </head>
 <body>
@@ -134,9 +156,9 @@ footer a{color:var(--mint);text-decoration:none}
 </footer>
 
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
-<script src="../../../shared/config.js?v=2"></script>
-<script src="../../../shared/core.js?v=14"></script>
-<script src="../../../shared/auth.js?v=3"></script>
+<script src="../../../shared/config.js?v=3"></script>
+<script src="../../../shared/core.js?v=16"></script>
+<script src="../../../shared/auth.js?v=5"></script>
 <script>
 // живой дымный фон на canvas: несколько мягких клубов пара поднимаются вверх.
 // дёшево (около 40 радиальных градиентов на кадр), уважает prefers-reduced-motion.
@@ -145,15 +167,15 @@ footer a{color:var(--mint);text-decoration:none}
   let W,H,parts,raf; const reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
   const HUES=['95,243,208','101,223,255','157,139,255'];
   function resize(){ W=cv.width=innerWidth; H=cv.height=innerHeight; }
-  function mk(any){ return { x:Math.random()*W, y:any?Math.random()*H:H+80, r:70+Math.random()*140,
-    v:.25+Math.random()*.6, a:.05+Math.random()*.07, hue:HUES[(Math.random()*HUES.length)|0] }; }
+  function mk(any){ return { x:Math.random()*W, y:any?Math.random()*H:H+80, r:80+Math.random()*150,
+    v:.25+Math.random()*.6, a:.08+Math.random()*.1, hue:HUES[(Math.random()*HUES.length)|0] }; }
   function frame(){ ctx.clearRect(0,0,W,H); ctx.globalCompositeOperation='lighter';
     for(const p of parts){ p.y-=p.v; p.x+=Math.sin(p.y*.008)*.35; if(p.y<-p.r) Object.assign(p,mk(false));
       const g=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,p.r);
       g.addColorStop(0,'rgba('+p.hue+','+p.a+')'); g.addColorStop(1,'rgba('+p.hue+',0)');
       ctx.fillStyle=g; ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,6.29); ctx.fill(); }
     raf=requestAnimationFrame(frame); }
-  function start(){ resize(); parts=Array.from({length:38},()=>mk(true));
+  function start(){ resize(); parts=Array.from({length:48},()=>mk(true));
     if(reduce){ frame(); cancelAnimationFrame(raf); frame(); } else frame(); }
   addEventListener('resize',resize);
   document.addEventListener('visibilitychange',()=>{ if(document.hidden) cancelAnimationFrame(raf); else if(!reduce) frame(); });

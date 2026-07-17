@@ -8,6 +8,8 @@ import { randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
 import { db } from './db.mjs';
 
 const PORT = process.env.PORT || 8790;
+// кому открыта админка (Telegram ID). Совпадает со списком в shared/config.js.
+const ADMIN_IDS = new Set([5301671230]);
 
 // ---- пароли: scrypt + соль ----
 function hashPass(pw) {
@@ -45,7 +47,8 @@ function publicUser(u) {
   return {
     id: u.id, username: u.username, email: u.email, phone: u.phone,
     telegram_id: u.telegram_id, telegram_username: u.telegram_username,
-    display_name: u.display_name, avatar: u.avatar, created_at: u.created_at
+    display_name: u.display_name, avatar: u.avatar, created_at: u.created_at,
+    is_admin: !!(u.telegram_id && ADMIN_IDS.has(u.telegram_id))
   };
 }
 function startSession(userId) {
@@ -180,5 +183,10 @@ async function route(req, res) {
   return send(res, 404, { error: 'not found' });
 }
 
-createServer((req, res) => { route(req, res).catch(() => send(res, 500, { error: 'server' })); })
-  .listen(PORT, () => console.log('KatoVape auth demo on http://127.0.0.1:' + PORT));
+const server = createServer((req, res) => { route(req, res).catch(() => send(res, 500, { error: 'server' })); });
+server.on('error', (e) => {
+  if (e.code === 'EADDRINUSE') console.error('Порт ' + PORT + ' уже занят. Закрой старый процесс (или задай PORT=8791).');
+  else console.error(e.message);
+  process.exit(1);
+});
+server.listen(PORT, '127.0.0.1', () => console.log('KatoVape auth demo слушает http://127.0.0.1:' + PORT));

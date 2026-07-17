@@ -191,6 +191,7 @@ window.KV = (function () {
   let modal = null;                  // открытая карточка товара {id, fl, rate}
   let delivery = null;               // способ получения {method, addr}
   let profileName = '';              // имя из профиля (или из Telegram)
+  let isApp = false;                 // true в мини-аппе Telegram (opts.app)
   const DELIVERY_DEF = [             // фолбэк, если в content.json нет блока delivery
     { id: 'pickup', fee: 0 },
     { id: 'inpost', fee: 12 },
@@ -515,7 +516,6 @@ window.KV = (function () {
         toast(applyPromo(inp.value) ? ui('discount') : ui('promoBad'));
         drawDrawer();
       }
-      if (e.target.closest('.kvd-ref button')) inviteFriend();
       if (e.target.closest('.kvd-repeat')) repeatOrder();
       const dopt = e.target.closest('[data-deliv]');
       if (dopt) { setDelivery(dopt.dataset.deliv, undefined); drawDrawer(); }
@@ -541,21 +541,17 @@ window.KV = (function () {
           '<span class="kvd-sum">' + l.sum + ' zł</span></div>').join('')
       : '<p class="kvd-empty">' + t('cartEmpty') + '</p>';
 
-    // блок промо, скидки, реферала, либо кнопка повтора заказа для пустой корзины
+    // блок промо и скидки, либо кнопка повтора заказа для пустой корзины
     const extra = d.querySelector('.kvd-extra');
     if (lines.length) {
       const disc = discount();
       const fee = deliveryFee();
-      const r = content.referral;
       extra.innerHTML =
         deliveryHTML() +
         '<div class="kvd-promo"><input type="text" placeholder="' + ui('promoPh') +
           '" value="' + (appliedPromo ? appliedPromo.code : '') + '"><button class="kvd-promo-go">' + ui('promoApply') + '</button></div>' +
         (disc ? '<div class="kvd-disc"><span>' + ui('discount') + '</span><span>−' + disc + ' zł</span></div>' : '') +
-        (fee ? '<div class="kvd-disc kvd-fee"><span>' + t('delivPay') + '</span><span>+' + fee + ' zł</span></div>' : '') +
-        (r ? '<div class="kvd-ref"><b>' + loc(r.title) + '</b>' + loc(r.text) +
-          '<div class="kvd-ref-p">' + (referralReady() ? loc(r.done) : loc(r.progress).replace('{n}', invitedCount()).replace('{need}', r.need)) + '</div>' +
-          (referralReady() ? '' : '<button>' + loc(r.invite) + '</button>') + '</div>' : '');
+        (fee ? '<div class="kvd-disc kvd-fee"><span>' + t('delivPay') + '</span><span>+' + fee + ' zł</span></div>' : '');
     } else {
       extra.innerHTML = hasLastOrder()
         ? '<button class="kvd-repeat">' + ui('repeat') + '</button>' : '';
@@ -821,7 +817,6 @@ window.KV = (function () {
     const sub = cartTotal();
     let d = 0;
     if (appliedPromo) d += appliedPromo.type === 'percent' ? Math.round(sub * appliedPromo.value / 100) : appliedPromo.value;
-    if (referralReady() && content.referral) d += content.referral.reward;
     return Math.min(d, sub);
   }
   function grandTotal() { return Math.max(cartTotal() - discount(), 0) + deliveryFee(); }
@@ -1112,7 +1107,16 @@ window.KV = (function () {
     const sc = prev ? prev.scrollLeft : 0;
     body.innerHTML = modalHTML(find(modal.id));
     const strip = body.querySelector('.kvm-flavstrip');
-    if (strip) strip.scrollLeft = sc;
+    if (strip) {
+      strip.scrollLeft = sc;
+      // на сайте колесо мыши крутит ленту вкусов вбок (в мини-аппе свайп и так работает)
+      if (!isApp) strip.onwheel = e => {
+        if (strip.scrollWidth <= strip.clientWidth) return;
+        if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
+        e.preventDefault();
+        strip.scrollLeft += e.deltaY;
+      };
+    }
   }
   function modalHTML(item) {
     if (!item) return '';
@@ -1340,8 +1344,7 @@ window.KV = (function () {
         '<div><b>' + favList.length + '</b><span>' + t('favsN') + '</span></div>' +
         '<div><b>' + myRev.length + '</b><span>' + t('reviewsN') + '</span></div>' +
       '</div>' +
-      favBlock + revBlock + ordBlock +
-      '<button class="kvp-clear">' + t('clearData') + '</button>';
+      favBlock + revBlock + ordBlock;
     // блок входа/аккаунта рисует модуль auth.js, если он подключён
     if (window.KVAuth && window.KVAuth.decorateProfile)
       window.KVAuth.decorateProfile(d.querySelector('#kvp-auth'));
@@ -1369,17 +1372,6 @@ window.KV = (function () {
     const goto = e.target.closest('[data-goto]');
     if (goto) { closeProfile(); openProduct(goto.dataset.goto); return; }
     if (e.target.closest('.kvp-repeat')) { closeProfile(); repeatOrder(); return; }
-    if (e.target.closest('.kvp-clear')) {
-      ['kv_favs', 'kv_orders', 'kv_profile', 'kv_promo', cartStoreKey(), lastOrderKey(), 'kv_searches', 'kv_invited'].forEach(k => localStorage.removeItem(k));
-      for (let i = localStorage.length - 1; i >= 0; i--) {
-        const k = localStorage.key(i);
-        if (k && k.indexOf('kv_rev_') === 0) localStorage.removeItem(k);
-      }
-      cart = {}; appliedPromo = null; profileName = '';
-      saveCart(); toast(t('cleared')); renderProfile();
-      if (hooks.render) hooks.render();
-      return;
-    }
   }
 
   // ==== способ получения: самовывоз / InPost / курьер ====
@@ -1575,12 +1567,12 @@ body.kv-noscroll{overflow:hidden}
 @media(min-width:620px){.kvm-grid{grid-template-columns:minmax(0,1fr) minmax(0,1.05fr)}}
 .kvm-col{min-width:0;display:flex;flex-direction:column;gap:14px}
 .kvm-col .kvm-taste,.kvm-col .kvm-desc,.kvm-col .kvm-reviews,.kvm-col .kvm-sec-t,.kvm-buy .kvm-pick{margin-top:0}
-.kvm-photo-big{border-radius:14px;overflow:hidden;background:#fff}
-.kvm-photo-big .kv-photo{aspect-ratio:1/1;width:100%;height:auto}
-.kvm-photo-big .kv-photo span{font-size:44px}
-.kvm-flavstrip{display:flex;gap:8px;overflow-x:auto;padding-bottom:5px;scrollbar-width:thin}
-.kvm-flavstrip::-webkit-scrollbar{height:6px}
-.kvm-flavstrip::-webkit-scrollbar-thumb{background:var(--kv-line);border-radius:99px}
+.kvm-photo-big{position:relative;align-self:start;width:100%;aspect-ratio:1/1;border-radius:14px;overflow:hidden;background:#fff}
+.kvm-photo-big .kv-photo{position:absolute;inset:0;width:100%;height:100%;display:grid;place-items:center;background:#fff}
+.kvm-photo-big .kv-photo img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+.kvm-photo-big .kv-photo span{font-size:44px;color:#c9d2d2}
+.kvm-flavstrip{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none;-ms-overflow-style:none;overscroll-behavior-x:contain}
+.kvm-flavstrip::-webkit-scrollbar{display:none}
 .kvm-chip{flex:0 0 auto;min-width:98px;max-width:150px;text-align:left;background:var(--kv-surface);border:1px solid var(--kv-line);border-radius:12px;padding:9px 11px;cursor:pointer;font-family:inherit;color:var(--kv-text);display:flex;flex-direction:column;gap:2px}
 .kvm-chip.sel{border-color:var(--kv-accent);box-shadow:inset 0 0 0 1px var(--kv-accent)}
 .kvm-chip.off{opacity:.5;cursor:default}
@@ -1679,6 +1671,7 @@ body.kv-noscroll{overflow:hidden}
   async function init(opts) {
     hooks.render = opts.render;
     hooks.cart = opts.cart || null;
+    isApp = !!opts.app;
     injectCSS();
     if (!localStorage.getItem('kv_me')) localStorage.setItem('kv_me', Math.random().toString(36).slice(2, 8));
     try {
