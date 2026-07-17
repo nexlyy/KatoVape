@@ -5,13 +5,14 @@
 import { createServer } from 'node:http';
 import { randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
 import { db } from './db.mjs';
-import { BOT_TOKEN, verifyWidget, verifyInitData, sendMessage, setWebhook, setMenuButton } from './tg.mjs';
+import { BOT_TOKEN, verifyWidget, verifyInitData, sendMessage, setWebhook, deleteWebhook, getUpdates, setMenuButton } from './tg.mjs';
 import * as sheets from './sheets.mjs';
 
 const PORT = process.env.PORT || 8790;
 const PUBLIC_URL = (process.env.PUBLIC_URL || '').replace(/\/$/, '');
 const MINIAPP_URL = process.env.MINIAPP_URL || '';
 const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET || 'kv_hook';
+const BOT_MODE = process.env.KV_BOT_MODE || 'poll';   // poll (по умолчанию, без домена/nginx) | webhook
 const ADMIN_IDS = new Set((process.env.KV_ADMIN_IDS || '5301671230').split(',').map(s => Number(s.trim())).filter(Boolean));
 const ALLOW_DEMO_TG = !BOT_TOKEN;   // без токена бота разрешаем демо-вход (локальный показ)
 
@@ -213,15 +214,41 @@ const esc = s => String(s == null ? '' : s).replace(/[&<>]/g, c => ({ '&': '&amp
 const safeJson = s => { try { return JSON.parse(s); } catch { return []; } };
 
 // ---- бот: входящие апдейты ----
+const qProdName = db.prepare('select name from products where id = ? limit 1');
 async function handleUpdate(upd) {
   const msg = upd.message;
   if (msg && msg.text && msg.text.startsWith('/start')) {
     const from = msg.from || {};
     Q.botUser.run(from.id, from.username || null, from.first_name || null, from.language_code || null);
+    const param = (msg.text.split(' ')[1] || '').trim();
+    // диплинк брони из мини-аппа: /start res_<productId>_<city>
+    if (param.startsWith('res_')) {
+      const rest = param.slice(4), i = rest.lastIndexOf('_');
+      const pid = i > 0 ? rest.slice(0, i) : rest, city = i > 0 ? rest.slice(i + 1) : 'katowice';
+      const p = qProdName.get(pid);
+      Q.insRes.run(null, from.id, city, pid, (p && p.name) || pid, '');
+      Q.bumpDemand.run(pid, 'reserve');
+      await sendMessage(msg.chat.id, `✅ Бронь принята: <b>${esc((p && p.name) || pid)}</b>. Сообщим, как только появится в наличии.`);
+      return;
+    }
     const kb = MINIAPP_URL ? { inline_keyboard: [[{ text: '🛍 Открыть магазин', web_app: { url: MINIAPP_URL } }]] } : undefined;
     await sendMessage(msg.chat.id,
-      'Привет! Это <b>KatoVape</b>. Открывай магазин кнопкой ниже, оформляй заказ и бронь — уведомим, когда товар появится.',
+      'Привет! Это <b>KatoVape</b>. Открывай магазин кнопкой ниже, выбирай вкус, оформляй заказ и бронь — уведомим, когда товар появится.',
       kb ? { reply_markup: kb } : {});
+  }
+}
+
+// ---- long polling: бот работает без домена и вебхука (только он на сервере) ----
+async function pollLoop() {
+  try { await deleteWebhook(); } catch (e) {}
+  let offset = 0;
+  console.log('бот: long polling');
+  for (;;) {
+    try {
+      const r = await getUpdates(offset, 25);
+      if (r && r.ok && r.result) for (const u of r.result) { offset = u.update_id + 1; handleUpdate(u).catch(() => {}); }
+      else if (r && r.ok === false) await new Promise(res => setTimeout(res, 2000));
+    } catch (e) { await new Promise(res => setTimeout(res, 3000)); }
   }
 }
 
@@ -248,13 +275,17 @@ async function notifyRestocks() {
 }
 
 // ---- старт ----
+// API слушает только localhost — наружу его не выставляем, нет nginx/домена, сайт не трогаем
 const server = createServer((req, res) => { route(req, res).catch(() => send(res, 500, { error: 'server' })); });
 server.on('error', e => { console.error(e.code === 'EADDRINUSE' ? 'Порт ' + PORT + ' занят.' : e.message); process.exit(1); });
-server.listen(PORT, '0.0.0.0', async () => {
-  console.log('KatoVape API :' + PORT + (BOT_TOKEN ? ' (бот подключён)' : ' (демо, без бота)'));
-  if (BOT_TOKEN && PUBLIC_URL) {
+server.listen(PORT, process.env.KV_BIND || '127.0.0.1', async () => {
+  console.log('KatoVape :' + PORT + (BOT_TOKEN ? ' (бот подключён)' : ' (без токена — бот спит)'));
+  if (!BOT_TOKEN) return;
+  if (MINIAPP_URL) { const m = await setMenuButton(MINIAPP_URL); console.log('menuButton:', m && m.ok ? 'ok' : JSON.stringify(m)); }
+  if (BOT_MODE === 'webhook' && PUBLIC_URL) {
     const r = await setWebhook(`${PUBLIC_URL}/tg/webhook/${WEBHOOK_SECRET}`, WEBHOOK_SECRET);
     console.log('setWebhook:', r && r.ok ? 'ok' : JSON.stringify(r));
-    if (MINIAPP_URL) { const m = await setMenuButton(MINIAPP_URL); console.log('menuButton:', m && m.ok ? 'ok' : JSON.stringify(m)); }
+  } else {
+    pollLoop();   // по умолчанию — long polling, домен не нужен
   }
 });

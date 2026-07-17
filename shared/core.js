@@ -482,10 +482,16 @@ window.KV = (function () {
   function reserve(id) {
     const item = find(id); if (!item) return;
     const fl = (modal && modal.id === id && item.flavors && modal.fl >= 0) ? item.flavors[modal.fl] : null;
-    tgSend(t('reserve') + ': ' + item.name + (fl ? ', ' + flavorName(fl) : '') + '. ' + pickup(), t('reserved'));
-    // бронь на бэкенд: бот уведомит, когда позиция появится в наличии
-    if (window.KVAuth && KVAuth.apiReserve)
-      KVAuth.apiReserve({ product_id: id, product_name: item.name, flavor: fl ? fl.name : '', city });
+    const bot = window.KV_CONFIG && window.KV_CONFIG.TELEGRAM_BOT;
+    if (bot) {
+      // бронь уходит боту диплинком: он сохранит и уведомит, когда товар появится
+      toast(t('reserved'));
+      const url = 'https://t.me/' + bot + '?start=res_' + id + '_' + city;
+      const tg = window.Telegram && window.Telegram.WebApp;
+      if (tg && tg.initData) tg.openTelegramLink(url); else window.open(url, '_blank');
+    } else {
+      tgSend(t('reserve') + ': ' + item.name + (fl ? ', ' + flavorName(fl) : '') + '. ' + pickup(), t('reserved'));
+    }
   }
 
   function toast(msg) {

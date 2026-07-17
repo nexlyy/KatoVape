@@ -52,6 +52,10 @@ export const sendMessage = (chat_id, text, extra = {}) =>
 export async function setWebhook(url, secret) {
   return tgCall('setWebhook', { url, secret_token: secret, allowed_updates: ['message', 'callback_query'] });
 }
+export async function deleteWebhook() { return tgCall('deleteWebhook', { drop_pending_updates: false }); }
+export async function getUpdates(offset, timeout = 25) {
+  return tgCall('getUpdates', { offset, timeout, allowed_updates: ['message', 'callback_query'] });
+}
 export async function setMenuButton(webAppUrl, text = 'Магазин') {
   return tgCall('setChatMenuButton', { menu_button: { type: 'web_app', text, web_app: { url: webAppUrl } } });
 }
