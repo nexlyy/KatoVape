@@ -324,6 +324,17 @@ window.KV = (function () {
 
   function price(item) { return item.price ? item.price + ' zł' : ''; }
 
+  // оптовые цены: item.tiers = [{q:1,p:50},{q:3,p:45},{q:5,p:40}].
+  // цена за штуку падает с количеством в одной позиции.
+  function priceTiers(item) { return item.tiers && item.tiers.length ? item.tiers : null; }
+  function tierPrice(item, n) {
+    const ts = priceTiers(item);
+    if (!ts) return item.price || 0;
+    let p = ts[0].p;
+    for (const t of ts) if (n >= t.q) p = t.p;
+    return p;
+  }
+
   function plural(n, one, few, many) {
     const m10 = n % 10, m100 = n % 100;
     if (m10 === 1 && m100 !== 11) return one;
@@ -406,7 +417,7 @@ window.KV = (function () {
       const [id, fl] = key.split('::');
       const item = find(id); if (!item) continue;
       const flavor = fl !== '' && item.flavors ? item.flavors[+fl] : null;
-      lines.push({ key, item, flavor, n: cart[key], sum: (item.price || 0) * cart[key] });
+      lines.push({ key, item, flavor, n: cart[key], sum: tierPrice(item, cart[key]) * cart[key] });
     }
     return lines;
   }
@@ -987,9 +998,10 @@ window.KV = (function () {
     return normTaste({ sweet, cool, sour });
   }
   function tasteBar(label, v) {
+    const n = Math.max(1, Math.round(v / 10));   // шкала 1..10 как в эскизе
     return '<div class="kvm-bar"><span>' + label + '</span>' +
-      '<div class="kvm-bar-track"><i style="width:' + v + '%"></i></div>' +
-      '<b>' + v + '</b></div>';
+      '<div class="kvm-bar-track"><i style="width:' + (n * 10) + '%"></i></div>' +
+      '<b>' + n + '<i>/10</i></b></div>';
   }
 
   // ==== описание вкуса, своё у каждой позиции ====
@@ -1096,11 +1108,11 @@ window.KV = (function () {
   }
   function renderModal() {
     const body = document.querySelector('#kvm .kvm-body'); if (!body || !modal) return;
-    const prev = body.querySelector('.kvm-flavs');
-    const sc = prev ? prev.scrollTop : 0;
+    const prev = body.querySelector('.kvm-flavstrip');
+    const sc = prev ? prev.scrollLeft : 0;
     body.innerHTML = modalHTML(find(modal.id));
-    const list = body.querySelector('.kvm-flavs');
-    if (list) list.scrollTop = sc;
+    const strip = body.querySelector('.kvm-flavstrip');
+    if (strip) strip.scrollLeft = sc;
   }
   function modalHTML(item) {
     if (!item) return '';
@@ -1110,8 +1122,9 @@ window.KV = (function () {
     const r = ratingOf(item);
     const catObj = db.categories.find(c => c.id === item._cat);
 
+    // компактная шапка: категория, название, рейтинг, сердечко
     const head =
-      '<div class="kvm-head">' + photo(item) +
+      '<div class="kvm-head">' +
       '<div class="kvm-hmain">' +
         '<span class="kvm-cat">' + (catObj ? catName(catObj) : '') + '</span>' +
         '<h3 class="kvm-name">' + item.name + '</h3>' +
@@ -1122,49 +1135,60 @@ window.KV = (function () {
         (isFav(item.id) ? '♥' : '♡') + '</button>' +
       '</div>';
 
-    // выбранный вкус отдельной карточкой (высвечивается под шапкой)
-    const preview = hasFl ?
-      '<div class="kvm-pick">' +
-        '<span class="kvm-pick-lbl">' + t('selected') + '</span>' +
-        '<div class="kvm-pick-card' + (fl && fl.qty > 0 ? '' : ' off') + '">' +
-          '<span class="kvm-pick-ic">' + (flavorIcon(fl ? fl.name : '') || '🫙 ') + '</span>' +
-          '<span class="kvm-pick-name">' + (fl ? flavorName(fl) : t('pickFlavor')) + '</span>' +
-          (fl ? '<span class="kvm-pick-q">' + (fl.qty > 0 ? t('left', fl.qty) : t('qtyNone')) + '</span>' : '') +
-        '</div>' +
-      '</div>' : '';
+    // фото товара (в эскизе "фото с жижей")
+    const bigPhoto = '<div class="kvm-photo-big">' + photo(item) + '</div>';
 
+    // выбор вкуса горизонтальной полосой со скроллом
+    const flavStrip = hasFl ?
+      '<div class="kvm-sec-t">' + t('flavors') + ' · ' + item.flavors.length + '</div>' +
+      '<div class="kvm-flavstrip">' + item.flavors.map((f, i) => {
+        const have = f.qty > 0;
+        return '<button class="kvm-chip' + (i === modal.fl ? ' sel' : '') + (have ? '' : ' off') + '" data-fl-sel="' + i + '"' + (have ? '' : ' disabled') + '>' +
+          '<span class="kvm-chip-ic">' + (flavorIcon(f.name) || '•') + '</span>' +
+          '<span class="kvm-chip-n">' + flavorName(f) + '</span>' +
+          '<span class="kvm-chip-q">' + (have ? f.qty + ' ' + t('pcs') : t('qtyNone')) + '</span>' +
+        '</button>';
+      }).join('') + '</div>' : '';
+
+    // профиль вкуса по шкале 1..10
     const tp = fl ? tasteOf(item, fl) : null;
     const taste = tp ?
       '<div class="kvm-taste"><b>' + t('taste') + '</b>' +
         tasteBar(t('sweet'), tp.sweet) + tasteBar(t('cool'), tp.cool) + tasteBar(t('sour'), tp.sour) +
       '</div>' : '';
 
+    // описание выбранного вкуса
     const desc = fl ?
       '<div class="kvm-desc"><b>' + t('flavorDesc') + '</b><p>' + flavorDesc(item, fl) + '</p></div>' : '';
 
     const spec = specOf(item);
     const specLine = spec ? '<div class="kvm-spec">' + spec + '</div>' : '';
 
-    const flavs = hasFl ?
-      '<div class="kvm-sec-t">' + t('flavors') + ' · ' + item.flavors.length + '</div>' +
-      '<div class="kvm-flavs">' + item.flavors.map((f, i) => {
-        const have = f.qty > 0;
-        return '<button class="kvm-flav' + (i === modal.fl ? ' sel' : '') + (have ? '' : ' off') + '" data-fl-sel="' + i + '"' + (have ? '' : ' disabled') + '>' +
-          '<span class="kvm-flav-ic">' + (flavorIcon(f.name) || '•') + '</span>' +
-          '<span class="kvm-flav-n">' + flavorName(f) + '</span>' +
-          '<span class="kvm-flav-q">' + (have ? t('left', f.qty) : t('qtyNone')) + '</span>' +
-        '</button>';
-      }).join('') + '</div>' : '';
+    // выбранный вкус отдельной карточкой
+    const preview = hasFl ?
+      '<div class="kvm-pick"><span class="kvm-pick-lbl">' + t('selected') + '</span>' +
+        '<div class="kvm-pick-card' + (fl && fl.qty > 0 ? '' : ' off') + '">' +
+          '<span class="kvm-pick-ic">' + (flavorIcon(fl ? fl.name : '') || '🫙 ') + '</span>' +
+          '<span class="kvm-pick-name">' + (fl ? flavorName(fl) : t('pickFlavor')) + '</span>' +
+          (fl ? '<span class="kvm-pick-q">' + (fl.qty > 0 ? t('left', fl.qty) : t('qtyNone')) + '</span>' : '') +
+        '</div></div>' : '';
 
+    // кнопка в корзину и оптовая сетка цен
     const canAdd = hasFl ? !!(fl && fl.qty > 0) : qty(item) > 0;
     const addBtn = canAdd
       ? '<button class="kvm-add-cta" data-add="' + item.id + '"' + (hasFl ? ' data-fl="' + modal.fl + '"' : '') + '>' +
-          t('add') + (fl ? ' · ' + flavorName(fl) : '') + (item.price ? ' · ' + item.price + ' zł' : '') + '</button>'
+          t('add') + (item.price ? ' · ' + item.price + ' zł' : '') + '</button>'
       : (st === 'out'
           ? '<button class="kv-restock kvm-restock" data-notify="' + item.id + '">' + ui('notify') + '</button>'
           : '<button class="kvm-add-cta" disabled>' + t('chooseFirst') + '</button>');
+    const tiers = priceTiers(item);
+    const tiersHTML = tiers ?
+      '<div class="kvm-tiers">' + tiers.map(x =>
+        '<span class="kvm-tier"><b>' + x.q + '</b> ' + t('pcs') + '<em>' + x.p + ' zł</em></span>').join('') + '</div>' : '';
     const resBtn = st !== 'out' ? '<button class="kvm-res" data-res="' + item.id + '">' + t('reserve') + '</button>' : '';
+    const buy = '<div class="kvm-buy">' + preview + addBtn + tiersHTML + resBtn + '</div>';
 
+    // отзывы + форма
     const reviews = allReviews(item);
     const revList = reviews.map(rv =>
       '<div class="kv-rev"><span class="kv-rev-h">' + esc(rv.a) +
@@ -1182,9 +1206,13 @@ window.KV = (function () {
     const reviewsBlock = '<div class="kvm-reviews"><div class="kvm-sec-t">' + ui('reviews') + ' · ' + reviews.length + '</div>' +
       revList + revForm + '</div>';
 
-    return head + preview + taste + desc + specLine + flavs +
-      '<div class="kvm-actions">' + addBtn + resBtn + '</div>' +
-      reviewsBlock + relatedHTML(item);
+    // раскладка как в эскизе: слева фото/вкусы/отзывы, справа профиль/описание/корзина
+    return head +
+      '<div class="kvm-grid">' +
+        '<div class="kvm-col kvm-col-l">' + bigPhoto + flavStrip + reviewsBlock + '</div>' +
+        '<div class="kvm-col kvm-col-r">' + taste + desc + specLine + buy + '</div>' +
+      '</div>' +
+      relatedHTML(item);
   }
   function onModalClick(e) {
     const d = e.currentTarget;
@@ -1543,6 +1571,28 @@ body.kv-noscroll{overflow:hidden}
 .kvm-rev-name,.kvm-rev-text{background:var(--kv-field);border:1px solid var(--kv-line);color:var(--kv-text);border-radius:9px;padding:9px 11px;font-family:inherit;font-size:13px;width:100%;resize:vertical}
 .kvm-rev-send{align-self:flex-start;background:var(--kv-surface2);border:1px solid var(--kv-accent);color:var(--kv-accent-2,var(--kv-accent));border-radius:9px;padding:9px 16px;font-weight:800;font-size:12.5px;cursor:pointer;font-family:inherit}
 .kvm-mine{color:var(--kv-accent-2,var(--kv-accent));font-weight:700}
+.kvm-grid{display:grid;gap:16px;margin-top:16px;grid-template-columns:1fr}
+@media(min-width:620px){.kvm-grid{grid-template-columns:minmax(0,1fr) minmax(0,1.05fr)}}
+.kvm-col{min-width:0;display:flex;flex-direction:column;gap:14px}
+.kvm-col .kvm-taste,.kvm-col .kvm-desc,.kvm-col .kvm-reviews,.kvm-col .kvm-sec-t,.kvm-buy .kvm-pick{margin-top:0}
+.kvm-photo-big{border-radius:14px;overflow:hidden;background:#fff}
+.kvm-photo-big .kv-photo{aspect-ratio:1/1;width:100%;height:auto}
+.kvm-photo-big .kv-photo span{font-size:44px}
+.kvm-flavstrip{display:flex;gap:8px;overflow-x:auto;padding-bottom:5px;scrollbar-width:thin}
+.kvm-flavstrip::-webkit-scrollbar{height:6px}
+.kvm-flavstrip::-webkit-scrollbar-thumb{background:var(--kv-line);border-radius:99px}
+.kvm-chip{flex:0 0 auto;min-width:98px;max-width:150px;text-align:left;background:var(--kv-surface);border:1px solid var(--kv-line);border-radius:12px;padding:9px 11px;cursor:pointer;font-family:inherit;color:var(--kv-text);display:flex;flex-direction:column;gap:2px}
+.kvm-chip.sel{border-color:var(--kv-accent);box-shadow:inset 0 0 0 1px var(--kv-accent)}
+.kvm-chip.off{opacity:.5;cursor:default}
+.kvm-chip-ic{font-size:16px}
+.kvm-chip-n{font-weight:700;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kvm-chip-q{font-size:10.5px;color:var(--kv-muted);font-weight:700}
+.kvm-buy{display:flex;flex-direction:column;gap:9px}
+.kvm-tiers{display:flex;gap:7px;flex-wrap:wrap}
+.kvm-tier{flex:1;min-width:66px;text-align:center;background:var(--kv-surface);border:1px solid var(--kv-line);border-radius:10px;padding:7px 4px;font-size:11px;color:var(--kv-muted);font-weight:700}
+.kvm-tier b{display:block;font-size:15px;color:var(--kv-text)}
+.kvm-tier em{display:block;font-style:normal;color:var(--kv-accent-2,var(--kv-accent));font-weight:800;margin-top:1px}
+.kvm-bar>b i{font-style:normal;font-size:9px;opacity:.6}
 .kv-prof{width:34px;height:34px;border:1px solid var(--kv-line);background:var(--kv-surface);color:var(--kv-muted);border-radius:50%;cursor:pointer;display:grid;place-items:center;padding:0}
 .kv-prof:hover{color:var(--kv-accent);border-color:var(--kv-accent)}
 .kv-prof svg{width:17px;height:17px}
