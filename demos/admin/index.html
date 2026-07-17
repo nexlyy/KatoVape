@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KatoVape · Админка</title>
+<link rel="icon" type="image/png" href="../../data/photos/cat.png">
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://api.fontshare.com/v2/css?f[]=clash-display@500,600,700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#06090d;--panel:#0e151c;--panel2:#121b23;--line:#1e2b35;--line2:#2b3c48;
+  --mint:#63f5cf;--ink:#eef6f6;--txt:#dbe7e9;--mut:#93a4af;--red:#ff6f8a;--disp:'Clash Display',sans-serif}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--txt);font-family:'Hanken Grotesk',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:var(--mint)}
+.wrap{max-width:1100px;margin:0 auto;padding:22px 20px 60px}
+header{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:24px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:11px;font-family:var(--disp);font-weight:600;font-size:20px;color:var(--ink)}
+.brand img{width:36px;height:36px;border-radius:10px}
+.brand em{font-style:normal;color:var(--mint)}
+.who{font-size:13px;color:var(--mut)}
+.who b{color:var(--txt)}
+button{font-family:inherit;cursor:pointer}
+.btn{background:var(--mint);color:#032019;border:none;border-radius:11px;padding:11px 18px;font-weight:700;font-size:13.5px}
+.btn.ghost{background:transparent;border:1px solid var(--line2);color:var(--txt)}
+.btn:focus-visible{outline:2px solid var(--mint);outline-offset:2px}
+.login{max-width:420px;margin:12vh auto 0;text-align:center;background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:34px 28px}
+.login h1{font-family:var(--disp);font-weight:600;font-size:26px;color:var(--ink);margin-bottom:8px}
+.login p{color:var(--mut);font-size:14px;line-height:1.6;margin-bottom:22px}
+.login .row{display:flex;flex-direction:column;gap:12px}
+.tgwrap{display:flex;justify-content:center;min-height:40px}
+.err{color:var(--red);font-size:13px;margin-top:12px;min-height:18px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:22px}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px 18px}
+.stat b{font-family:var(--disp);font-size:26px;color:var(--mint);display:block}
+.stat span{font-size:12.5px;color:var(--mut)}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.tab{background:var(--panel);border:1px solid var(--line);color:var(--mut);border-radius:10px;padding:9px 15px;font-size:13px;font-weight:600}
+.tab.on{background:var(--mint);border-color:var(--mint);color:#032019}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px 20px;margin-bottom:16px}
+.card h2{font-family:var(--disp);font-weight:600;font-size:16px;color:var(--ink);margin-bottom:14px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line)}
+th{color:var(--mut);font-weight:600;font-size:11.5px;text-transform:uppercase;letter-spacing:.04em}
+td{color:var(--txt)}
+.tag{font-size:11px;font-weight:700;padding:3px 9px;border-radius:99px;background:rgba(99,245,207,.12);color:var(--mint)}
+.tag.new{background:rgba(111,225,255,.14);color:#6fe1ff}
+.muted{color:var(--mut)}
+.tools{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+textarea,input{background:#0a1017;border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:11px 13px;font-family:inherit;font-size:14px;width:100%}
+textarea:focus,input:focus{outline:none;border-color:var(--mint)}
+.hint{font-size:12px;color:var(--mut);margin-top:8px;line-height:1.5}
+.hidden{display:none}
+.wrapscroll{overflow-x:auto}
+</style>
+</head>
+<body>
+<div id="app" class="wrap"></div>
+
+<script src="../../shared/config.js?v=3"></script>
+<script>
+const CFG = window.KV_CONFIG || {};
+const API = (CFG.LOCAL_API || '').replace(/\/$/, '');   // на VPS укажи адрес API в config.js
+const app = document.getElementById('app');
+let token = localStorage.getItem('kv_local_token') || '';
+let me = null;
+
+async function api(path, opts) {
+  opts = opts || {};
+  const headers = Object.assign({ 'Content-Type': 'application/json' }, token ? { Authorization: 'Bearer ' + token } : {});
+  const res = await fetch(API + path, Object.assign({ headers }, opts));
+  const out = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(out.error || ('http ' + res.status));
+  return out;
+}
+const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+// ---- вход ----
+function loginView(errText) {
+  const bot = CFG.TELEGRAM_BOT;
+  const localHost = /^(127\.0\.0\.1|localhost)$/.test(location.hostname);
+  app.innerHTML = `<div class="login">
+    <h1>KatoVape · Админка</h1>
+    <p>Доступ только для менеджеров. Войдите через Telegram — ваш ID должен быть в списке администраторов.</p>
+    <div class="row">
+      ${bot && !localHost ? '<div class="tgwrap" id="tgwrap"></div>' : ''}
+      ${localHost ? '<button class="btn" id="demoAdmin">Демо-вход администратором</button>' : ''}
+    </div>
+    <div class="err" id="err">${errText ? esc(errText) : ''}</div>
+  </div>`;
+  const bot2 = CFG.TELEGRAM_BOT;
+  if (bot2 && !localHost) {
+    const s = document.createElement('script');
+    s.async = true; s.src = 'https://telegram.org/js/telegram-widget.js?22';
+    s.setAttribute('data-telegram-login', bot2); s.setAttribute('data-size', 'large');
+    s.setAttribute('data-onauth', 'onTgAuth(user)'); s.setAttribute('data-request-access', 'write');
+    document.getElementById('tgwrap').appendChild(s);
+  }
+  const demo = document.getElementById('demoAdmin');
+  if (demo) demo.onclick = () => exchange({ mode: 'demo', payload: { id: 5301671230, first_name: 'Admin', username: 'admin' } });
+}
+window.onTgAuth = u => exchange({ mode: 'widget', payload: u });
+async function exchange(body) {
+  try {
+    const out = await api('/auth/telegram', { method: 'POST', body: JSON.stringify(body) });
+    token = out.token; localStorage.setItem('kv_local_token', token);
+    if (!out.user || !out.user.is_admin) return loginView('Этот аккаунт не в списке администраторов.');
+    me = out.user; dashboard();
+  } catch (e) { loginView(e.message); }
+}
+
+// ---- дашборд ----
+let tab = 'orders';
+async function dashboard() {
+  let ov = {}; try { ov = await api('/admin/overview'); } catch (e) { return loginView(e.message); }
+  app.innerHTML = `
+    <header>
+      <div class="brand"><img src="../../data/photos/cat.png" alt="">KATO<em>VAPE</em> · админка</div>
+      <div class="who">Вы: <b>${esc(me.display_name || me.username)}</b> · id ${me.telegram_id} <button class="btn ghost" id="logout" style="margin-left:10px">Выйти</button></div>
+    </header>
+    <div class="stats">
+      <div class="stat"><b>${ov.orders}</b><span>заказов</span></div>
+      <div class="stat"><b>${ov.users}</b><span>пользователей</span></div>
+      <div class="stat"><b>${ov.reservations}</b><span>броней (${ov.waiting} ждут)</span></div>
+      <div class="stat"><b>${ov.bot_users}</b><span>в боте</span></div>
+    </div>
+    <div class="tabs" id="tabs">
+      ${['orders:Заказы','customers:Клиенты','demand:Спрос','reservations:Бронь','tools:Рассылка и синк'].map(x=>{const[k,l]=x.split(':');return `<button class="tab ${k===tab?'on':''}" data-t="${k}">${l}</button>`}).join('')}
+    </div>
+    <div id="panel"></div>`;
+  document.getElementById('logout').onclick = async () => { try { await api('/auth/logout', { method: 'POST' }); } catch (e) {} localStorage.removeItem('kv_local_token'); token = ''; me = null; loginView(); };
+  document.getElementById('tabs').onclick = e => { const b = e.target.closest('[data-t]'); if (b) { tab = b.dataset.t; dashboard(); } };
+  renderTab();
+}
+async function renderTab() {
+  const p = document.getElementById('panel'); if (!p) return;
+  p.innerHTML = '<div class="card"><span class="muted">Загрузка…</span></div>';
+  try {
+    if (tab === 'orders') {
+      const { items } = await api('/admin/orders');
+      p.innerHTML = card('Заказы', table(['#','Дата','Клиент','Город','Состав','Доставка','Сумма','Статус'],
+        items.map(o => [o.id, fdate(o.created_at), o.telegram_id ? 'tg:' + o.telegram_id : ('#' + (o.user_id||'?')), o.city,
+          (o.items||[]).join(', '), o.delivery + (o.address ? ' · ' + esc(o.address) : ''), (o.sum||0) + ' zł', `<span class="tag ${o.status==='new'?'new':''}">${o.status}</span>`])));
+    } else if (tab === 'customers') {
+      const { items } = await api('/admin/customers');
+      p.innerHTML = card('Клиенты', table(['#','Логин','Имя','Почта','Телефон','Telegram','Дата'],
+        items.map(u => [u.id, esc(u.username), esc(u.display_name||''), esc(u.email||'—'), esc(u.phone||'—'),
+          u.telegram_id ? (u.telegram_username ? '@'+esc(u.telegram_username) : u.telegram_id) : '—', fdate(u.created_at)])));
+    } else if (tab === 'demand') {
+      const { items } = await api('/admin/demand');
+      p.innerHTML = card('Спрос (просмотры / брони / заказы)', table(['Товар','Событие','Кол-во'],
+        items.map(d => [esc(d.product_id), d.event, d.n])));
+    } else if (tab === 'reservations') {
+      const { items } = await api('/admin/reservations');
+      p.innerHTML = card('Бронь', table(['#','Дата','Товар','Вкус','Город','Статус','Telegram'],
+        items.map(r => [r.id, fdate(r.created_at), esc(r.product_name||r.product_id), esc(r.flavor||'—'), r.city, `<span class="tag ${r.status==='waiting'?'new':''}">${r.status}</span>`, r.telegram_id||'—'])));
+    } else if (tab === 'tools') {
+      p.innerHTML = `
+        <div class="card"><h2>Рассылка</h2>
+          <textarea id="bctext" rows="4" placeholder="Текст рассылки всем, кто нажал /start у бота…"></textarea>
+          <div class="tools" style="margin-top:12px"><button class="btn" id="bcsend">Отправить всем</button><span class="muted" id="bcres"></span></div>
+          <div class="hint">Уйдёт только тем, кто запускал бота (/start). Поддерживается HTML.</div>
+        </div>
+        <div class="card"><h2>Синхронизация ассортимента</h2>
+          <div class="tools"><button class="btn ghost" id="syncbtn">Синхронизировать из Google Sheets</button><span class="muted" id="syncres"></span></div>
+          <div class="hint">Тянет опубликованную CSV-таблицу в базу и рассылает уведомления по броням на появившиеся позиции. Нужен env KV_SHEETS_CSV на сервере.</div>
+        </div>`;
+      document.getElementById('bcsend').onclick = async () => {
+        const text = document.getElementById('bctext').value.trim(); if (!text) return;
+        document.getElementById('bcres').textContent = 'Отправка…';
+        try { const r = await api('/admin/broadcast', { method: 'POST', body: JSON.stringify({ text }) }); document.getElementById('bcres').textContent = 'В очереди: ' + r.queued; }
+        catch (e) { document.getElementById('bcres').textContent = 'Ошибка: ' + e.message; }
+      };
+      document.getElementById('syncbtn').onclick = async () => {
+        document.getElementById('syncres').textContent = 'Синк…';
+        try { const r = await api('/admin/sync', { method: 'POST' }); document.getElementById('syncres').textContent = 'Обновлено строк: ' + r.rows; }
+        catch (e) { document.getElementById('syncres').textContent = 'Ошибка: ' + e.message; }
+      };
+    }
+  } catch (e) { p.innerHTML = card('Ошибка', '<span class="muted">' + esc(e.message) + '</span>'); }
+}
+function card(title, inner) { return `<div class="card"><h2>${esc(title)}</h2><div class="wrapscroll">${inner}</div></div>`; }
+function table(head, rows) {
+  if (!rows.length) return '<span class="muted">Пусто.</span>';
+  return `<table><thead><tr>${head.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${
+    rows.map(r=>`<tr>${r.map(c=>`<td>${c==null?'':c}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+}
+const fdate = s => { try { return new Date((s||'').replace(' ','T')+'Z').toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}); } catch { return s; } };
+
+// ---- старт ----
+(async function(){
+  if (!API) return loginView('Не задан адрес API (KV_CONFIG.LOCAL_API в config.js).');
+  if (token) { try { const r = await api('/auth/me'); if (r.user && r.user.is_admin) { me = r.user; return dashboard(); } } catch (e) {} }
+  loginView();
+})();
+</script>
+</body>
+</html>

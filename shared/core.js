@@ -472,12 +472,20 @@ window.KV = (function () {
     saveLastOrder();
     logOrder();
     track('checkout', { total: grandTotal(), delivery: cur.method });
+    // сохраняем заказ на бэкенде (для админки), если человек вошёл
+    if (window.KVAuth && KVAuth.apiOrder)
+      KVAuth.apiOrder({ city, sum: grandTotal(), delivery: cur.method, address: cur.addr || '',
+        items: cartLines().map(l => l.item.name + (l.flavor ? ' (' + flavorName(l.flavor) + ')' : '') + ' ×' + l.n) });
     tgSend(orderText(), t('copied'));
   }
 
   function reserve(id) {
     const item = find(id); if (!item) return;
-    tgSend(t('reserve') + ': ' + item.name + '. ' + pickup(), t('reserved'));
+    const fl = (modal && modal.id === id && item.flavors && modal.fl >= 0) ? item.flavors[modal.fl] : null;
+    tgSend(t('reserve') + ': ' + item.name + (fl ? ', ' + flavorName(fl) : '') + '. ' + pickup(), t('reserved'));
+    // бронь на бэкенд: бот уведомит, когда позиция появится в наличии
+    if (window.KVAuth && KVAuth.apiReserve)
+      KVAuth.apiReserve({ product_id: id, product_name: item.name, flavor: fl ? fl.name : '', city });
   }
 
   function toast(msg) {

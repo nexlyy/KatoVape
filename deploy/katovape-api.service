@@ -1,0 +1,19 @@
+[Unit]
+Description=KatoVape API + Telegram bot
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/katovape/server
+# изолированный Node 22 (на системе стоит Node 20 для mcr-bot, его не трогаем)
+ExecStart=/opt/katovape/node/bin/node index.mjs
+EnvironmentFile=/opt/katovape/.env
+Restart=always
+RestartSec=3
+User=root
+# БД и данные не должны затираться при обновлении кода
+ReadWritePaths=/opt/katovape
+
+[Install]
+WantedBy=multi-user.target

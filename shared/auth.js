@@ -183,14 +183,8 @@ window.KVAuth = (function () {
   // ---- Telegram: виджет на сайте и initData в мини-аппе ----
   async function telegramExchange(body) {
     if (LOCAL()) {
-      let fields;
-      if (body.mode === 'widget') fields = body.payload;
-      else {
-        const p = new URLSearchParams(body.initData);
-        const u = JSON.parse(p.get('user') || '{}');
-        fields = { id: u.id, username: u.username, first_name: u.first_name, photo_url: u.photo_url };
-      }
-      const out = await lapi('/auth/telegram', { method: 'POST', body: JSON.stringify(fields) });
+      // передаём подписанные данные как есть — сервер сам проверит подпись бот-токеном
+      const out = await lapi('/auth/telegram', { method: 'POST', body: JSON.stringify(body) });
       setLtoken(out.token); await afterAuth(); return { ok: true };
     }
     if (!configured() || !CFG.FUNCTIONS_URL) throw msg('noTg');
@@ -399,7 +393,7 @@ window.KVAuth = (function () {
       '<text x="64" y="86" font-size="58" text-anchor="middle" fill="#fff" font-family="Arial">✈</text></svg>';
     const u = { id: id, first_name: 'Telegram', username: 'demo_' + String(id).slice(-4),
       photo_url: 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svg))) };
-    telegramExchange({ mode: 'widget', payload: u })
+    telegramExchange({ mode: 'demo', payload: u })
       .then(() => { closeModal(); if (window.KV) KV.toast(tr('welcome')); })
       .catch(showErr);
   }
@@ -532,12 +526,27 @@ window.KVAuth = (function () {
     updateAll();
   }
 
+  // бронь и заказ уходят на бэкенд, только если человек вошёл (для брони нужен аккаунт).
+  // Возвращаем true, если запрос ушёл — ядро по этому решает, показывать ли доп-подсказку.
+  async function apiReserve(data) {
+    if (!LOCAL() || !user) return false;
+    try { await lapi('/reservations', { method: 'POST', body: JSON.stringify(data) }); return true; }
+    catch (e) { return false; }
+  }
+  async function apiOrder(data) {
+    if (!LOCAL() || !user) return false;
+    try { await lapi('/orders', { method: 'POST', body: JSON.stringify(data) }); return true; }
+    catch (e) { return false; }
+  }
+  function loggedIn() { return !!user; }
+
   if (document.readyState === 'loading')
     document.addEventListener('DOMContentLoaded', init);
   else init();
 
   return {
     init, signUp, signIn, signOut, openModal, decorateProfile,
+    apiReserve, apiOrder, loggedIn,
     _tgWidget: tgWidget,
     get user() { return user; }, get profile() { return profile; },
     get configured() { return configured(); }
