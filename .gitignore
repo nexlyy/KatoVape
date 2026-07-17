@@ -1,0 +1,5 @@
+# демо-бэкенд: локальная БД и зависимости не коммитим
+server/*.db
+server/*.db-journal
+server/*.db-wal
+server/node_modules/

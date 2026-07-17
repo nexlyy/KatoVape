@@ -14,6 +14,11 @@
 // Edge Function на сервере Supabase. Подробнее в AUTH_SETUP.md.
 
 window.KV_CONFIG = {
+  // BACKEND: 'local' — локальный SQL-сервер из папки server/ (демо для показа клиенту).
+  //          'supabase' — облачный Supabase (прод). '' — гостевой режим без входа.
+  BACKEND: 'local',
+  LOCAL_API: 'http://127.0.0.1:8790',   // адрес демо-бэкенда (node server/index.mjs)
+
   SUPABASE_URL: '',
   SUPABASE_ANON_KEY: '',
   FUNCTIONS_URL: '',

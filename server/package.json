@@ -1,0 +1,10 @@
+{
+  "name": "katovape-auth-demo",
+  "private": true,
+  "type": "module",
+  "version": "1.0.0",
+  "description": "Локальный SQL-бэкенд для демо регистрации KatoVape (node:sqlite, без зависимостей)",
+  "scripts": {
+    "start": "node index.mjs"
+  }
+}

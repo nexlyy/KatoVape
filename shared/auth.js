@@ -4,7 +4,8 @@
 // Пока config.js пустой, модуль сидит тихо и сайт работает как гостевой демо.
 window.KVAuth = (function () {
   const CFG = window.KV_CONFIG || {};
-  const configured = () => !!(CFG.SUPABASE_URL && CFG.SUPABASE_ANON_KEY);
+  const LOCAL = () => CFG.BACKEND === 'local' && !!CFG.LOCAL_API;
+  const configured = () => LOCAL() || !!(CFG.SUPABASE_URL && CFG.SUPABASE_ANON_KEY);
 
   let sb = null;        // клиент supabase-js
   let user = null;      // запись из auth.users
@@ -28,7 +29,8 @@ window.KVAuth = (function () {
       takenEmail: 'Эта почта уже зарегистрирована', takenPhone: 'Этот телефон уже зарегистрирован',
       noAccount: 'Аккаунт не найден', badCreds: 'Неверный логин или пароль',
       noTg: 'Вход через Telegram не настроен', tgFail: 'Не вышло войти через Telegram',
-      generic: 'Что-то пошло не так, попробуйте ещё раз', needTg: 'Открой в Telegram для входа'
+      generic: 'Что-то пошло не так, попробуйте ещё раз', needTg: 'Открой в Telegram для входа',
+      changeAvatar: 'Сменить фото', avatarBig: 'Фото слишком большое', hi: 'Привет'
     },
     uk: {
       account: 'Акаунт', login: 'Вхід', register: 'Реєстрація', logout: 'Вийти',
@@ -45,7 +47,8 @@ window.KVAuth = (function () {
       takenEmail: 'Ця пошта вже зареєстрована', takenPhone: 'Цей телефон вже зареєстрований',
       noAccount: 'Акаунт не знайдено', badCreds: 'Невірний логін або пароль',
       noTg: 'Вхід через Telegram не налаштований', tgFail: 'Не вдалося увійти через Telegram',
-      generic: 'Щось пішло не так, спробуйте ще раз', needTg: 'Відкрий у Telegram для входу'
+      generic: 'Щось пішло не так, спробуйте ще раз', needTg: 'Відкрий у Telegram для входу',
+      changeAvatar: 'Змінити фото', avatarBig: 'Фото завелике', hi: 'Привіт'
     },
     pl: {
       account: 'Konto', login: 'Logowanie', register: 'Rejestracja', logout: 'Wyloguj',
@@ -62,7 +65,8 @@ window.KVAuth = (function () {
       takenEmail: 'Ten e-mail jest już zarejestrowany', takenPhone: 'Ten telefon jest już zarejestrowany',
       noAccount: 'Nie znaleziono konta', badCreds: 'Błędny login lub hasło',
       noTg: 'Logowanie przez Telegram nie jest skonfigurowane', tgFail: 'Nie udało się zalogować przez Telegram',
-      generic: 'Coś poszło nie tak, spróbuj ponownie', needTg: 'Otwórz w Telegramie, aby się zalogować'
+      generic: 'Coś poszło nie tak, spróbuj ponownie', needTg: 'Otwórz w Telegramie, aby się zalogować',
+      changeAvatar: 'Zmień zdjęcie', avatarBig: 'Zdjęcie za duże', hi: 'Cześć'
     }
   };
   const lang = () => (window.KV && KV.lang) || 'ru';
@@ -99,6 +103,18 @@ window.KVAuth = (function () {
     return e && e.message ? e : msg('generic');
   }
 
+  // ---- локальный SQL-бэкенд (демо, папка server/) ----
+  function ltoken() { return localStorage.getItem('kv_local_token') || ''; }
+  function setLtoken(t) { if (t) localStorage.setItem('kv_local_token', t); else localStorage.removeItem('kv_local_token'); }
+  async function lapi(path, opts) {
+    opts = opts || {};
+    const headers = Object.assign({ 'Content-Type': 'application/json' }, ltoken() ? { Authorization: 'Bearer ' + ltoken() } : {});
+    const res = await fetch(CFG.LOCAL_API.replace(/\/$/, '') + path, Object.assign({ headers }, opts));
+    const out = await res.json().catch(() => ({}));
+    if (!res.ok) throw { message: out.error ? tr(out.error) : tr('generic'), code: out.error };
+    return out;
+  }
+
   // ---- регистрация ----
   async function signUp(form) {
     if (!configured()) throw msg('notConfigured');
@@ -111,6 +127,10 @@ window.KVAuth = (function () {
     if (password.length < 6) throw msg('errPass');
     if (email && !looksEmail(email)) throw msg('errEmail');
     if (phone && !looksPhone(phone)) throw msg('errPhone');
+    if (LOCAL()) {
+      const out = await lapi('/auth/register', { method: 'POST', body: JSON.stringify({ username, password, email, phone }) });
+      setLtoken(out.token); await afterAuth(); return { ok: true };
+    }
     const c = await client();
     // предварительная проверка занятости, финальную гарантию даёт уникальный индекс в БД
     const av = await c.rpc('login_availability', { p_username: username, p_email: email || null, p_phone: phone || null });
@@ -137,6 +157,10 @@ window.KVAuth = (function () {
     const id = (form.identifier || '').trim();
     const password = form.password || '';
     if (!id || !password) throw msg('errEmpty');
+    if (LOCAL()) {
+      const out = await lapi('/auth/login', { method: 'POST', body: JSON.stringify({ identifier: id, password }) });
+      setLtoken(out.token); await afterAuth(); return { ok: true };
+    }
     const c = await client();
     // сервер сам находит, какой auth-email стоит за этим логином/телефоном/почтой
     const r = await c.rpc('resolve_login', { p_identifier: looksPhone(id) ? normPhone(id) : id });
@@ -151,6 +175,17 @@ window.KVAuth = (function () {
 
   // ---- Telegram: виджет на сайте и initData в мини-аппе ----
   async function telegramExchange(body) {
+    if (LOCAL()) {
+      let fields;
+      if (body.mode === 'widget') fields = body.payload;
+      else {
+        const p = new URLSearchParams(body.initData);
+        const u = JSON.parse(p.get('user') || '{}');
+        fields = { id: u.id, username: u.username, first_name: u.first_name, photo_url: u.photo_url };
+      }
+      const out = await lapi('/auth/telegram', { method: 'POST', body: JSON.stringify(fields) });
+      setLtoken(out.token); await afterAuth(); return { ok: true };
+    }
     if (!configured() || !CFG.FUNCTIONS_URL) throw msg('noTg');
     const res = await fetch(CFG.FUNCTIONS_URL.replace(/\/$/, '') + '/telegram-auth', {
       method: 'POST',
@@ -176,7 +211,8 @@ window.KVAuth = (function () {
   }
 
   async function signOut() {
-    if (sb) { try { await sb.auth.signOut(); } catch (e) {} }
+    if (LOCAL()) { try { await lapi('/auth/logout', { method: 'POST' }); } catch (e) {} setLtoken(''); }
+    else if (sb) { try { await sb.auth.signOut(); } catch (e) {} }
     user = null; profile = null;
     if (window.KV) { KV.setProfileName('', true); }
     updateAll();
@@ -184,6 +220,13 @@ window.KVAuth = (function () {
 
   // ---- после входа: подтягиваем профиль и имя ----
   async function afterAuth() {
+    if (LOCAL()) {
+      try { const out = await lapi('/auth/me', {}); user = out.user; profile = out.user; }
+      catch (e) { user = null; profile = null; setLtoken(''); }
+      const nm = profile && (profile.display_name || profile.username);
+      if (window.KV && nm) KV.setProfileName(nm, true);
+      updateAll(); return;
+    }
     const c = await client();
     const g = await c.auth.getUser();
     user = (g && g.data && g.data.user) || null;
@@ -198,35 +241,91 @@ window.KVAuth = (function () {
     updateAll();
   }
 
-  // ---- перерисовка аккаунт-блока и профиля ----
+  // ---- перерисовка аккаунт-блока, шапки и профиля ----
   function updateAll() {
+    updateProfileBtn();
     const kvp = document.getElementById('kvp');
     if (kvp && !kvp.hidden && window.KV) { KV.refreshProfile(); return; }
     const mount = document.getElementById('kvp-auth');
     if (mount) decorateProfile(mount);
   }
 
-  // блок в панели профиля: либо аккаунт с кнопкой выхода, либо кнопка входа
+  // иконка профиля в шапке: если есть аватар (из Telegram или загруженный) — показываем его
+  const PROF_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>';
+  function avatarOf() { return (profile && profile.avatar) || (user && user.avatar) || null; }
+  function updateProfileBtn() {
+    const btn = document.querySelector('#profile .kv-prof'); if (!btn) return;
+    const av = avatarOf();
+    btn.innerHTML = av ? '<img class="kv-prof-ava" src="' + esc(av) + '" alt="">' : PROF_ICON;
+    btn.classList.toggle('has-ava', !!av);
+  }
+
+  // блок профиля: залогинен — аватар, имя, контакты, выход (и смена фото на сайте);
+  // гость — только кнопка входа. Старый «Гость / Ваше имя / Сохранить» больше не нужен.
   function decorateProfile(el) {
     if (!el) return;
+    const tg = window.Telegram && window.Telegram.WebApp;
+    const inTg = !!(tg && tg.initData);
     if (user) {
-      const p = profile || {};
+      const p = profile || user;
+      const name = p.display_name || p.username || '';
+      const av = p.avatar || null;
+      const initial = (name || 'K').trim()[0].toUpperCase();
+      const avaInner = av ? '<img src="' + esc(av) + '" alt="">' : '<span>' + esc(initial) + '</span>';
       const rows = [];
-      if (p.username) rows.push('<span>@' + esc(p.username) + '</span>');
+      if (p.username && !/^tg_\d+$/.test(p.username)) rows.push('<span>@' + esc(p.username) + '</span>');
       if (p.email) rows.push('<span>' + esc(p.email) + '</span>');
       if (p.phone) rows.push('<span>' + esc(p.phone) + '</span>');
       if (p.telegram_id) rows.push('<span class="kva-tg">✈ ' + tr('linked') +
         (p.telegram_username ? ' @' + esc(p.telegram_username) : '') + '</span>');
-      el.innerHTML = '<div class="kva-acc"><b>' + tr('account') + '</b>' +
-        '<div class="kva-acc-rows">' + rows.join('') + '</div>' +
-        '<button class="kva-logout">' + tr('logout') + '</button></div>';
+      el.innerHTML =
+        '<div class="kva-me">' +
+          '<div class="kva-ava' + (inTg ? '' : ' editable') + '">' + avaInner +
+            (inTg ? '' : '<span class="kva-ava-cam">✎</span><input type="file" accept="image/*" class="kva-ava-file" hidden>') +
+          '</div>' +
+          '<div class="kva-me-info"><b>' + esc(name) + '</b>' +
+            '<div class="kva-me-rows">' + rows.join('') + '</div></div>' +
+        '</div>' +
+        '<button class="kva-logout">' + tr('logout') + '</button>';
       el.querySelector('.kva-logout').onclick = signOut;
+      if (!inTg) {
+        const ava = el.querySelector('.kva-ava'), file = el.querySelector('.kva-ava-file');
+        ava.onclick = () => file.click();
+        file.onchange = () => { if (file.files[0]) pickAvatar(file.files[0]); };
+      }
     } else {
       el.innerHTML = '<div class="kva-guest"><p>' + tr('guestNote') + '</p>' +
         '<button class="kva-login-btn">' + tr('loginBtn') + '</button>' +
         (configured() ? '' : '<div class="kva-note">' + tr('notConfigured') + '</div>') + '</div>';
       el.querySelector('.kva-login-btn').onclick = openModal;
     }
+  }
+
+  // смена аватара на сайте: ужимаем до 256px, шлём как data-URL
+  function pickAvatar(file) {
+    const rd = new FileReader();
+    rd.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const max = 256, sc = Math.min(1, max / Math.max(img.width, img.height));
+        const cv = document.createElement('canvas');
+        cv.width = Math.round(img.width * sc); cv.height = Math.round(img.height * sc);
+        cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+        changeAvatar(cv.toDataURL('image/jpeg', 0.85))
+          .catch(e => { if (window.KV) KV.toast((e && e.message) || tr('generic')); });
+      };
+      img.src = rd.result;
+    };
+    rd.readAsDataURL(file);
+  }
+  async function changeAvatar(dataUrl) {
+    if (LOCAL()) {
+      const out = await lapi('/auth/avatar', { method: 'POST', body: JSON.stringify({ avatar: dataUrl }) });
+      user = out.user; profile = out.user; updateAll();
+      if (window.KV) KV.toast(tr('changeAvatar'));
+      return;
+    }
+    // supabase: загрузка в Storage делается на этапе продакшена (см. AUTH_SETUP.md)
   }
 
   // ---- модалка входа/регистрации ----
@@ -361,7 +460,21 @@ window.KVAuth = (function () {
 .kva-logout{width:100%;background:none;border:1px solid var(--kv-line);color:var(--kv-muted);border-radius:10px;padding:10px;font-weight:700;font-size:12.5px;cursor:pointer;font-family:inherit}
 .kva-guest p{font-size:12.5px;color:var(--kv-muted);line-height:1.5;margin-bottom:10px}
 .kva-login-btn{width:100%;background:var(--kv-accent);color:var(--kv-accent-ink);border:none;border-radius:12px;padding:13px;font-weight:800;font-size:13.5px;cursor:pointer;font-family:inherit}
-.kva-note{margin-top:10px}`;
+.kva-note{margin-top:10px}
+.kva-me{display:flex;align-items:center;gap:13px;margin-bottom:12px}
+.kva-ava{position:relative;width:56px;height:56px;border-radius:50%;overflow:hidden;background:var(--kv-accent);color:var(--kv-accent-ink);display:grid;place-items:center;font-weight:900;font-size:22px;flex-shrink:0}
+.kva-ava img{width:100%;height:100%;object-fit:cover}
+.kva-ava.editable{cursor:pointer}
+.kva-ava-cam{position:absolute;inset:0;display:flex;align-items:flex-end;justify-content:center;padding-bottom:4px;font-size:12px;color:#fff;background:linear-gradient(transparent 55%,rgba(0,0,0,.6));opacity:0;transition:.15s}
+.kva-ava.editable:hover .kva-ava-cam{opacity:1}
+.kva-me-info{min-width:0}
+.kva-me-info>b{font-size:16px;display:block;line-height:1.2}
+.kva-me-rows{display:flex;flex-direction:column;gap:2px;margin-top:3px}
+.kva-me-rows span{font-size:12.5px;color:var(--kv-muted)}
+.kva-me-rows .kva-tg{color:var(--kv-accent-2,var(--kv-accent));font-weight:700}
+.kva-logout{width:100%;background:none;border:1px solid var(--kv-line);color:var(--kv-muted);border-radius:10px;padding:10px;font-weight:700;font-size:12.5px;cursor:pointer;font-family:inherit}
+.kv-prof.has-ava{padding:0;overflow:hidden}
+.kv-prof-ava{width:100%;height:100%;object-fit:cover;border-radius:50%}`;
     const s = document.createElement('style');
     s.id = 'kva-css'; s.textContent = css;
     (document.head || document.documentElement).appendChild(s);
@@ -370,6 +483,10 @@ window.KVAuth = (function () {
   async function init() {
     injectCSS();
     if (!configured()) { ready = true; updateAll(); return; }
+    if (LOCAL()) {
+      try { if (ltoken()) await afterAuth(); else await tgInitData(); } catch (e) {}
+      ready = true; updateAll(); return;
+    }
     try {
       const c = await client();
       const s = await c.auth.getSession();

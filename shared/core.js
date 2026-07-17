@@ -1307,10 +1307,6 @@ window.KV = (function () {
 
     d.querySelector('.kvp-body').innerHTML =
       '<div id="kvp-auth"></div>' +
-      '<div class="kvp-user"><div class="kvp-ava">' + avatar + '</div>' +
-        '<div class="kvp-uinfo"><b>' + (esc(name) || t('guest')) + '</b><span>' + uname + '</span></div></div>' +
-      '<div class="kvp-name"><input class="kvp-name-i" type="text" placeholder="' + t('yourName') + '" value="' + esc(name) + '">' +
-        '<button class="kvp-name-save" disabled>' + t('save') + '</button></div>' +
       '<div class="kvp-stats">' +
         '<div><b>' + orders.length + '</b><span>' + t('ordersN') + '</span></div>' +
         '<div><b>' + favList.length + '</b><span>' + t('favsN') + '</span></div>' +
