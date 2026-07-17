@@ -45,9 +45,14 @@ html[data-theme="light"] .aura{background:radial-gradient(120% 80% at 50% 118%,r
 .wrap{max-width:1160px;margin:0 auto;padding:0 clamp(18px,4vw,34px);position:relative;z-index:1}
 header,main,footer{position:relative;z-index:1}
 h1,h2{font-family:var(--disp);font-weight:600;letter-spacing:-.02em}
-button{font-family:inherit}
+button{font-family:inherit;cursor:pointer}
+button:disabled{cursor:default}
 a{color:inherit;text-decoration:none}
 ::selection{background:rgba(99,245,207,.28);color:var(--ink)}
+/* единый отклик на нажатие и видимый фокус для клавиатуры/доступности */
+.kv-city:active,.kv-theme:active,.cartbtn:active,.chip:active{transform:translateY(1px)}
+a:focus-visible,button:focus-visible,input:focus-visible,[tabindex]:focus-visible{
+  outline:2px solid var(--mint);outline-offset:2px;border-radius:10px}
 
 /* ── header ─────────────────────────────────────────── */
 header{position:sticky;top:0;z-index:var(--z-sticky);background:color-mix(in srgb,var(--bg) 88%,transparent);
