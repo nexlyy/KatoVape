@@ -274,13 +274,13 @@ footer a{color:var(--mint)}
     ctx.setTransform(1,0,0,1,0,0); ctx.globalAlpha=1; ctx.globalCompositeOperation='source-over';
     ctx.clearRect(0,0,W,H);
     for(let i=0;i<L.length;i++) layer(L[i],i,t);
-    // маска: ровное присутствие дыма по кадру, чуть плотнее по краям (лёгкая виньетка).
-    // текст читается за счёт светлого цвета шрифта, товары — за счёт непрозрачных карточек
+    // маска: пар поднимается снизу вверх — густо у нижней кромки (источник),
+    // редеет к верху, так шапка и герой остаются чистыми
     ctx.globalAlpha=1; ctx.globalCompositeOperation='destination-in';
-    const rgr=ctx.createRadialGradient(W*0.5,H*0.44,Math.min(W,H)*0.2, W*0.5,H*0.44,Math.max(W,H)*0.8);
-    rgr.addColorStop(0,'rgba(0,0,0,.34)'); rgr.addColorStop(.55,'rgba(0,0,0,.42)');
-    rgr.addColorStop(1,'rgba(0,0,0,.7)');
-    ctx.fillStyle=rgr; ctx.fillRect(0,0,W,H);
+    const gr=ctx.createLinearGradient(0,0,0,H);
+    gr.addColorStop(0,'rgba(0,0,0,.04)'); gr.addColorStop(.4,'rgba(0,0,0,.15)');
+    gr.addColorStop(.72,'rgba(0,0,0,.42)'); gr.addColorStop(1,'rgba(0,0,0,.8)');
+    ctx.fillStyle=gr; ctx.fillRect(0,0,W,H);
     ctx.globalCompositeOperation='source-over';
   }
   function loop(t){ draw(t); raf=requestAnimationFrame(loop); }
