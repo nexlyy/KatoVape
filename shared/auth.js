@@ -4,7 +4,14 @@
 // Пока config.js пустой, модуль сидит тихо и сайт работает как гостевой демо.
 window.KVAuth = (function () {
   const CFG = window.KV_CONFIG || {};
-  const LOCAL = () => CFG.BACKEND === 'local' && !!CFG.LOCAL_API;
+  // локальный бэкенд включаем, только когда сама страница открыта локально,
+  // иначе публичный сайт (GitHub Pages) не должен стучаться на localhost
+  const LOCAL = () => {
+    if (CFG.BACKEND !== 'local' || !CFG.LOCAL_API) return false;
+    const apiLocal = /^https?:\/\/(127\.0\.0\.1|localhost|0\.0\.0\.0)/.test(CFG.LOCAL_API);
+    const hostLocal = /^(127\.0\.0\.1|localhost|0\.0\.0\.0|\[::1\])$/.test(location.hostname);
+    return apiLocal ? hostLocal : true;
+  };
   const configured = () => LOCAL() || !!(CFG.SUPABASE_URL && CFG.SUPABASE_ANON_KEY);
 
   let sb = null;        // клиент supabase-js
