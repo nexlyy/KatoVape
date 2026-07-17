@@ -69,6 +69,66 @@ window.KV = (function () {
     }
   };
 
+  // строки для профиля, окна вкуса, отзывов и доставки. Держим их тут же,
+  // рядом с базовыми, чтобы t() находил их без правки content.json
+  const EXTRA = {
+    ru: {
+      profile: 'Профиль', guest: 'Гость', yourName: 'Ваше имя', save: 'Сохранить',
+      myOrders: 'Мои заказы', myReviews: 'Мои отзывы', myFavs: 'Избранное',
+      noFavs: 'Пока пусто. Жми на сердечко в карточке товара.',
+      noReviews: 'Вы ещё не оставляли отзывов.', noOrders: 'Заказов пока нет.',
+      clearData: 'Очистить мои данные', cleared: 'Данные очищены',
+      ordersN: 'заказов', reviewsN: 'отзывов', favsN: 'в избранном',
+      pickFlavor: 'Выберите вкус', selected: 'Выбрано', chooseFirst: 'Сначала выберите вкус',
+      taste: 'Вкусовой профиль', sweet: 'Сладость', cool: 'Холодок', sour: 'Кислинка',
+      flavorDesc: 'Описание вкуса', addFav: 'В избранное', inFav: 'В избранном',
+      reviewAdd: 'Оставить отзыв', reviewName: 'Имя', reviewText: 'Что понравилось?',
+      reviewSend: 'Отправить', reviewThanks: 'Спасибо за отзыв!', reviewYourRate: 'Ваша оценка',
+      reviewNoText: 'Напишите пару слов', you: 'вы',
+      delivery: 'Получение', delPickup: 'Самовывоз', delInpost: 'Доставка InPost',
+      delCourier: 'Курьер', delFree: 'бесплатно', delivPay: 'Доставка',
+      inpostPh: 'Номер посылкомата (напр. KAT01M)', courierPh: 'Адрес доставки',
+      needAddr: 'Укажите адрес доставки', needPaczko: 'Укажите номер посылкомата'
+    },
+    uk: {
+      profile: 'Профіль', guest: 'Гість', yourName: 'Ваше ім’я', save: 'Зберегти',
+      myOrders: 'Мої замовлення', myReviews: 'Мої відгуки', myFavs: 'Обране',
+      noFavs: 'Поки порожньо. Тисни на сердечко в картці товару.',
+      noReviews: 'Ви ще не залишали відгуків.', noOrders: 'Замовлень поки немає.',
+      clearData: 'Очистити мої дані', cleared: 'Дані очищено',
+      ordersN: 'замовлень', reviewsN: 'відгуків', favsN: 'в обраному',
+      pickFlavor: 'Оберіть смак', selected: 'Обрано', chooseFirst: 'Спочатку оберіть смак',
+      taste: 'Смаковий профіль', sweet: 'Солодкість', cool: 'Холодок', sour: 'Кислинка',
+      flavorDesc: 'Опис смаку', addFav: 'В обране', inFav: 'В обраному',
+      reviewAdd: 'Залишити відгук', reviewName: 'Ім’я', reviewText: 'Що сподобалось?',
+      reviewSend: 'Надіслати', reviewThanks: 'Дякуємо за відгук!', reviewYourRate: 'Ваша оцінка',
+      reviewNoText: 'Напишіть кілька слів', you: 'ви',
+      delivery: 'Отримання', delPickup: 'Самовивіз', delInpost: 'Доставка InPost',
+      delCourier: 'Кур’єр', delFree: 'безкоштовно', delivPay: 'Доставка',
+      inpostPh: 'Номер поштомата (напр. KAT01M)', courierPh: 'Адреса доставки',
+      needAddr: 'Вкажіть адресу доставки', needPaczko: 'Вкажіть номер поштомата'
+    },
+    pl: {
+      profile: 'Profil', guest: 'Gość', yourName: 'Twoje imię', save: 'Zapisz',
+      myOrders: 'Moje zamówienia', myReviews: 'Moje opinie', myFavs: 'Ulubione',
+      noFavs: 'Na razie pusto. Kliknij serduszko w karcie produktu.',
+      noReviews: 'Nie dodałeś jeszcze opinii.', noOrders: 'Brak zamówień.',
+      clearData: 'Wyczyść moje dane', cleared: 'Dane wyczyszczone',
+      ordersN: 'zamówień', reviewsN: 'opinii', favsN: 'w ulubionych',
+      pickFlavor: 'Wybierz smak', selected: 'Wybrano', chooseFirst: 'Najpierw wybierz smak',
+      taste: 'Profil smaku', sweet: 'Słodycz', cool: 'Chłodek', sour: 'Kwaśność',
+      flavorDesc: 'Opis smaku', addFav: 'Do ulubionych', inFav: 'W ulubionych',
+      reviewAdd: 'Dodaj opinię', reviewName: 'Imię', reviewText: 'Co Ci się podobało?',
+      reviewSend: 'Wyślij', reviewThanks: 'Dziękujemy za opinię!', reviewYourRate: 'Twoja ocena',
+      reviewNoText: 'Napisz kilka słów', you: 'ty',
+      delivery: 'Odbiór', delPickup: 'Odbiór osobisty', delInpost: 'Dostawa InPost',
+      delCourier: 'Kurier', delFree: 'gratis', delivPay: 'Dostawa',
+      inpostPh: 'Numer paczkomatu (np. KAT01M)', courierPh: 'Adres dostawy',
+      needAddr: 'Podaj adres dostawy', needPaczko: 'Podaj numer paczkomatu'
+    }
+  };
+  for (const l in EXTRA) Object.assign(STR[l], EXTRA[l]);
+
   // словарь для перевода вкусов пословно: ключи в нижнем регистре, регистр
   // первой буквы восстанавливается автоматически. Английские и марочные слова
   // не трогаем (regex ловит только кириллицу).
@@ -128,6 +188,14 @@ window.KV = (function () {
   let content = {};                  // тексты разделов, промо, самовывоз
   let appliedPromo = null;           // применённый промокод {code, type, value}
   let filters = { brand: '', maxPrice: 0 };
+  let modal = null;                  // открытая карточка товара {id, fl, rate}
+  let delivery = null;               // способ получения {method, addr}
+  let profileName = '';              // имя из профиля (или из Telegram)
+  const DELIVERY_DEF = [             // фолбэк, если в content.json нет блока delivery
+    { id: 'pickup', fee: 0 },
+    { id: 'inpost', fee: 12 },
+    { id: 'courier', fee: 18 }
+  ];
 
   // локализованное значение: объект {ru,uk,pl} -> строка текущего языка
   function loc(o) { return o ? (o[lang] || o.ru || '') : ''; }
@@ -351,8 +419,10 @@ window.KV = (function () {
     const disc = discount();
     const discLine = disc
       ? '\n' + ui('discount') + (appliedPromo ? ' ' + appliedPromo.code : '') + ': −' + disc + ' zł' : '';
+    const fee = deliveryFee();
+    const feeLine = fee ? '\n' + t('delivPay') + ': +' + fee + ' zł' : '';
     return t('order') + ' KatoVape (' + cityName(currentCity) + '):\n' + lines.join('\n') +
-      discLine + '\n' + t('total') + ': ' + grandTotal() + ' zł\n' + pickup();
+      discLine + feeLine + '\n' + t('total') + ': ' + grandTotal() + ' zł\n' + deliveryLine();
   }
 
   function copyText(text) {
@@ -384,8 +454,12 @@ window.KV = (function () {
 
   function checkout() {
     if (!cartCount()) return;
+    const cur = currentDelivery();
+    if (cur.method === 'inpost' && !(cur.addr || '').trim()) { toast(t('needPaczko')); openCart(); return; }
+    if (cur.method === 'courier' && !(cur.addr || '').trim()) { toast(t('needAddr')); openCart(); return; }
     saveLastOrder();
-    track('checkout', { total: grandTotal() });
+    logOrder();
+    track('checkout', { total: grandTotal(), delivery: cur.method });
     tgSend(orderText(), t('copied'));
   }
 
@@ -432,9 +506,15 @@ window.KV = (function () {
       }
       if (e.target.closest('.kvd-ref button')) inviteFriend();
       if (e.target.closest('.kvd-repeat')) repeatOrder();
+      const dopt = e.target.closest('[data-deliv]');
+      if (dopt) { setDelivery(dopt.dataset.deliv, undefined); drawDrawer(); }
       if (e.target.closest('.kvd-go')) checkout();
       if (e.target.closest('.kvd-clear')) { cart = {}; appliedPromo = null; saveCart(); }
     };
+    // адрес доставки печатают в поле, полный перерисов сбил бы фокус
+    d.addEventListener('input', e => {
+      if (e.target.classList.contains('kvd-daddr')) setDelivery(undefined, e.target.value);
+    });
   }
 
   function drawDrawer() {
@@ -454,11 +534,14 @@ window.KV = (function () {
     const extra = d.querySelector('.kvd-extra');
     if (lines.length) {
       const disc = discount();
+      const fee = deliveryFee();
       const r = content.referral;
       extra.innerHTML =
+        deliveryHTML() +
         '<div class="kvd-promo"><input type="text" placeholder="' + ui('promoPh') +
           '" value="' + (appliedPromo ? appliedPromo.code : '') + '"><button class="kvd-promo-go">' + ui('promoApply') + '</button></div>' +
         (disc ? '<div class="kvd-disc"><span>' + ui('discount') + '</span><span>−' + disc + ' zł</span></div>' : '') +
+        (fee ? '<div class="kvd-disc kvd-fee"><span>' + t('delivPay') + '</span><span>+' + fee + ' zł</span></div>' : '') +
         (r ? '<div class="kvd-ref"><b>' + loc(r.title) + '</b>' + loc(r.text) +
           '<div class="kvd-ref-p">' + (referralReady() ? loc(r.done) : loc(r.progress).replace('{n}', invitedCount()).replace('{need}', r.need)) + '</div>' +
           (referralReady() ? '' : '<button>' + loc(r.invite) + '</button>') + '</div>' : '');
@@ -586,9 +669,16 @@ window.KV = (function () {
   function hashId(s) { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0; return h; }
   function ratingOf(item) {
     const m = meta[item.id];
-    if (m && m.rating) return m.rating;
-    const h = hashId(item.id);
-    return { avg: +(4.3 + (h % 7) / 10).toFixed(1), count: 5 + (h % 55) };
+    let avg, count;
+    if (m && m.rating) { avg = m.rating.avg; count = m.rating.count; }
+    else { const h = hashId(item.id); avg = +(4.3 + (h % 7) / 10).toFixed(1); count = 5 + (h % 55); }
+    const ur = userReviews(item.id);
+    if (ur.length) {
+      const sum = avg * count + ur.reduce((s, x) => s + (x.r || 5), 0);
+      count += ur.length;
+      avg = +(sum / count).toFixed(1);
+    }
+    return { avg, count };
   }
   function starsHTML(item) {
     if (status(item) === 'out') return '';
@@ -723,7 +813,7 @@ window.KV = (function () {
     if (referralReady() && content.referral) d += content.referral.reward;
     return Math.min(d, sub);
   }
-  function grandTotal() { return Math.max(cartTotal() - discount(), 0); }
+  function grandTotal() { return Math.max(cartTotal() - discount(), 0) + deliveryFee(); }
 
   // ==== повтор заказа (3) ====
   function lastOrderKey() { return 'kv_last_' + city; }
@@ -866,6 +956,458 @@ window.KV = (function () {
     el.onclick = e => { if (e.target === el) close(); };
   }
 
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"]/g, c =>
+      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  }
+
+  // ==== вкусовой профиль: сладость / холодок / кислинка (0..100) ====
+  // считаем по названию вкуса. Если у вкуса задан taste в базе, берём его.
+  function normTaste(o) {
+    const c = v => Math.max(4, Math.min(100, Math.round(v || 0)));
+    return { sweet: c(o.sweet), cool: c(o.cool), sour: c(o.sour) };
+  }
+  function tasteOf(item, flavor) {
+    if (flavor && flavor.taste) return normTaste(flavor.taste);
+    const nm = ((flavor && flavor.name) || item.name || '').toLowerCase();
+    const has = re => re.test(nm);
+    let sweet = 55, cool = 12, sour = 12;
+    if (has(/лёд|лед|лід|ice|холод|frost/)) cool = 82;
+    if (has(/мят|mint|м’ят|mięt|peppermint/)) cool = Math.max(cool, 68);
+    if (has(/двойн|extra|ultra|max/)) cool += 6;
+    if (has(/кисл|sour/)) sour = 78;
+    if (has(/лайм|lime|лимон|lemon|cytryn|limonk/)) sour = Math.max(sour, 62);
+    if (has(/грейпфрут|grapefruit|grejpfrut|клюкв|żurawin|журавлин|барбарис|berberys|смородин|porzeczk|вишн|cherry|wiśni|ежевик|jeżyn|ожин/)) sour = Math.max(sour, 46);
+    if (has(/яблок|apple|jabłk/)) sour = Math.max(sour, 40);
+    if (has(/сахар|цукр|sweet|cukr|жвачк|guma|жуйк|кола|cola|энергет|energy|energetyk|манго|mango|банан|banana|виноград|grape|winogron|клубник|truskaw|полуниц|персик|peach|brzoskwin|дын|melon|груш|pear|gruszk|ананас|pineapple|ananas|личи|liczi|лічі|питай|pitay/)) sweet = 82;
+    if (has(/табак|tobacco|tytoń/)) { sweet = 30; cool = Math.min(cool, 18); }
+    if (has(/мят|mint|mięt/) && !has(/жвачк|guma/)) sweet = Math.min(sweet, 44);
+    const h = hashId(nm);
+    sweet += (h % 7) - 3; cool += (h % 5) - 2; sour += (h % 5) - 2;
+    return normTaste({ sweet, cool, sour });
+  }
+  function tasteBar(label, v) {
+    return '<div class="kvm-bar"><span>' + label + '</span>' +
+      '<div class="kvm-bar-track"><i style="width:' + v + '%"></i></div>' +
+      '<b>' + v + '</b></div>';
+  }
+
+  // ==== описание вкуса, своё у каждой позиции ====
+  // берём переведённое название вкуса и подбираем концовку по профилю.
+  // без длинных тире, двоеточие вместо них
+  const DESC_LEAD = {
+    cool: { ru: 'ледяная свежесть и долгий холодок', uk: 'крижана свіжість і довгий холодок', pl: 'lodowa świeżość i długi chłodek' },
+    sour: { ru: 'яркая кислинка и сочность', uk: 'яскрава кислинка й соковитість', pl: 'wyraźna kwaskowatość i soczystość' },
+    sweet: { ru: 'насыщенный сладкий вкус', uk: 'насичений солодкий смак', pl: 'intensywny słodki smak' },
+    balanced: { ru: 'мягкий сбалансированный вкус', uk: 'м’який збалансований смак', pl: 'łagodny, zrównoważony smak' },
+    tobacco: { ru: 'тёплый табачный вкус без приторности', uk: 'теплий тютюновий смак без нудотності', pl: 'ciepły tytoniowy smak bez mdłości' }
+  };
+  function flavorDesc(item, flavor) {
+    const ov = flavor && flavor.desc;
+    if (ov) return typeof ov === 'string' ? ov : (ov[lang] || ov.ru);
+    const nm = flavor ? flavorName(flavor) : '';
+    const raw = ((flavor && flavor.name) || '').toLowerCase();
+    const tp = tasteOf(item, flavor);
+    let key = 'balanced';
+    if (/табак|tobacco|tytoń/.test(raw)) key = 'tobacco';
+    else if (tp.cool >= 65) key = 'cool';
+    else if (tp.sour >= 58) key = 'sour';
+    else if (tp.sweet >= 72) key = 'sweet';
+    const lead = DESC_LEAD[key][lang] || DESC_LEAD[key].ru;
+    if (!nm) return lead[0].toUpperCase() + lead.slice(1) + '.';
+    return nm + ': ' + lead + '.';
+  }
+
+  // ==== избранное ====
+  function favs() { try { return JSON.parse(localStorage.getItem('kv_favs') || '[]'); } catch (e) { return []; } }
+  function isFav(id) { return favs().includes(id); }
+  function toggleFav(id) {
+    let f = favs();
+    f = f.includes(id) ? f.filter(x => x !== id) : f.concat(id);
+    localStorage.setItem('kv_favs', JSON.stringify(f));
+    return f.includes(id);
+  }
+
+  // ==== отзывы пользователей поверх отзывов из meta.json ====
+  function revKey(id) { return 'kv_rev_' + id; }
+  function userReviews(id) { try { return JSON.parse(localStorage.getItem(revKey(id)) || '[]'); } catch (e) { return []; } }
+  function addReview(id, rate, text, name) {
+    const list = userReviews(id);
+    list.unshift({ a: (name || profileName || t('you')).trim() || t('you'), r: rate, t: text, ts: Date.now(), mine: true });
+    localStorage.setItem(revKey(id), JSON.stringify(list));
+  }
+  function allReviews(item) {
+    const m = meta[item.id];
+    return userReviews(item.id).concat((m && m.reviews) || []);
+  }
+  function myReviewsAll() {
+    const out = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.indexOf('kv_rev_') === 0) {
+        const id = k.slice(7), item = find(id);
+        userReviews(id).forEach(r => out.push({ id, item, r }));
+      }
+    }
+    return out.sort((a, b) => (b.r.ts || 0) - (a.r.ts || 0));
+  }
+
+  function starsRow(r) {
+    const full = Math.round(r.avg);
+    let s = '';
+    for (let i = 1; i <= 5; i++) s += '<span class="kv-star' + (i <= full ? ' on' : '') + '">★</span>';
+    return '<span class="kv-stars">' + s + '<i>' + r.avg.toFixed(1) + ' · ' + r.count + '</i></span>';
+  }
+
+  // ==== окно товара: выбор вкуса, профиль, описание, отзывы ====
+  function ensureModal() {
+    if (document.getElementById('kvm')) return;
+    const d = document.createElement('div');
+    d.id = 'kvm'; d.className = 'kvm'; d.hidden = true;
+    d.innerHTML = '<div class="kvm-box"><button class="kvm-x" aria-label="close">&times;</button><div class="kvm-body"></div></div>';
+    document.body.appendChild(d);
+    d.addEventListener('click', onModalClick);
+    d.addEventListener('input', e => {
+      if (!modal) return;
+      if (e.target.classList.contains('kvm-rev-name')) modal.name = e.target.value;
+      if (e.target.classList.contains('kvm-rev-text')) modal.text = e.target.value;
+    });
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && !d.hidden) closeProduct();
+    });
+  }
+  function openProduct(id) {
+    const item = find(id); if (!item) return;
+    const hasFl = !!(item.flavors && item.flavors.length);
+    let fl = -1;
+    if (hasFl) { fl = item.flavors.findIndex(f => f.qty > 0); if (fl < 0) fl = 0; }
+    modal = { id, fl, rate: 0, name: profileName || '', text: '' };
+    ensureModal();
+    renderModal();
+    const d = document.getElementById('kvm');
+    d.hidden = false; d.querySelector('.kvm-box').scrollTop = 0;
+    document.body.classList.add('kv-noscroll');
+    track('open_product', { id });
+  }
+  function closeProduct() {
+    const d = document.getElementById('kvm'); if (d) d.hidden = true;
+    document.body.classList.remove('kv-noscroll');
+    modal = null;
+  }
+  function renderModal() {
+    const body = document.querySelector('#kvm .kvm-body'); if (!body || !modal) return;
+    const prev = body.querySelector('.kvm-flavs');
+    const sc = prev ? prev.scrollTop : 0;
+    body.innerHTML = modalHTML(find(modal.id));
+    const list = body.querySelector('.kvm-flavs');
+    if (list) list.scrollTop = sc;
+  }
+  function modalHTML(item) {
+    if (!item) return '';
+    const hasFl = !!(item.flavors && item.flavors.length);
+    const fl = hasFl && modal.fl >= 0 ? item.flavors[modal.fl] : null;
+    const st = status(item);
+    const r = ratingOf(item);
+    const catObj = db.categories.find(c => c.id === item._cat);
+
+    const head =
+      '<div class="kvm-head">' + photo(item) +
+      '<div class="kvm-hmain">' +
+        '<span class="kvm-cat">' + (catObj ? catName(catObj) : '') + '</span>' +
+        '<h3 class="kvm-name">' + item.name + '</h3>' +
+        badgesHTML(item) +
+        '<div class="kvm-hrow"><span class="kvm-price">' + (price(item) || '') + '</span>' + starsRow(r) + '</div>' +
+      '</div>' +
+      '<button class="kvm-fav' + (isFav(item.id) ? ' on' : '') + '" data-fav="' + item.id + '" aria-label="fav">' +
+        (isFav(item.id) ? '♥' : '♡') + '</button>' +
+      '</div>';
+
+    // выбранный вкус отдельной карточкой (высвечивается под шапкой)
+    const preview = hasFl ?
+      '<div class="kvm-pick">' +
+        '<span class="kvm-pick-lbl">' + t('selected') + '</span>' +
+        '<div class="kvm-pick-card' + (fl && fl.qty > 0 ? '' : ' off') + '">' +
+          '<span class="kvm-pick-ic">' + (flavorIcon(fl ? fl.name : '') || '🫙 ') + '</span>' +
+          '<span class="kvm-pick-name">' + (fl ? flavorName(fl) : t('pickFlavor')) + '</span>' +
+          (fl ? '<span class="kvm-pick-q">' + (fl.qty > 0 ? t('left', fl.qty) : t('qtyNone')) + '</span>' : '') +
+        '</div>' +
+      '</div>' : '';
+
+    const tp = fl ? tasteOf(item, fl) : null;
+    const taste = tp ?
+      '<div class="kvm-taste"><b>' + t('taste') + '</b>' +
+        tasteBar(t('sweet'), tp.sweet) + tasteBar(t('cool'), tp.cool) + tasteBar(t('sour'), tp.sour) +
+      '</div>' : '';
+
+    const desc = fl ?
+      '<div class="kvm-desc"><b>' + t('flavorDesc') + '</b><p>' + flavorDesc(item, fl) + '</p></div>' : '';
+
+    const spec = specOf(item);
+    const specLine = spec ? '<div class="kvm-spec">' + spec + '</div>' : '';
+
+    const flavs = hasFl ?
+      '<div class="kvm-sec-t">' + t('flavors') + ' · ' + item.flavors.length + '</div>' +
+      '<div class="kvm-flavs">' + item.flavors.map((f, i) => {
+        const have = f.qty > 0;
+        return '<button class="kvm-flav' + (i === modal.fl ? ' sel' : '') + (have ? '' : ' off') + '" data-fl-sel="' + i + '"' + (have ? '' : ' disabled') + '>' +
+          '<span class="kvm-flav-ic">' + (flavorIcon(f.name) || '•') + '</span>' +
+          '<span class="kvm-flav-n">' + flavorName(f) + '</span>' +
+          '<span class="kvm-flav-q">' + (have ? t('left', f.qty) : t('qtyNone')) + '</span>' +
+        '</button>';
+      }).join('') + '</div>' : '';
+
+    const canAdd = hasFl ? !!(fl && fl.qty > 0) : qty(item) > 0;
+    const addBtn = canAdd
+      ? '<button class="kvm-add-cta" data-add="' + item.id + '"' + (hasFl ? ' data-fl="' + modal.fl + '"' : '') + '>' +
+          t('add') + (fl ? ' · ' + flavorName(fl) : '') + (item.price ? ' · ' + item.price + ' zł' : '') + '</button>'
+      : (st === 'out'
+          ? '<button class="kv-restock kvm-restock" data-notify="' + item.id + '">' + ui('notify') + '</button>'
+          : '<button class="kvm-add-cta" disabled>' + t('chooseFirst') + '</button>');
+    const resBtn = st !== 'out' ? '<button class="kvm-res" data-res="' + item.id + '">' + t('reserve') + '</button>' : '';
+
+    const reviews = allReviews(item);
+    const revList = reviews.map(rv =>
+      '<div class="kv-rev"><span class="kv-rev-h">' + esc(rv.a) +
+      (rv.mine ? ' <small class="kvm-mine">(' + t('you') + ')</small>' : '') +
+      ' <em>' + '★'.repeat(rv.r || 5) + '</em></span>' + esc(rv.t) + '</div>').join('');
+    const starPick = [1, 2, 3, 4, 5].map(i =>
+      '<button class="kvm-rstar' + (i <= (modal.rate || 0) ? ' on' : '') + '" data-star="' + i + '" type="button">★</button>').join('');
+    const revForm =
+      '<div class="kvm-revform"><b>' + t('reviewAdd') + '</b>' +
+        '<div class="kvm-rrate"><span>' + t('reviewYourRate') + '</span><div class="kvm-rstars">' + starPick + '</div></div>' +
+        '<input class="kvm-rev-name" type="text" placeholder="' + t('reviewName') + '" value="' + esc(modal.name || '') + '">' +
+        '<textarea class="kvm-rev-text" placeholder="' + t('reviewText') + '" rows="2">' + esc(modal.text || '') + '</textarea>' +
+        '<button class="kvm-rev-send" type="button">' + t('reviewSend') + '</button>' +
+      '</div>';
+    const reviewsBlock = '<div class="kvm-reviews"><div class="kvm-sec-t">' + ui('reviews') + ' · ' + reviews.length + '</div>' +
+      revList + revForm + '</div>';
+
+    return head + preview + taste + desc + specLine + flavs +
+      '<div class="kvm-actions">' + addBtn + resBtn + '</div>' +
+      reviewsBlock + relatedHTML(item);
+  }
+  function onModalClick(e) {
+    const d = e.currentTarget;
+    if (e.target === d || e.target.closest('.kvm-x')) { closeProduct(); return; }
+    const sel = e.target.closest('[data-fl-sel]');
+    if (sel) { modal.fl = +sel.dataset.flSel; renderModal(); return; }
+    const fav = e.target.closest('[data-fav]');
+    if (fav) { e.stopPropagation(); toggleFav(fav.dataset.fav); renderModal(); if (hooks.render) hooks.render(); return; }
+    const add = e.target.closest('[data-add]');
+    if (add) {
+      e.stopPropagation();
+      const ok = cartAdd(add.dataset.add, add.dataset.fl !== undefined ? +add.dataset.fl : undefined);
+      toast(t(ok ? 'added' : 'maxQty'));
+      if (ok) track('add_to_cart', { id: add.dataset.add });
+      renderModal();
+      return;
+    }
+    const star = e.target.closest('[data-star]');
+    if (star) { modal.rate = +star.dataset.star; renderModal(); return; }
+    const send = e.target.closest('.kvm-rev-send');
+    if (send) {
+      e.stopPropagation();
+      if (!modal.text || !modal.text.trim()) { toast(t('reviewNoText')); return; }
+      addReview(modal.id, modal.rate || 5, modal.text.trim(), modal.name);
+      modal.rate = 0; modal.text = '';
+      toast(t('reviewThanks'));
+      track('review', { id: modal.id });
+      renderModal();
+      if (hooks.render) hooks.render();
+      return;
+    }
+    const res = e.target.closest('[data-res]');
+    if (res) { e.stopPropagation(); reserve(res.dataset.res); return; }
+    const goto = e.target.closest('[data-goto]');
+    if (goto) { e.stopPropagation(); openProduct(goto.dataset.goto); return; }
+  }
+
+  // ==== профиль пользователя ====
+  function tgUser() {
+    const tg = window.Telegram && window.Telegram.WebApp;
+    return (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) || null;
+  }
+  function saveProfileName(name) {
+    profileName = name;
+    localStorage.setItem('kv_profile', JSON.stringify({ name }));
+  }
+  function orderLog() { try { return JSON.parse(localStorage.getItem('kv_orders') || '[]'); } catch (e) { return []; } }
+  function logOrder() {
+    const log = orderLog();
+    log.unshift({ ts: Date.now(), city, n: cartCount(), total: grandTotal(),
+      deliv: currentDelivery().method,
+      items: cartLines().map(l => l.item.name + (l.flavor ? ' (' + flavorName(l.flavor) + ')' : '') + ' ×' + l.n) });
+    localStorage.setItem('kv_orders', JSON.stringify(log.slice(0, 20)));
+  }
+  const PROF_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>';
+  function profileBtn(el) {
+    el.innerHTML = '<button class="kv-prof" aria-label="' + t('profile') + '">' + PROF_ICON + '</button>';
+    el.querySelector('button').onclick = openProfile;
+  }
+  function ensureProfile() {
+    if (document.getElementById('kvp')) return;
+    const d = document.createElement('div');
+    d.id = 'kvp'; d.className = 'kvp'; d.hidden = true;
+    d.innerHTML = '<div class="kvp-box"><div class="kvp-head"><b class="kvp-title"></b><button class="kvp-x" aria-label="close">&times;</button></div><div class="kvp-body"></div></div>';
+    document.body.appendChild(d);
+    d.addEventListener('input', e => {
+      if (e.target.classList.contains('kvp-name-i')) {
+        const save = d.querySelector('.kvp-name-save');
+        if (save) save.disabled = false;
+      }
+    });
+    d.addEventListener('click', onProfileClick);
+  }
+  function openProfile() {
+    ensureProfile();
+    renderProfile();
+    document.getElementById('kvp').hidden = false;
+    document.body.classList.add('kv-noscroll');
+    track('open_profile');
+  }
+  function closeProfile() {
+    const d = document.getElementById('kvp'); if (d) d.hidden = true;
+    if (!document.getElementById('kvm') || document.getElementById('kvm').hidden) document.body.classList.remove('kv-noscroll');
+  }
+  function renderProfile() {
+    const d = document.getElementById('kvp'); if (!d) return;
+    d.querySelector('.kvp-title').textContent = t('profile');
+    const u = tgUser();
+    const name = profileName || (u && u.first_name) || '';
+    const initial = (name || 'K').trim()[0].toUpperCase();
+    const avatar = u && u.photo_url
+      ? '<img src="' + esc(u.photo_url) + '" alt="">'
+      : '<span>' + esc(initial) + '</span>';
+    const uname = u && u.username ? '@' + esc(u.username) : t('guest');
+
+    const favList = favs().map(id => find(id)).filter(Boolean);
+    const myRev = myReviewsAll();
+    const orders = orderLog();
+
+    const favBlock = '<div class="kvp-sec"><b>' + t('myFavs') + ' · ' + favList.length + '</b>' +
+      (favList.length
+        ? '<div class="kvp-favs">' + favList.map(it =>
+            '<button class="kvp-fav" data-goto="' + it.id + '">' +
+              '<img src="' + ROOT + 'data/photos/' + it.id + '.jpg" alt="" loading="lazy" onerror="this.style.visibility=\'hidden\'">' +
+              '<span>' + it.name + '</span><em>' + price(it) + '</em></button>').join('') + '</div>'
+        : '<p class="kvp-empty">' + t('noFavs') + '</p>') + '</div>';
+
+    const revBlock = '<div class="kvp-sec"><b>' + t('myReviews') + ' · ' + myRev.length + '</b>' +
+      (myRev.length
+        ? myRev.map(x => '<div class="kvp-rev"><span class="kvp-rev-h">' +
+            (x.item ? x.item.name : x.id) + ' <em>' + '★'.repeat(x.r.r || 5) + '</em></span>' + esc(x.r.t) + '</div>').join('')
+        : '<p class="kvp-empty">' + t('noReviews') + '</p>') + '</div>';
+
+    const ordBlock = '<div class="kvp-sec"><b>' + t('myOrders') + ' · ' + orders.length + '</b>' +
+      (orders.length
+        ? orders.slice(0, 6).map(o => '<div class="kvp-ord"><div class="kvp-ord-h"><span>' +
+            fmtDate(o.ts) + '</span><b>' + o.total + ' zł</b></div><p>' + esc((o.items || []).join(', ')) + '</p></div>').join('') +
+          (hasLastOrder() ? '<button class="kvp-repeat">' + ui('repeat') + '</button>' : '')
+        : '<p class="kvp-empty">' + t('noOrders') + '</p>') + '</div>';
+
+    d.querySelector('.kvp-body').innerHTML =
+      '<div id="kvp-auth"></div>' +
+      '<div class="kvp-user"><div class="kvp-ava">' + avatar + '</div>' +
+        '<div class="kvp-uinfo"><b>' + (esc(name) || t('guest')) + '</b><span>' + uname + '</span></div></div>' +
+      '<div class="kvp-name"><input class="kvp-name-i" type="text" placeholder="' + t('yourName') + '" value="' + esc(name) + '">' +
+        '<button class="kvp-name-save" disabled>' + t('save') + '</button></div>' +
+      '<div class="kvp-stats">' +
+        '<div><b>' + orders.length + '</b><span>' + t('ordersN') + '</span></div>' +
+        '<div><b>' + favList.length + '</b><span>' + t('favsN') + '</span></div>' +
+        '<div><b>' + myRev.length + '</b><span>' + t('reviewsN') + '</span></div>' +
+      '</div>' +
+      favBlock + revBlock + ordBlock +
+      '<button class="kvp-clear">' + t('clearData') + '</button>';
+    // блок входа/аккаунта рисует модуль auth.js, если он подключён
+    if (window.KVAuth && window.KVAuth.decorateProfile)
+      window.KVAuth.decorateProfile(d.querySelector('#kvp-auth'));
+  }
+  // auth.js зовёт это после входа/выхода, чтобы обновить имя и панель
+  function setProfileName(name, persist) {
+    profileName = name || '';
+    if (persist) localStorage.setItem('kv_profile', JSON.stringify({ name: profileName }));
+  }
+  function refreshProfile() {
+    const d = document.getElementById('kvp');
+    if (d && !d.hidden) renderProfile();
+    if (hooks.render) hooks.render();
+  }
+  function onProfileClick(e) {
+    const d = e.currentTarget;
+    if (e.target === d || e.target.closest('.kvp-x')) { closeProfile(); return; }
+    if (e.target.closest('.kvp-name-save')) {
+      const inp = d.querySelector('.kvp-name-i');
+      saveProfileName(inp.value.trim());
+      toast(t('save'));
+      renderProfile();
+      return;
+    }
+    const goto = e.target.closest('[data-goto]');
+    if (goto) { closeProfile(); openProduct(goto.dataset.goto); return; }
+    if (e.target.closest('.kvp-repeat')) { closeProfile(); repeatOrder(); return; }
+    if (e.target.closest('.kvp-clear')) {
+      ['kv_favs', 'kv_orders', 'kv_profile', 'kv_promo', cartStoreKey(), lastOrderKey(), 'kv_searches', 'kv_invited'].forEach(k => localStorage.removeItem(k));
+      for (let i = localStorage.length - 1; i >= 0; i--) {
+        const k = localStorage.key(i);
+        if (k && k.indexOf('kv_rev_') === 0) localStorage.removeItem(k);
+      }
+      cart = {}; appliedPromo = null; profileName = '';
+      saveCart(); toast(t('cleared')); renderProfile();
+      if (hooks.render) hooks.render();
+      return;
+    }
+  }
+
+  // ==== способ получения: самовывоз / InPost / курьер ====
+  function deliveryMethods() {
+    return (content.delivery && content.delivery.methods) || DELIVERY_DEF;
+  }
+  function currentDelivery() {
+    if (!delivery) { try { delivery = JSON.parse(localStorage.getItem('kv_delivery') || 'null'); } catch (e) {} }
+    if (!delivery || !delivery.method) delivery = { method: 'pickup', addr: '' };
+    if (!deliveryMethods().some(m => m.id === delivery.method)) delivery.method = 'pickup';
+    return delivery;
+  }
+  function setDelivery(method, addr) {
+    const cur = currentDelivery();
+    if (method !== undefined) cur.method = method;
+    if (addr !== undefined) cur.addr = addr;
+    localStorage.setItem('kv_delivery', JSON.stringify(cur));
+  }
+  function deliveryFee() {
+    const m = deliveryMethods().find(x => x.id === currentDelivery().method);
+    return (m && m.fee) || 0;
+  }
+  function deliveryLabel(id) {
+    const m = deliveryMethods().find(x => x.id === id);
+    if (m && m.label) return loc(m.label);
+    return t(id === 'inpost' ? 'delInpost' : id === 'courier' ? 'delCourier' : 'delPickup');
+  }
+  function deliveryLine() {
+    const cur = currentDelivery();
+    if (cur.method === 'pickup') return pickup();
+    const fee = deliveryFee();
+    return deliveryLabel(cur.method) + (cur.addr ? ': ' + cur.addr : '') + (fee ? ' (+' + fee + ' zł)' : '');
+  }
+  function deliveryHTML() {
+    const cur = currentDelivery();
+    const opts = deliveryMethods().map(m => {
+      const fee = m.fee || 0;
+      return '<button class="kvd-dopt' + (m.id === cur.method ? ' on' : '') + '" data-deliv="' + m.id + '" type="button">' +
+        '<span>' + deliveryLabel(m.id) + '</span><i>' + (fee ? '+' + fee + ' zł' : t('delFree')) + '</i></button>';
+    }).join('');
+    let field = '';
+    if (cur.method === 'inpost')
+      field = '<input class="kvd-daddr" type="text" placeholder="' + t('inpostPh') + '" value="' + esc(cur.addr || '') + '">';
+    else if (cur.method === 'courier')
+      field = '<input class="kvd-daddr" type="text" placeholder="' + t('courierPh') + '" value="' + esc(cur.addr || '') + '">';
+    else {
+      const pc = content.pickup && content.pickup.cities && content.pickup.cities[city];
+      field = pc ? '<div class="kvd-dnote">' + esc(pc.addr) + '</div>' : '';
+    }
+    return '<div class="kvd-deliv"><b>' + t('delivery') + '</b><div class="kvd-dopts">' + opts + '</div>' + field + '</div>';
+  }
+
   // ==== один общий стиль для всех новых компонентов ====
   // сайты только мапят палитру на нейтральные токены --kv-*, разметку красим тут
   function injectCSS() {
@@ -946,7 +1488,113 @@ window.KV = (function () {
 .kv-sub-box p{color:var(--kv-muted);margin:10px 0 20px;line-height:1.5;font-size:13.5px}
 .kv-sub-go{display:block;background:var(--kv-accent);color:var(--kv-accent-ink);text-decoration:none;font-weight:800;padding:13px;border-radius:12px;font-size:14px}
 .kv-sub-later{background:none;border:none;color:var(--kv-muted);margin-top:12px;cursor:pointer;font-family:inherit;font-size:12.5px}
-.kvf-ic{margin-right:2px}`;
+.kvf-ic{margin-right:2px}
+body.kv-noscroll{overflow:hidden}
+.kvm{position:fixed;inset:0;z-index:150;background:rgba(6,6,10,.72);display:flex;align-items:flex-end;justify-content:center}
+@media(min-width:640px){.kvm{align-items:center;padding:24px}}
+.kvm[hidden]{display:none}
+.kvm-box{position:relative;width:min(560px,100%);max-height:92vh;overflow-y:auto;background:var(--kv-surface2);border:1px solid var(--kv-line);border-radius:20px 20px 0 0;padding:20px 18px 26px;box-shadow:var(--kv-shadow)}
+@media(min-width:640px){.kvm-box{border-radius:20px}}
+.kvm-x{position:absolute;top:12px;right:12px;z-index:2;width:34px;height:34px;border:none;background:var(--kv-surface);color:var(--kv-muted);border-radius:50%;font-size:22px;line-height:1;cursor:pointer}
+.kvm-fav{position:absolute;top:12px;right:54px;z-index:2;width:34px;height:34px;border:1px solid var(--kv-line);background:var(--kv-surface);color:var(--kv-muted);border-radius:50%;font-size:16px;cursor:pointer}
+.kvm-fav.on{color:#ff5c7a;border-color:#ff5c7a}
+.kvm-head{display:flex;gap:14px;align-items:flex-start;padding-right:78px}
+.kvm-head .kv-photo{width:76px;height:76px;flex:0 0 76px;border-radius:14px;overflow:hidden}
+.kvm-head .kv-photo span{font-size:26px}
+.kvm-hmain{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
+.kvm-cat{font-size:10.5px;letter-spacing:1.4px;text-transform:uppercase;color:var(--kv-muted);font-weight:800}
+.kvm-name{font-size:18px;line-height:1.2}
+.kvm-hrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.kvm-price{font-weight:900;font-size:16px;color:var(--kv-text)}
+.kvm-pick{margin-top:16px}
+.kvm-pick-lbl{font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--kv-muted);font-weight:800}
+.kvm-pick-card{display:flex;align-items:center;gap:10px;margin-top:6px;background:var(--kv-surface);border:1px solid var(--kv-accent);border-radius:12px;padding:11px 13px}
+.kvm-pick-card.off{border-color:var(--kv-line);opacity:.65}
+.kvm-pick-ic{font-size:20px}
+.kvm-pick-name{flex:1;font-weight:800;font-size:14.5px}
+.kvm-pick-q{font-size:11.5px;color:var(--kv-muted);font-weight:700}
+.kvm-taste{margin-top:16px;background:var(--kv-surface);border:1px solid var(--kv-line);border-radius:12px;padding:13px 15px}
+.kvm-taste>b,.kvm-desc>b{display:block;font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:var(--kv-muted);margin-bottom:10px}
+.kvm-bar{display:flex;align-items:center;gap:10px;margin:7px 0}
+.kvm-bar>span{font-size:12.5px;width:78px;flex-shrink:0;color:var(--kv-text)}
+.kvm-bar-track{flex:1;height:8px;border-radius:99px;background:var(--kv-line);overflow:hidden}
+.kvm-bar-track i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--kv-accent),var(--kv-accent-2,var(--kv-accent)))}
+.kvm-bar>b{font-size:11.5px;color:var(--kv-muted);width:26px;text-align:right;font-weight:700}
+.kvm-desc{margin-top:14px}
+.kvm-desc p{font-size:13.5px;line-height:1.6;color:var(--kv-text)}
+.kvm-spec{margin-top:12px;font-size:12.5px;color:var(--kv-muted);line-height:1.5}
+.kvm-sec-t{margin-top:18px;font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:var(--kv-muted);font-weight:800}
+.kvm-flavs{max-height:212px;overflow-y:auto;margin-top:10px;display:flex;flex-direction:column;gap:7px;padding-right:4px}
+.kvm-flav{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:var(--kv-surface);border:1px solid var(--kv-line);border-radius:11px;padding:10px 12px;cursor:pointer;font-family:inherit;color:var(--kv-text)}
+.kvm-flav.sel{border-color:var(--kv-accent);box-shadow:inset 0 0 0 1px var(--kv-accent)}
+.kvm-flav.off{opacity:.5;cursor:default}
+.kvm-flav-ic{font-size:16px;flex-shrink:0}
+.kvm-flav-n{flex:1;font-weight:700;font-size:13.5px}
+.kvm-flav-q{font-size:11px;color:var(--kv-muted);font-weight:700}
+.kvm-actions{display:flex;flex-direction:column;gap:9px;margin-top:16px}
+.kvm-add-cta{width:100%;background:var(--kv-accent);color:var(--kv-accent-ink);border:none;border-radius:12px;padding:14px;font-weight:800;font-size:14px;cursor:pointer;font-family:inherit}
+.kvm-add-cta[disabled]{opacity:.5;cursor:default}
+.kvm-res{width:100%;background:none;border:1px solid var(--kv-line);color:var(--kv-text);border-radius:12px;padding:11px;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit}
+.kvm-restock{margin-top:0}
+.kvm-reviews{margin-top:4px}
+.kvm-revform{margin-top:14px;background:var(--kv-surface);border:1px solid var(--kv-line);border-radius:12px;padding:13px 14px;display:flex;flex-direction:column;gap:9px}
+.kvm-revform>b{font-size:13px}
+.kvm-rrate{display:flex;align-items:center;gap:10px;justify-content:space-between}
+.kvm-rrate>span{font-size:12px;color:var(--kv-muted)}
+.kvm-rstars{display:flex;gap:3px}
+.kvm-rstar{background:none;border:none;font-size:22px;line-height:1;color:var(--kv-line);cursor:pointer;padding:0}
+.kvm-rstar.on{color:#ffb020}
+.kvm-rev-name,.kvm-rev-text{background:var(--kv-field);border:1px solid var(--kv-line);color:var(--kv-text);border-radius:9px;padding:9px 11px;font-family:inherit;font-size:13px;width:100%;resize:vertical}
+.kvm-rev-send{align-self:flex-start;background:var(--kv-surface2);border:1px solid var(--kv-accent);color:var(--kv-accent-2,var(--kv-accent));border-radius:9px;padding:9px 16px;font-weight:800;font-size:12.5px;cursor:pointer;font-family:inherit}
+.kvm-mine{color:var(--kv-accent-2,var(--kv-accent));font-weight:700}
+.kv-prof{width:34px;height:34px;border:1px solid var(--kv-line);background:var(--kv-surface);color:var(--kv-muted);border-radius:50%;cursor:pointer;display:grid;place-items:center;padding:0}
+.kv-prof:hover{color:var(--kv-accent);border-color:var(--kv-accent)}
+.kv-prof svg{width:17px;height:17px}
+.kvp{position:fixed;inset:0;z-index:150;background:rgba(6,6,10,.72)}
+.kvp[hidden]{display:none}
+.kvp-box{position:absolute;top:0;right:0;bottom:0;width:min(400px,100%);background:var(--kv-surface2);border-left:1px solid var(--kv-line);display:flex;flex-direction:column;box-shadow:var(--kv-shadow)}
+.kvp-head{display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid var(--kv-line)}
+.kvp-title{font-size:17px}
+.kvp-x{border:none;background:none;color:var(--kv-muted);font-size:26px;cursor:pointer}
+.kvp-body{flex:1;overflow-y:auto;padding:18px 20px 30px;display:flex;flex-direction:column;gap:16px}
+.kvp-user{display:flex;align-items:center;gap:13px}
+.kvp-ava{width:52px;height:52px;border-radius:50%;overflow:hidden;background:var(--kv-accent);color:var(--kv-accent-ink);display:grid;place-items:center;font-weight:900;font-size:22px;flex-shrink:0}
+.kvp-ava img{width:100%;height:100%;object-fit:cover}
+.kvp-uinfo b{font-size:16px;display:block}
+.kvp-uinfo span{font-size:12.5px;color:var(--kv-muted)}
+.kvp-name{display:flex;gap:8px}
+.kvp-name-i{flex:1;background:var(--kv-field);border:1px solid var(--kv-line);color:var(--kv-text);border-radius:10px;padding:10px 12px;font-family:inherit;font-size:13.5px}
+.kvp-name-save{background:var(--kv-accent);color:var(--kv-accent-ink);border:none;border-radius:10px;padding:0 16px;font-weight:800;cursor:pointer;font-family:inherit;font-size:12.5px}
+.kvp-name-save[disabled]{opacity:.45;cursor:default}
+.kvp-stats{display:flex;gap:8px}
+.kvp-stats>div{flex:1;background:var(--kv-surface);border:1px solid var(--kv-line);border-radius:12px;padding:12px 8px;text-align:center}
+.kvp-stats b{display:block;font-size:19px;font-weight:900;color:var(--kv-accent-2,var(--kv-accent))}
+.kvp-stats span{font-size:10.5px;color:var(--kv-muted)}
+.kvp-sec>b{font-size:13px;display:block;margin-bottom:9px}
+.kvp-empty{font-size:12.5px;color:var(--kv-muted);line-height:1.5}
+.kvp-favs{display:flex;flex-direction:column;gap:7px}
+.kvp-fav{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:var(--kv-surface);border:1px solid var(--kv-line);border-radius:11px;padding:8px 10px;cursor:pointer;font-family:inherit;color:var(--kv-text)}
+.kvp-fav img{width:38px;height:38px;object-fit:contain;background:#fff;border-radius:8px;flex-shrink:0}
+.kvp-fav span{flex:1;font-weight:700;font-size:13px}
+.kvp-fav em{font-style:normal;font-size:12px;color:var(--kv-accent-2,var(--kv-accent));font-weight:800}
+.kvp-rev,.kvp-ord{background:var(--kv-surface);border:1px solid var(--kv-line);border-radius:11px;padding:10px 12px;margin-bottom:7px;font-size:12.5px;line-height:1.5;color:var(--kv-text)}
+.kvp-rev-h{display:block;font-weight:700;margin-bottom:2px}
+.kvp-rev-h em,.kvp-ord em{color:#ffb020;font-style:normal}
+.kvp-ord-h{display:flex;justify-content:space-between;font-weight:700}
+.kvp-ord-h b{color:var(--kv-accent-2,var(--kv-accent))}
+.kvp-ord p{color:var(--kv-muted);margin-top:3px}
+.kvp-repeat{width:100%;background:var(--kv-surface);border:1px solid var(--kv-line);color:var(--kv-text);border-radius:11px;padding:11px;font-weight:700;font-size:12.5px;cursor:pointer;font-family:inherit;margin-top:2px}
+.kvp-clear{background:none;border:1px solid var(--kv-line);color:var(--kv-muted);border-radius:11px;padding:11px;font-size:12.5px;cursor:pointer;font-family:inherit}
+.kvd-deliv{border:1px solid var(--kv-line);border-radius:12px;padding:12px 13px}
+.kvd-deliv>b{font-size:12px;text-transform:uppercase;letter-spacing:.4px;color:var(--kv-muted);display:block;margin-bottom:9px}
+.kvd-dopts{display:flex;flex-direction:column;gap:7px}
+.kvd-dopt{display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--kv-surface);border:1px solid var(--kv-line);color:var(--kv-text);border-radius:10px;padding:10px 12px;cursor:pointer;font-family:inherit;font-size:13px;font-weight:700}
+.kvd-dopt.on{border-color:var(--kv-accent);box-shadow:inset 0 0 0 1px var(--kv-accent)}
+.kvd-dopt i{font-style:normal;font-size:11.5px;color:var(--kv-muted);font-weight:700}
+.kvd-dopt.on i{color:var(--kv-accent-2,var(--kv-accent))}
+.kvd-daddr{width:100%;margin-top:9px;background:var(--kv-field);border:1px solid var(--kv-line);color:var(--kv-text);border-radius:9px;padding:10px 12px;font-family:inherit;font-size:13px}
+.kvd-dnote{margin-top:9px;font-size:12px;color:var(--kv-muted);line-height:1.4}
+.kvd-fee{color:var(--kv-muted)}`;
     const s = document.createElement('style');
     s.id = 'kv-shared'; s.textContent = css;
     document.head.appendChild(s);
@@ -964,12 +1612,9 @@ window.KV = (function () {
     if (res) reserve(res.dataset.res);
     const notify = e.target.closest('[data-notify]');
     if (notify) notifyRestock(notify.dataset.notify);
-    // переход к похожему товару: подсветить и открыть его карточку
+    // переход к похожему товару: открыть его окно
     const goto = e.target.closest('[data-goto]');
-    if (goto) {
-      const card = document.querySelector('[data-id="' + goto.dataset.goto + '"]');
-      if (card) { card.classList.add('open'); card.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
-    }
+    if (goto) openProduct(goto.dataset.goto);
     // аккордеон FAQ
     const faq = e.target.closest('.kv-q button');
     if (faq) {
@@ -1003,6 +1648,10 @@ window.KV = (function () {
     // восстанавливаем ранее введённый промокод
     const savedPromo = localStorage.getItem('kv_promo');
     if (savedPromo) appliedPromo = findPromo(savedPromo) || null;
+    // имя из профиля, иначе имя из Telegram
+    let savedProf = null;
+    try { savedProf = JSON.parse(localStorage.getItem('kv_profile') || 'null'); } catch (e) {}
+    profileName = (savedProf && savedProf.name) || (tgUser() && tgUser().first_name) || '';
     cities = master.cities || [{ id: master.city || 'katowice',
       name: { ru: 'Катовице', uk: 'Катовіце', pl: 'Katowice' }, main: true, logo: 'cat.png' }];
     if (!cities.some(c => c.id === city)) city = cities[0].id;
@@ -1021,6 +1670,8 @@ window.KV = (function () {
     if (ts) themeSwitch(ts);
     const ls = document.getElementById('lang');
     if (ls) langSwitch(ls);
+    const pf = document.getElementById('profile');
+    if (pf) profileBtn(pf);
     const fp = document.getElementById('filters');
     if (fp) filterPanel(fp);
     opts.render();
@@ -1040,6 +1691,8 @@ window.KV = (function () {
     isNew, match, find, price, plural, fmtDate, photo, detailsHTML, openCart, checkout,
     cartCount, cartTotal, toast, autoHideHeader, sortItems,
     starsHTML, badgesHTML, filterPass, searchSuggest, track,
+    openProduct, openProfile, isFav, toggleFav, tasteOf, flavorDesc,
+    setProfileName, refreshProfile,
     get db() { return db; }, get lang() { return lang; }, get city() { return city; },
     manager: MANAGER
   };

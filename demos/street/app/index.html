@@ -118,6 +118,7 @@ button{font-family:inherit}
     <span class="upd" id="upd"></span>
   </div>
   <div id="lang"></div>
+  <div id="profile"></div>
 </div>
 
 <div class="sticky">
@@ -132,7 +133,9 @@ button{font-family:inherit}
 <div id="list"></div>
 <button class="cta" id="cta"></button>
 
-<script src="../../../shared/core.js?v=10"></script>
+<script src="../../../shared/config.js"></script>
+<script src="../../../shared/core.js?v=12"></script>
+<script src="../../../shared/auth.js?v=1"></script>
 <script>
 let cat = 'all', q = '';
 const tg = window.Telegram && window.Telegram.WebApp;
@@ -179,7 +182,7 @@ function drawList() {
     out.push('<div class="sec"><h2>' + KV.catName(c) + '<b>' + have + '/' + items.length + '</b></h2>' +
       items.map(i => {
         const st = KV.status(i);
-        return '<div class="row' + (st === 'out' ? ' is-out' : '') + '">' +
+        return '<div class="row' + (st === 'out' ? ' is-out' : '') + '" data-id="' + i.id + '">' +
           '<div class="rhead">' + KV.photo(i) +
             '<div class="rmain">' +
               '<div class="rname">' + i.name + '</div>' +
@@ -188,7 +191,7 @@ function drawList() {
                 (st !== 'out' ? ' · ' + KV.qty(i) + ' ' + KV.t('pcs') : '') + '</div>' +
             '</div>' +
             '<span class="tag ' + st + '">' + SL[st][KV.lang] + '</span>' +
-          '</div>' + KV.detailsHTML(i) + '</div>';
+          '</div></div>';
       }).join('') + '</div>');
   }
   list.innerHTML = out.join('') || '<p class="empty">' + KV.t('empty').toUpperCase() + ' :(</p>';
@@ -205,7 +208,7 @@ KV.searchSuggest(document.getElementById('q'), v => { q = v.trim().toLowerCase()
 list.onclick = e => {
   if (e.target.closest('button')) return;
   const row = e.target.closest('.row');
-  if (row) row.classList.toggle('open');
+  if (row) KV.openProduct(row.dataset.id);
 };
 
 function cartHook() {

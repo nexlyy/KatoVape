@@ -1,0 +1,396 @@
+// KatoVape авторизация. Подключается после core.js.
+// Логин/почта/телефон + пароль и вход через Telegram живут в Supabase Auth:
+// пароли хешируются (bcrypt), сессия в JWT, данные шифруются на стороне Supabase.
+// Пока config.js пустой, модуль сидит тихо и сайт работает как гостевой демо.
+window.KVAuth = (function () {
+  const CFG = window.KV_CONFIG || {};
+  const configured = () => !!(CFG.SUPABASE_URL && CFG.SUPABASE_ANON_KEY);
+
+  let sb = null;        // клиент supabase-js
+  let user = null;      // запись из auth.users
+  let profile = null;   // строка public.profiles
+  let tab = 'login';    // вкладка в модалке
+  let ready = false;
+
+  const L = {
+    ru: {
+      account: 'Аккаунт', login: 'Вход', register: 'Регистрация', logout: 'Выйти',
+      loginBtn: 'Войти или зарегистрироваться', or: 'или', tgLogin: 'Войти через Telegram',
+      identifier: 'Логин, почта или телефон', password: 'Пароль',
+      username: 'Логин', email: 'Почта (по желанию)', phone: 'Телефон (по желанию)',
+      doLogin: 'Войти', doReg: 'Создать аккаунт', linked: 'Привязан Telegram',
+      guestNote: 'Вы зашли как гость. Войдите, чтобы сохранять заказы и отзывы за собой.',
+      notConfigured: 'Демо-режим: вход подключится после настройки Supabase (см. AUTH_SETUP.md).',
+      pending: 'Проверьте почту и подтвердите регистрацию.', welcome: 'Готово, вы вошли',
+      errUser: 'Логин от 3 символов', errUserChars: 'Логин: латиница, цифры, _ и .',
+      errPass: 'Пароль от 6 символов', errEmail: 'Проверьте почту', errPhone: 'Проверьте телефон',
+      errEmpty: 'Заполните поля', takenUser: 'Такой логин уже занят',
+      takenEmail: 'Эта почта уже зарегистрирована', takenPhone: 'Этот телефон уже зарегистрирован',
+      noAccount: 'Аккаунт не найден', badCreds: 'Неверный логин или пароль',
+      noTg: 'Вход через Telegram не настроен', tgFail: 'Не вышло войти через Telegram',
+      generic: 'Что-то пошло не так, попробуйте ещё раз', needTg: 'Открой в Telegram для входа'
+    },
+    uk: {
+      account: 'Акаунт', login: 'Вхід', register: 'Реєстрація', logout: 'Вийти',
+      loginBtn: 'Увійти або зареєструватися', or: 'або', tgLogin: 'Увійти через Telegram',
+      identifier: 'Логін, пошта або телефон', password: 'Пароль',
+      username: 'Логін', email: 'Пошта (за бажанням)', phone: 'Телефон (за бажанням)',
+      doLogin: 'Увійти', doReg: 'Створити акаунт', linked: 'Прив’язаний Telegram',
+      guestNote: 'Ви зайшли як гість. Увійдіть, щоб зберігати замовлення й відгуки за собою.',
+      notConfigured: 'Демо-режим: вхід підключиться після налаштування Supabase (див. AUTH_SETUP.md).',
+      pending: 'Перевірте пошту й підтвердьте реєстрацію.', welcome: 'Готово, ви увійшли',
+      errUser: 'Логін від 3 символів', errUserChars: 'Логін: латиниця, цифри, _ та .',
+      errPass: 'Пароль від 6 символів', errEmail: 'Перевірте пошту', errPhone: 'Перевірте телефон',
+      errEmpty: 'Заповніть поля', takenUser: 'Такий логін вже зайнятий',
+      takenEmail: 'Ця пошта вже зареєстрована', takenPhone: 'Цей телефон вже зареєстрований',
+      noAccount: 'Акаунт не знайдено', badCreds: 'Невірний логін або пароль',
+      noTg: 'Вхід через Telegram не налаштований', tgFail: 'Не вдалося увійти через Telegram',
+      generic: 'Щось пішло не так, спробуйте ще раз', needTg: 'Відкрий у Telegram для входу'
+    },
+    pl: {
+      account: 'Konto', login: 'Logowanie', register: 'Rejestracja', logout: 'Wyloguj',
+      loginBtn: 'Zaloguj lub zarejestruj się', or: 'lub', tgLogin: 'Zaloguj przez Telegram',
+      identifier: 'Login, e-mail lub telefon', password: 'Hasło',
+      username: 'Login', email: 'E-mail (opcjonalnie)', phone: 'Telefon (opcjonalnie)',
+      doLogin: 'Zaloguj', doReg: 'Utwórz konto', linked: 'Powiązany Telegram',
+      guestNote: 'Jesteś gościem. Zaloguj się, aby zapisywać zamówienia i opinie.',
+      notConfigured: 'Tryb demo: logowanie ruszy po konfiguracji Supabase (zob. AUTH_SETUP.md).',
+      pending: 'Sprawdź e-mail i potwierdź rejestrację.', welcome: 'Gotowe, zalogowano',
+      errUser: 'Login od 3 znaków', errUserChars: 'Login: litery, cyfry, _ i .',
+      errPass: 'Hasło od 6 znaków', errEmail: 'Sprawdź e-mail', errPhone: 'Sprawdź telefon',
+      errEmpty: 'Wypełnij pola', takenUser: 'Ten login jest już zajęty',
+      takenEmail: 'Ten e-mail jest już zarejestrowany', takenPhone: 'Ten telefon jest już zarejestrowany',
+      noAccount: 'Nie znaleziono konta', badCreds: 'Błędny login lub hasło',
+      noTg: 'Logowanie przez Telegram nie jest skonfigurowane', tgFail: 'Nie udało się zalogować przez Telegram',
+      generic: 'Coś poszło nie tak, spróbuj ponownie', needTg: 'Otwórz w Telegramie, aby się zalogować'
+    }
+  };
+  const lang = () => (window.KV && KV.lang) || 'ru';
+  const tr = k => (L[lang()] || L.ru)[k] || k;
+  const msg = k => ({ message: tr(k) });
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+  // ---- клиент supabase (SDK тянем с CDN один раз) ----
+  async function client() {
+    if (sb) return sb;
+    const mod = await import('https://esm.sh/@supabase/supabase-js@2');
+    sb = mod.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_ANON_KEY, {
+      auth: { persistSession: true, autoRefreshToken: true, storageKey: 'kv_sb_auth', detectSessionInUrl: false }
+    });
+    return sb;
+  }
+
+  // ---- нормализация и проверки ----
+  const normPhone = s => (s || '').replace(/[^\d+]/g, '');
+  const looksEmail = s => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s || '');
+  const looksPhone = s => /^\+?\d[\d\s()-]{6,}$/.test(s || '');
+  // если реальной почты нет, вход по синтетическому адресу (в auth.users нужен email)
+  function authEmailFor(f) {
+    if (f.email && looksEmail(f.email)) return f.email.toLowerCase();
+    if (f.username) return 'u_' + f.username.toLowerCase().replace(/[^a-z0-9_]/g, '') + '@users.katovape.local';
+    if (f.phone) return 'p_' + normPhone(f.phone).replace(/\D/g, '') + '@users.katovape.local';
+    return null;
+  }
+  function mapErr(e) {
+    const m = (e && e.message || '').toLowerCase();
+    if (m.includes('already registered') || m.includes('already exists')) return msg('takenEmail');
+    if (m.includes('invalid login')) return msg('badCreds');
+    if (m.includes('email') && m.includes('confirm')) return msg('pending');
+    return e && e.message ? e : msg('generic');
+  }
+
+  // ---- регистрация ----
+  async function signUp(form) {
+    if (!configured()) throw msg('notConfigured');
+    const username = (form.username || '').trim();
+    const password = form.password || '';
+    const email = (form.email || '').trim();
+    const phone = normPhone(form.phone);
+    if (username.length < 3) throw msg('errUser');
+    if (!/^[a-zA-Z0-9_.]+$/.test(username)) throw msg('errUserChars');
+    if (password.length < 6) throw msg('errPass');
+    if (email && !looksEmail(email)) throw msg('errEmail');
+    if (phone && !looksPhone(phone)) throw msg('errPhone');
+    const c = await client();
+    // предварительная проверка занятости, финальную гарантию даёт уникальный индекс в БД
+    const av = await c.rpc('login_availability', { p_username: username, p_email: email || null, p_phone: phone || null });
+    const a = av && (Array.isArray(av.data) ? av.data[0] : av.data);
+    if (a) {
+      if (a.username_taken) throw msg('takenUser');
+      if (a.email_taken) throw msg('takenEmail');
+      if (a.phone_taken) throw msg('takenPhone');
+    }
+    const authEmail = authEmailFor({ username, email, phone });
+    const { data, error } = await c.auth.signUp({
+      email: authEmail, password,
+      options: { data: { username, email_real: email || null, phone: phone || null, display_name: username } }
+    });
+    if (error) throw mapErr(error);
+    if (!data.session && email) return { pending: true };  // ждёт подтверждения почты
+    await afterAuth();
+    return { ok: true };
+  }
+
+  // ---- вход по логину / почте / телефону ----
+  async function signIn(form) {
+    if (!configured()) throw msg('notConfigured');
+    const id = (form.identifier || '').trim();
+    const password = form.password || '';
+    if (!id || !password) throw msg('errEmpty');
+    const c = await client();
+    // сервер сам находит, какой auth-email стоит за этим логином/телефоном/почтой
+    const r = await c.rpc('resolve_login', { p_identifier: looksPhone(id) ? normPhone(id) : id });
+    let email = (r && r.data) || null;
+    if (!email && looksEmail(id)) email = id.toLowerCase();
+    if (!email) throw msg('noAccount');
+    const { error } = await c.auth.signInWithPassword({ email, password });
+    if (error) throw mapErr(error);
+    await afterAuth();
+    return { ok: true };
+  }
+
+  // ---- Telegram: виджет на сайте и initData в мини-аппе ----
+  async function telegramExchange(body) {
+    if (!configured() || !CFG.FUNCTIONS_URL) throw msg('noTg');
+    const res = await fetch(CFG.FUNCTIONS_URL.replace(/\/$/, '') + '/telegram-auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', apikey: CFG.SUPABASE_ANON_KEY },
+      body: JSON.stringify(body)
+    });
+    const out = await res.json().catch(() => ({}));
+    if (!res.ok || !out.email || !out.otp) throw (out.error ? { message: out.error } : msg('tgFail'));
+    const c = await client();
+    const { error } = await c.auth.verifyOtp({ email: out.email, token: out.otp, type: 'magiclink' });
+    if (error) throw mapErr(error);
+    await afterAuth();
+    return { ok: true };
+  }
+  function tgWidget(u) {  // колбэк Telegram Login Widget на сайте
+    telegramExchange({ mode: 'widget', payload: u }).then(closeModal).catch(showErr);
+  }
+  async function tgInitData() {  // тихий авто-вход в мини-аппе
+    const tg = window.Telegram && window.Telegram.WebApp;
+    if (!tg || !tg.initData) return false;
+    try { await telegramExchange({ mode: 'initdata', initData: tg.initData }); return true; }
+    catch (e) { return false; }
+  }
+
+  async function signOut() {
+    if (sb) { try { await sb.auth.signOut(); } catch (e) {} }
+    user = null; profile = null;
+    if (window.KV) { KV.setProfileName('', true); }
+    updateAll();
+  }
+
+  // ---- после входа: подтягиваем профиль и имя ----
+  async function afterAuth() {
+    const c = await client();
+    const g = await c.auth.getUser();
+    user = (g && g.data && g.data.user) || null;
+    profile = null;
+    if (user) {
+      const pr = await c.from('profiles').select('*').eq('id', user.id).maybeSingle();
+      profile = (pr && pr.data) || null;
+      const nm = (profile && (profile.display_name || profile.username)) ||
+        (user.user_metadata && user.user_metadata.username) || '';
+      if (window.KV && nm) KV.setProfileName(nm, true);
+    }
+    updateAll();
+  }
+
+  // ---- перерисовка аккаунт-блока и профиля ----
+  function updateAll() {
+    const kvp = document.getElementById('kvp');
+    if (kvp && !kvp.hidden && window.KV) { KV.refreshProfile(); return; }
+    const mount = document.getElementById('kvp-auth');
+    if (mount) decorateProfile(mount);
+  }
+
+  // блок в панели профиля: либо аккаунт с кнопкой выхода, либо кнопка входа
+  function decorateProfile(el) {
+    if (!el) return;
+    if (user) {
+      const p = profile || {};
+      const rows = [];
+      if (p.username) rows.push('<span>@' + esc(p.username) + '</span>');
+      if (p.email) rows.push('<span>' + esc(p.email) + '</span>');
+      if (p.phone) rows.push('<span>' + esc(p.phone) + '</span>');
+      if (p.telegram_id) rows.push('<span class="kva-tg">✈ ' + tr('linked') +
+        (p.telegram_username ? ' @' + esc(p.telegram_username) : '') + '</span>');
+      el.innerHTML = '<div class="kva-acc"><b>' + tr('account') + '</b>' +
+        '<div class="kva-acc-rows">' + rows.join('') + '</div>' +
+        '<button class="kva-logout">' + tr('logout') + '</button></div>';
+      el.querySelector('.kva-logout').onclick = signOut;
+    } else {
+      el.innerHTML = '<div class="kva-guest"><p>' + tr('guestNote') + '</p>' +
+        '<button class="kva-login-btn">' + tr('loginBtn') + '</button>' +
+        (configured() ? '' : '<div class="kva-note">' + tr('notConfigured') + '</div>') + '</div>';
+      el.querySelector('.kva-login-btn').onclick = openModal;
+    }
+  }
+
+  // ---- модалка входа/регистрации ----
+  function ensureModal() {
+    if (document.getElementById('kva')) return;
+    const d = document.createElement('div');
+    d.id = 'kva'; d.className = 'kva'; d.hidden = true;
+    d.innerHTML = '<div class="kva-box"><button class="kva-x" aria-label="close">&times;</button>' +
+      '<div class="kva-tabs"><button data-tab="login"></button><button data-tab="register"></button></div>' +
+      '<div class="kva-body"></div></div>';
+    document.body.appendChild(d);
+    d.addEventListener('click', e => {
+      if (e.target === d || e.target.closest('.kva-x')) { closeModal(); return; }
+      const tb = e.target.closest('[data-tab]');
+      if (tb) { tab = tb.dataset.tab; renderModal(); return; }
+      if (e.target.closest('.kva-submit')) { submit(); return; }
+    });
+    d.addEventListener('keydown', e => { if (e.key === 'Enter') submit(); });
+  }
+  function renderModal() {
+    const d = document.getElementById('kva'); if (!d) return;
+    d.querySelector('[data-tab="login"]').textContent = tr('login');
+    d.querySelector('[data-tab="login"]').className = tab === 'login' ? 'on' : '';
+    d.querySelector('[data-tab="register"]').textContent = tr('register');
+    d.querySelector('[data-tab="register"]').className = tab === 'register' ? 'on' : '';
+    const notCfg = configured() ? '' : '<div class="kva-banner">' + tr('notConfigured') + '</div>';
+    let form;
+    if (tab === 'login') {
+      form = '<input class="kva-f" data-k="identifier" type="text" placeholder="' + tr('identifier') + '" autocomplete="username">' +
+        '<input class="kva-f" data-k="password" type="password" placeholder="' + tr('password') + '" autocomplete="current-password">' +
+        '<button class="kva-submit">' + tr('doLogin') + '</button>';
+    } else {
+      form = '<input class="kva-f" data-k="username" type="text" placeholder="' + tr('username') + '" autocomplete="username">' +
+        '<input class="kva-f" data-k="email" type="email" placeholder="' + tr('email') + '" autocomplete="email">' +
+        '<input class="kva-f" data-k="phone" type="tel" placeholder="' + tr('phone') + '" autocomplete="tel">' +
+        '<input class="kva-f" data-k="password" type="password" placeholder="' + tr('password') + '" autocomplete="new-password">' +
+        '<button class="kva-submit">' + tr('doReg') + '</button>';
+    }
+    const tg = window.Telegram && window.Telegram.WebApp;
+    const inTg = !!(tg && tg.initData);
+    const tgBlock = (CFG.TELEGRAM_BOT && !inTg)
+      ? '<div class="kva-or"><span>' + tr('or') + '</span></div><div class="kva-tg" id="kva-tg-widget"></div>'
+      : '';
+    d.querySelector('.kva-body').innerHTML = notCfg + '<div class="kva-form">' + form + '</div>' +
+      '<div class="kva-err" hidden></div>' + tgBlock;
+    if (CFG.TELEGRAM_BOT && !inTg) mountTgWidget();
+  }
+  function mountTgWidget() {
+    const box = document.getElementById('kva-tg-widget'); if (!box) return;
+    box.innerHTML = '';
+    const s = document.createElement('script');
+    s.async = true;
+    s.src = 'https://telegram.org/js/telegram-widget.js?22';
+    s.setAttribute('data-telegram-login', CFG.TELEGRAM_BOT);
+    s.setAttribute('data-size', 'large');
+    s.setAttribute('data-userpic', 'false');
+    s.setAttribute('data-request-access', 'write');
+    s.setAttribute('data-onauth', 'KVAuth._tgWidget(user)');
+    box.appendChild(s);
+  }
+  function readForm() {
+    const d = document.getElementById('kva'), f = {};
+    d.querySelectorAll('.kva-f').forEach(i => { f[i.dataset.k] = i.value; });
+    return f;
+  }
+  function showErr(e) {
+    const box = document.querySelector('#kva .kva-err'); if (!box) return;
+    box.textContent = (e && e.message) || tr('generic'); box.hidden = false;
+  }
+  function submit() {
+    const d = document.getElementById('kva'); if (!d || d.hidden) return;
+    const btn = d.querySelector('.kva-submit'); if (btn && btn.disabled) return;
+    const box = d.querySelector('.kva-err'); if (box) box.hidden = true;
+    if (btn) { btn.disabled = true; btn.dataset.txt = btn.textContent; btn.textContent = '…'; }
+    const done = () => { if (btn) { btn.disabled = false; btn.textContent = btn.dataset.txt; } };
+    const form = readForm();
+    const run = tab === 'login' ? signIn(form) : signUp(form);
+    run.then(res => {
+      done();
+      if (res && res.pending) { showErr(msg('pending')); return; }
+      closeModal();
+      if (window.KV) KV.toast(tr('welcome'));
+    }).catch(e => { done(); showErr(e); });
+  }
+  function openModal() {
+    if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData && !user) {
+      // в мини-аппе вход телеграмом идёт сам, руками ничего вводить не нужно
+      tgInitData().then(ok => { if (!ok) { ensureModal(); tab = 'login'; renderModal(); reallyOpen(); } });
+      return;
+    }
+    ensureModal(); renderModal(); reallyOpen();
+  }
+  function reallyOpen() {
+    const d = document.getElementById('kva');
+    d.hidden = false; document.body.classList.add('kv-noscroll');
+  }
+  function closeModal() {
+    const d = document.getElementById('kva'); if (d) d.hidden = true;
+    const kvp = document.getElementById('kvp');
+    if (!kvp || kvp.hidden) document.body.classList.remove('kv-noscroll');
+  }
+
+  function injectCSS() {
+    if (document.getElementById('kva-css')) return;
+    const css = `
+.kva{position:fixed;inset:0;z-index:160;background:rgba(6,6,10,.74);display:flex;align-items:flex-end;justify-content:center}
+@media(min-width:640px){.kva{align-items:center;padding:24px}}
+.kva[hidden]{display:none}
+.kva-box{position:relative;width:min(420px,100%);max-height:92vh;overflow-y:auto;background:var(--kv-surface2);border:1px solid var(--kv-line);border-radius:20px 20px 0 0;padding:22px 20px 26px;box-shadow:var(--kv-shadow)}
+@media(min-width:640px){.kva-box{border-radius:20px}}
+.kva-x{position:absolute;top:12px;right:12px;width:34px;height:34px;border:none;background:var(--kv-surface);color:var(--kv-muted);border-radius:50%;font-size:22px;cursor:pointer}
+.kva-tabs{display:flex;gap:6px;margin:2px 44px 16px 0}
+.kva-tabs button{flex:1;background:none;border:none;border-bottom:2px solid transparent;color:var(--kv-muted);font-family:inherit;font-weight:800;font-size:15px;padding:8px 4px;cursor:pointer}
+.kva-tabs button.on{color:var(--kv-text);border-bottom-color:var(--kv-accent)}
+.kva-form{display:flex;flex-direction:column;gap:10px}
+.kva-f{background:var(--kv-field);border:1px solid var(--kv-line);color:var(--kv-text);border-radius:11px;padding:12px 14px;font-family:inherit;font-size:14px;width:100%}
+.kva-f:focus{outline:none;border-color:var(--kv-accent)}
+.kva-submit{margin-top:4px;background:var(--kv-accent);color:var(--kv-accent-ink);border:none;border-radius:12px;padding:14px;font-weight:800;font-size:14px;cursor:pointer;font-family:inherit}
+.kva-submit[disabled]{opacity:.6;cursor:default}
+.kva-err{margin-top:12px;background:rgba(255,92,122,.12);border:1px solid rgba(255,92,122,.4);color:#ff6a86;border-radius:10px;padding:10px 12px;font-size:12.5px;line-height:1.4}
+.kva-err[hidden]{display:none}
+.kva-banner,.kva-note{background:var(--kv-surface);border:1px solid var(--kv-line);color:var(--kv-muted);border-radius:10px;padding:10px 12px;font-size:12px;line-height:1.5}
+.kva-banner{margin-bottom:14px}
+.kva-or{display:flex;align-items:center;gap:10px;margin:16px 0 12px;color:var(--kv-muted);font-size:12px}
+.kva-or::before,.kva-or::after{content:"";flex:1;height:1px;background:var(--kv-line)}
+.kva-tg{display:flex;justify-content:center;min-height:34px}
+.kva-acc{border:1px solid var(--kv-line);border-radius:12px;padding:14px 15px;background:var(--kv-surface)}
+.kva-acc>b{font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:var(--kv-muted);display:block;margin-bottom:9px}
+.kva-acc-rows{display:flex;flex-direction:column;gap:4px;margin-bottom:12px}
+.kva-acc-rows span{font-size:13.5px;color:var(--kv-text);font-weight:600}
+.kva-acc-rows .kva-tg{justify-content:flex-start;color:var(--kv-accent-2,var(--kv-accent));font-weight:700;min-height:0}
+.kva-logout{width:100%;background:none;border:1px solid var(--kv-line);color:var(--kv-muted);border-radius:10px;padding:10px;font-weight:700;font-size:12.5px;cursor:pointer;font-family:inherit}
+.kva-guest p{font-size:12.5px;color:var(--kv-muted);line-height:1.5;margin-bottom:10px}
+.kva-login-btn{width:100%;background:var(--kv-accent);color:var(--kv-accent-ink);border:none;border-radius:12px;padding:13px;font-weight:800;font-size:13.5px;cursor:pointer;font-family:inherit}
+.kva-note{margin-top:10px}`;
+    const s = document.createElement('style');
+    s.id = 'kva-css'; s.textContent = css;
+    (document.head || document.documentElement).appendChild(s);
+  }
+
+  async function init() {
+    injectCSS();
+    if (!configured()) { ready = true; updateAll(); return; }
+    try {
+      const c = await client();
+      const s = await c.auth.getSession();
+      if (s && s.data && s.data.session) { await afterAuth(); }
+      else { await tgInitData(); }               // в мини-аппе войдёт сам
+      c.auth.onAuthStateChange((_e, sess) => {
+        if (!sess) { user = null; profile = null; updateAll(); }
+      });
+    } catch (e) { /* нет сети или SDK, остаёмся гостем */ }
+    ready = true;
+    updateAll();
+  }
+
+  if (document.readyState === 'loading')
+    document.addEventListener('DOMContentLoaded', init);
+  else init();
+
+  return {
+    init, signUp, signIn, signOut, openModal, decorateProfile,
+    _tgWidget: tgWidget,
+    get user() { return user; }, get profile() { return profile; },
+    get configured() { return configured(); }
+  };
+})();

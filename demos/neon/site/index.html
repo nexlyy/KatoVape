@@ -213,6 +213,7 @@ html[data-theme="light"] .kv-city-menu{box-shadow:0 16px 36px rgba(31,71,125,.18
       </nav>
       <div id="lang"></div>
       <div id="theme"></div>
+      <div id="profile"></div>
       <button class="cartbtn" id="cartFab" onclick="KV.openCart()"></button>
       <a class="cta" id="navCta" href="https://t.me/KatoManager" target="_blank" rel="noopener"></a>
     </div>
@@ -290,7 +291,9 @@ html[data-theme="light"] .kv-city-menu{box-shadow:0 16px 36px rgba(31,71,125,.18
 </footer>
 
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
-<script src="../../../shared/core.js?v=10"></script>
+<script src="../../../shared/config.js"></script>
+<script src="../../../shared/core.js?v=12"></script>
+<script src="../../../shared/auth.js?v=1"></script>
 <script>
 const L = {
   ru: {
@@ -376,7 +379,6 @@ function drawGrid() {
       '</div>' +
       KV.starsHTML(r.it) +
     '</div>' +
-    KV.detailsHTML(r.it) +
     '</div>').join('') || '<p class="empty">' + KV.t('empty') + '</p>';
 }
 
@@ -390,11 +392,11 @@ document.getElementById('q').oninput = e => { q = e.target.value.trim().toLowerC
 document.getElementById('only').onchange = e => { only = e.target.checked; drawGrid(); };
 KV.searchSuggest(document.getElementById('q'), v => { q = v.trim().toLowerCase(); drawGrid(); });
 
-// клик по карточке раскрывает вкусы, кнопки внутри при этом не трогаем
+// клик по карточке открывает окно товара с выбором вкуса
 list.onclick = e => {
   if (e.target.closest('button')) return;
   const card = e.target.closest('.card');
-  if (card) card.classList.toggle('open');
+  if (card) KV.openProduct(card.dataset.id);
 };
 
 const CART_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="20" r="1.6"/><circle cx="17" cy="20" r="1.6"/><path d="M3 4h2l2.6 11.2a1.5 1.5 0 0 0 1.5 1.1h7.9a1.5 1.5 0 0 0 1.5-1.2L20 8H6"/></svg>';

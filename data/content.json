@@ -16,6 +16,15 @@
     "done": { "ru": "Готово! Скидка 5 zł ваша", "uk": "Готово! Знижка 5 zł ваша", "pl": "Gotowe! Rabat 5 zł jest Twój" }
   },
 
+  "delivery": {
+    "title": { "ru": "Получение", "uk": "Отримання", "pl": "Odbiór" },
+    "methods": [
+      { "id": "pickup", "fee": 0, "label": { "ru": "Самовывоз", "uk": "Самовивіз", "pl": "Odbiór osobisty" } },
+      { "id": "inpost", "fee": 12, "label": { "ru": "Доставка InPost", "uk": "Доставка InPost", "pl": "Dostawa InPost" } },
+      { "id": "courier", "fee": 18, "label": { "ru": "Курьер", "uk": "Кур'єр", "pl": "Kurier" } }
+    ]
+  },
+
   "howto": {
     "title": { "ru": "Как заказать", "uk": "Як замовити", "pl": "Jak zamówić" },
     "steps": [
