@@ -1,33 +1,20 @@
-// KatoVape: настройки авторизации.
-// Пока поля пустые, сайт работает как раньше (гостевой режим), вход выключен.
-// Заполни своими значениями из Supabase, и вход/регистрация включатся сами.
-//
-// Где взять: Supabase → Project Settings → API.
-//   SUPABASE_URL      — Project URL, вида https://xxxx.supabase.co
-//   SUPABASE_ANON_KEY — ключ anon/public. Его МОЖНО светить в коде: доступ к данным
-//                       ограничен политиками RLS, а не секретностью ключа.
-//   FUNCTIONS_URL     — обычно это SUPABASE_URL + "/functions/v1"
-//   TELEGRAM_BOT      — username бота без @, нужен только для кнопки
-//                       "Войти через Telegram" на сайте (в мини-аппе не нужен).
-//
-// Токен бота и service_role ключ сюда НЕ кладём. Они живут только в секретах
-// Edge Function на сервере Supabase. Подробнее в AUTH_SETUP.md.
-
+// KatoVape: настройки фронта. Публичные ключи — их можно держать в коде
+// (доступ к данным ограничен политиками RLS, а не секретностью ключа).
+// Секретный ключ Supabase и токен бота сюда НЕ кладём — они только на сервере бота.
 window.KV_CONFIG = {
-  // BACKEND: 'local' — локальный SQL-сервер из папки server/ (демо для показа клиенту).
-  //          'supabase' — облачный Supabase (прод). '' — гостевой режим без входа.
-  BACKEND: 'local',
-  LOCAL_API: 'http://127.0.0.1:8790',   // адрес демо-бэкенда (node server/index.mjs)
+  // BACKEND: 'supabase' — боевой контур (аккаунты, бронь, заказы, админка в Supabase).
+  //          'local' — локальный демо-бэкенд из server/ (node server/index.mjs) для разработки.
+  BACKEND: 'supabase',
+  LOCAL_API: 'http://127.0.0.1:8790',
 
-  SUPABASE_URL: '',
-  SUPABASE_ANON_KEY: '',
-  FUNCTIONS_URL: '',
+  SUPABASE_URL: 'https://vffqnydxofvunwausakv.supabase.co',
+  SUPABASE_ANON_KEY: 'sb_publishable_1SUnHJJpoxKPTkh3_ox4Xg_ONLBue9z',
+  FUNCTIONS_URL: 'https://vffqnydxofvunwausakv.supabase.co/functions/v1',
 
-  // username бота без @ для кнопки "Войти через Telegram" на публичном сайте.
-  // Виджет Telegram работает ТОЛЬКО на домене, заданном боту в BotFather (/setdomain),
-  // на localhost он не отрисуется — там показываем демо-вход.
-  TELEGRAM_BOT: 'test_syncae_bot',
+  TELEGRAM_BOT: 'KatoVape_bot',   // бронь уходит боту диплинком, кнопка "Войти через Telegram" на сайте
+  ADMIN_IDS: [5301671230],
 
-  // Telegram ID тех, кому открыта админка (проверяется на сервере).
-  ADMIN_IDS: [5301671230]
+  // токен геовиджета InPost (кабинет manager.paczkomaty.pl, раздел Geowidget).
+  // пустой = ручной ввод номера пачкомата, с токеном появится выбор на карте
+  INPOST_GEO_TOKEN: ''
 };

@@ -526,17 +526,149 @@ window.KVAuth = (function () {
     updateAll();
   }
 
-  // бронь и заказ уходят на бэкенд, только если человек вошёл (для брони нужен аккаунт).
-  // Возвращаем true, если запрос ушёл — ядро по этому решает, показывать ли доп-подсказку.
-  async function apiReserve(data) {
-    if (!LOCAL() || !user) return false;
-    try { await lapi('/reservations', { method: 'POST', body: JSON.stringify(data) }); return true; }
-    catch (e) { return false; }
+  // режим Supabase активен (не локальный демо-бэкенд и ключи заполнены)
+  const cloudOn = () => !LOCAL() && !!(CFG.SUPABASE_URL && CFG.SUPABASE_ANON_KEY);
+
+  // ---- контактные данные получателя ----
+  // живут в профиле (облако), для гостя копия в localStorage, чтобы форма не терялась
+  function contact() {
+    let saved = {};
+    try { saved = JSON.parse(localStorage.getItem('kv_contact') || '{}'); } catch (e) {}
+    const p = profile || {};
+    return {
+      name: p.full_name || saved.name || '',
+      phone: p.phone || saved.phone || '',
+      email: p.email || saved.email || '',
+      paczkomat: p.paczkomat || saved.paczkomat || ''
+    };
   }
+  async function saveContact(f) {
+    localStorage.setItem('kv_contact', JSON.stringify(f));
+    if (!user || !cloudOn()) return { ok: true, local: true };
+    const c = await client();
+    const patch = {
+      full_name: (f.name || '').trim() || null,
+      phone: (f.phone || '').trim() || null,
+      email: (f.email || '').trim() || null,
+      paczkomat: (f.paczkomat || '').trim() || null,
+      updated_at: new Date().toISOString()
+    };
+    const { error } = await c.from('profiles').update(patch).eq('id', user.id);
+    if (error) {
+      const m = (error.message || '').toLowerCase();
+      if (m.includes('phone')) throw msg('takenPhone');
+      if (m.includes('email')) throw msg('takenEmail');
+      throw { message: error.message };
+    }
+    if (profile) Object.assign(profile, patch);
+    return { ok: true };
+  }
+
+  // ---- бронь: пишем в Supabase с датой выдачи, остаток спишет триггер ----
+  async function apiReserve(data) {
+    if (!user) return false;
+    if (LOCAL()) {
+      try { await lapi('/reservations', { method: 'POST', body: JSON.stringify(data) }); return true; }
+      catch (e) { return false; }
+    }
+    try {
+      const c = await client();
+      const { error } = await c.from('reservations').insert({
+        user_id: user.id,
+        telegram_id: (profile && profile.telegram_id) || null,
+        kind: 'reserve', status: 'active',
+        city: data.city, product_id: data.product_id,
+        product_name: data.product_name || data.product_id,
+        flavor: data.flavor || '', qty: data.qty || 1,
+        reserve_date: data.reserve_date
+      });
+      return !error;
+    } catch (e) { return false; }
+  }
+  async function apiMyReservations() {
+    if (!user || !cloudOn()) return null;
+    try {
+      const c = await client();
+      const { data, error } = await c.from('reservations').select('*')
+        .eq('kind', 'reserve').order('created_at', { ascending: false }).limit(20);
+      return error ? null : data;
+    } catch (e) { return null; }
+  }
+  async function apiCancelReservation(id) {
+    if (!user || !cloudOn()) return false;
+    try {
+      const c = await client();
+      const { data, error } = await c.rpc('cancel_reservation', { p_id: id });
+      return !error && !!data;
+    } catch (e) { return false; }
+  }
+
+  // ---- заказ: состав структурой + снимок контактов, статус ведёт менеджер ----
   async function apiOrder(data) {
-    if (!LOCAL() || !user) return false;
-    try { await lapi('/orders', { method: 'POST', body: JSON.stringify(data) }); return true; }
-    catch (e) { return false; }
+    if (!user) return false;
+    if (LOCAL()) {
+      try { await lapi('/orders', { method: 'POST', body: JSON.stringify(data) }); return true; }
+      catch (e) { return false; }
+    }
+    try {
+      const c = await client();
+      const { error } = await c.from('orders').insert({
+        user_id: user.id, city: data.city, items: data.items, sum: data.sum,
+        delivery: data.delivery, address: data.address || null,
+        contact: data.contact || null, status: 'new'
+      });
+      return !error;
+    } catch (e) { return false; }
+  }
+  async function apiMyOrders() {
+    if (!user || !cloudOn()) return null;
+    try {
+      const c = await client();
+      const { data, error } = await c.from('orders').select('*')
+        .order('created_at', { ascending: false }).limit(30);
+      return error ? null : data;
+    } catch (e) { return null; }
+  }
+
+  // ---- отзывы: читают все, писать можно только на купленный вкус (RLS) ----
+  async function apiAllReviews() {
+    if (!cloudOn()) return null;
+    try {
+      const c = await client();
+      const { data, error } = await c.from('reviews')
+        .select('product_id,flavor,product_name,author,stars,body,created_at,user_id')
+        .order('created_at', { ascending: false }).limit(1000);
+      return error ? null : data;
+    } catch (e) { return null; }
+  }
+  async function apiMyReviews() {
+    if (!user || !cloudOn()) return null;
+    try {
+      const c = await client();
+      const { data, error } = await c.from('reviews').select('*')
+        .eq('user_id', user.id).order('created_at', { ascending: false });
+      return error ? null : data;
+    } catch (e) { return null; }
+  }
+  async function apiReviewables() {
+    if (!user || !cloudOn()) return null;
+    try {
+      const c = await client();
+      const { data, error } = await c.rpc('my_reviewables');
+      return error ? null : data;
+    } catch (e) { return null; }
+  }
+  async function apiReview(r) {
+    if (!user || !cloudOn()) return { error: 'login' };
+    try {
+      const c = await client();
+      const { error } = await c.from('reviews').upsert({
+        user_id: user.id, product_id: r.product_id, flavor: r.flavor || '',
+        product_name: r.product_name || r.product_id, author: r.author || '',
+        stars: r.stars || 5, body: r.body || '', updated_at: new Date().toISOString()
+      }, { onConflict: 'user_id,product_id,flavor' });
+      return { error: error ? error.message : null };
+    } catch (e) { return { error: String(e && e.message || e) }; }
   }
   function loggedIn() { return !!user; }
 
@@ -546,7 +678,9 @@ window.KVAuth = (function () {
 
   return {
     init, signUp, signIn, signOut, openModal, decorateProfile,
-    apiReserve, apiOrder, loggedIn,
+    apiReserve, apiOrder, loggedIn, contact, saveContact,
+    apiMyReservations, apiCancelReservation, apiMyOrders,
+    apiAllReviews, apiMyReviews, apiReviewables, apiReview, cloudOn,
     _tgWidget: tgWidget,
     get user() { return user; }, get profile() { return profile; },
     get configured() { return configured(); }

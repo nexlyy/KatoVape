@@ -18,8 +18,7 @@ header{display:flex;align-items:center;justify-content:space-between;gap:14px;ma
 .brand{display:flex;align-items:center;gap:11px;font-family:var(--disp);font-weight:600;font-size:20px;color:var(--ink)}
 .brand img{width:36px;height:36px;border-radius:10px}
 .brand em{font-style:normal;color:var(--mint)}
-.who{font-size:13px;color:var(--mut)}
-.who b{color:var(--txt)}
+.who{font-size:13px;color:var(--mut)}.who b{color:var(--txt)}
 button{font-family:inherit;cursor:pointer}
 .btn{background:var(--mint);color:#032019;border:none;border-radius:11px;padding:11px 18px;font-weight:700;font-size:13.5px}
 .btn.ghost{background:transparent;border:1px solid var(--line2);color:var(--txt)}
@@ -27,9 +26,8 @@ button{font-family:inherit;cursor:pointer}
 .login{max-width:420px;margin:12vh auto 0;text-align:center;background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:34px 28px}
 .login h1{font-family:var(--disp);font-weight:600;font-size:26px;color:var(--ink);margin-bottom:8px}
 .login p{color:var(--mut);font-size:14px;line-height:1.6;margin-bottom:22px}
-.login .row{display:flex;flex-direction:column;gap:12px}
 .tgwrap{display:flex;justify-content:center;min-height:40px}
-.err{color:var(--red);font-size:13px;margin-top:12px;min-height:18px}
+.err{color:var(--red);font-size:13px;margin-top:14px;min-height:18px;line-height:1.5}
 .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:22px}
 .stat{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px 18px}
 .stat b{font-family:var(--disp);font-size:26px;color:var(--mint);display:block}
@@ -50,86 +48,87 @@ td{color:var(--txt)}
 textarea,input{background:#0a1017;border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:11px 13px;font-family:inherit;font-size:14px;width:100%}
 textarea:focus,input:focus{outline:none;border-color:var(--mint)}
 .hint{font-size:12px;color:var(--mut);margin-top:8px;line-height:1.5}
-.hidden{display:none}
 .wrapscroll{overflow-x:auto}
 </style>
 </head>
 <body>
 <div id="app" class="wrap"></div>
 
-<script src="../../shared/config.js?v=3"></script>
-<script>
+<script src="../../shared/config.js?v=4"></script>
+<script type="module">
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 const CFG = window.KV_CONFIG || {};
-const API = (CFG.LOCAL_API || '').replace(/\/$/, '');   // на VPS укажи адрес API в config.js
 const app = document.getElementById('app');
-let token = localStorage.getItem('kv_local_token') || '';
-let me = null;
-
-async function api(path, opts) {
-  opts = opts || {};
-  const headers = Object.assign({ 'Content-Type': 'application/json' }, token ? { Authorization: 'Bearer ' + token } : {});
-  const res = await fetch(API + path, Object.assign({ headers }, opts));
-  const out = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(out.error || ('http ' + res.status));
-  return out;
-}
 const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const fdate = s => { try { return new Date(s).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }); } catch { return s; } };
 
-// ---- вход ----
+if (!CFG.SUPABASE_URL || !CFG.SUPABASE_ANON_KEY) {
+  app.innerHTML = '<div class="login"><h1>Админка</h1><p>Не задан Supabase в config.js.</p></div>';
+  throw new Error('no supabase config');
+}
+const sb = createClient(CFG.SUPABASE_URL, CFG.SUPABASE_ANON_KEY, { auth: { persistSession: true, storageKey: 'kv_sb_auth', detectSessionInUrl: false } });
+let me = null, tab = 'orders';
+
+// ---- вход через Telegram (та же Edge Function, что и у мини-аппа) ----
 function loginView(errText) {
-  const bot = CFG.TELEGRAM_BOT;
-  const localHost = /^(127\.0\.0\.1|localhost)$/.test(location.hostname);
   app.innerHTML = `<div class="login">
     <h1>KatoVape · Админка</h1>
     <p>Доступ только для менеджеров. Войдите через Telegram — ваш ID должен быть в списке администраторов.</p>
-    <div class="row">
-      ${bot && !localHost ? '<div class="tgwrap" id="tgwrap"></div>' : ''}
-      ${localHost ? '<button class="btn" id="demoAdmin">Демо-вход администратором</button>' : ''}
-    </div>
+    <div class="tgwrap" id="tgwrap"></div>
     <div class="err" id="err">${errText ? esc(errText) : ''}</div>
   </div>`;
-  const bot2 = CFG.TELEGRAM_BOT;
-  if (bot2 && !localHost) {
+  if (CFG.TELEGRAM_BOT) {
     const s = document.createElement('script');
     s.async = true; s.src = 'https://telegram.org/js/telegram-widget.js?22';
-    s.setAttribute('data-telegram-login', bot2); s.setAttribute('data-size', 'large');
+    s.setAttribute('data-telegram-login', CFG.TELEGRAM_BOT); s.setAttribute('data-size', 'large');
     s.setAttribute('data-onauth', 'onTgAuth(user)'); s.setAttribute('data-request-access', 'write');
     document.getElementById('tgwrap').appendChild(s);
+  } else {
+    document.getElementById('err').textContent = 'В config.js не задан TELEGRAM_BOT.';
   }
-  const demo = document.getElementById('demoAdmin');
-  if (demo) demo.onclick = () => exchange({ mode: 'demo', payload: { id: 5301671230, first_name: 'Admin', username: 'admin' } });
 }
-window.onTgAuth = u => exchange({ mode: 'widget', payload: u });
-async function exchange(body) {
+window.onTgAuth = async (u) => {
   try {
-    const out = await api('/auth/telegram', { method: 'POST', body: JSON.stringify(body) });
-    token = out.token; localStorage.setItem('kv_local_token', token);
-    if (!out.user || !out.user.is_admin) return loginView('Этот аккаунт не в списке администраторов.');
-    me = out.user; dashboard();
-  } catch (e) { loginView(e.message); }
+    const res = await fetch(CFG.FUNCTIONS_URL.replace(/\/$/, '') + '/telegram-auth', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', apikey: CFG.SUPABASE_ANON_KEY },
+      body: JSON.stringify({ mode: 'widget', payload: u })
+    });
+    const out = await res.json().catch(() => ({}));
+    if (!res.ok || !out.email || !out.otp) throw new Error(out.error || 'не удалось войти');
+    const { error } = await sb.auth.verifyOtp({ email: out.email, token: out.otp, type: 'magiclink' });
+    if (error) throw error;
+    await afterLogin();
+  } catch (e) { loginView(e.message || 'ошибка входа'); }
+};
+async function afterLogin() {
+  const { data: { user } } = await sb.auth.getUser();
+  const { data: ov, error } = await sb.rpc('admin_overview');
+  if (error || !ov) return loginView('Этот аккаунт не в списке администраторов.');
+  me = user; dashboard(ov);
 }
 
 // ---- дашборд ----
-let tab = 'orders';
-async function dashboard() {
-  let ov = {}; try { ov = await api('/admin/overview'); } catch (e) { return loginView(e.message); }
+function dashboard(ov) {
   app.innerHTML = `
     <header>
       <div class="brand"><img src="../../data/photos/cat.png" alt="">KATO<em>VAPE</em> · админка</div>
-      <div class="who">Вы: <b>${esc(me.display_name || me.username)}</b> · id ${me.telegram_id} <button class="btn ghost" id="logout" style="margin-left:10px">Выйти</button></div>
+      <div class="who">Вы: <b>${esc((me.user_metadata && (me.user_metadata.display_name || me.user_metadata.username)) || 'admin')}</b>
+        <button class="btn ghost" id="logout" style="margin-left:10px">Выйти</button></div>
     </header>
     <div class="stats">
-      <div class="stat"><b>${ov.orders}</b><span>заказов</span></div>
+      <div class="stat"><b>${ov.orders}</b><span>заказов${ov.orders_new ? ' (' + ov.orders_new + ' новых)' : ''}</span></div>
       <div class="stat"><b>${ov.users}</b><span>пользователей</span></div>
-      <div class="stat"><b>${ov.reservations}</b><span>броней (${ov.waiting} ждут)</span></div>
+      <div class="stat"><b>${ov.reservations || 0}</b><span>броней${ov.res_active ? ' (' + ov.res_active + ' актив.)' : ''}</span></div>
+      <div class="stat"><b>${ov.waiting || 0}</b><span>ждут поступления</span></div>
+      <div class="stat"><b>${ov.reviews || 0}</b><span>отзывов</span></div>
       <div class="stat"><b>${ov.bot_users}</b><span>в боте</span></div>
     </div>
     <div class="tabs" id="tabs">
-      ${['orders:Заказы','customers:Клиенты','demand:Спрос','reservations:Бронь','tools:Рассылка и синк'].map(x=>{const[k,l]=x.split(':');return `<button class="tab ${k===tab?'on':''}" data-t="${k}">${l}</button>`}).join('')}
+      ${['orders:Заказы','reservations:Бронь','products:Ассортимент','customers:Клиенты','demand:Спрос','tools:Рассылка'].map(x=>{const[k,l]=x.split(':');return `<button class="tab ${k===tab?'on':''}" data-t="${k}">${l}</button>`}).join('')}
     </div>
     <div id="panel"></div>`;
-  document.getElementById('logout').onclick = async () => { try { await api('/auth/logout', { method: 'POST' }); } catch (e) {} localStorage.removeItem('kv_local_token'); token = ''; me = null; loginView(); };
-  document.getElementById('tabs').onclick = e => { const b = e.target.closest('[data-t]'); if (b) { tab = b.dataset.t; dashboard(); } };
+  document.getElementById('logout').onclick = async () => { await sb.auth.signOut(); me = null; loginView(); };
+  document.getElementById('tabs').onclick = e => { const b = e.target.closest('[data-t]'); if (b) { tab = b.dataset.t; renderTab(); } };
   renderTab();
 }
 async function renderTab() {
@@ -137,47 +136,144 @@ async function renderTab() {
   p.innerHTML = '<div class="card"><span class="muted">Загрузка…</span></div>';
   try {
     if (tab === 'orders') {
-      const { items } = await api('/admin/orders');
-      p.innerHTML = card('Заказы', table(['#','Дата','Клиент','Город','Состав','Доставка','Сумма','Статус'],
-        items.map(o => [o.id, fdate(o.created_at), o.telegram_id ? 'tg:' + o.telegram_id : ('#' + (o.user_id||'?')), o.city,
-          (o.items||[]).join(', '), o.delivery + (o.address ? ' · ' + esc(o.address) : ''), (o.sum||0) + ' zł', `<span class="tag ${o.status==='new'?'new':''}">${o.status}</span>`])));
+      const { data } = await sb.from('orders').select('*').order('id', { ascending: false }).limit(200);
+      p.innerHTML = card('Заказы', table(['#','Дата','Город','Состав','Доставка','Контакты','Сумма','Статус',''],
+        (data||[]).map(o => [o.id, fdate(o.created_at), o.city, esc(itemsStr(o.items)),
+          esc((o.delivery||'') + (o.address ? ' · ' + o.address : '')), contactStr(o.contact),
+          (o.sum||0) + ' zł', `<span class="tag ${o.status==='new'?'new':''}">${stRu(o.status)}</span>`, orderBtns(o)])));
+      p.querySelectorAll('[data-ost]').forEach(b => b.onclick = async () => {
+        b.disabled = true;
+        await sb.from('orders').update({ status: b.dataset.ost, updated_at: new Date().toISOString() }).eq('id', +b.dataset.id);
+        renderTab();
+      });
     } else if (tab === 'customers') {
-      const { items } = await api('/admin/customers');
-      p.innerHTML = card('Клиенты', table(['#','Логин','Имя','Почта','Телефон','Telegram','Дата'],
-        items.map(u => [u.id, esc(u.username), esc(u.display_name||''), esc(u.email||'—'), esc(u.phone||'—'),
+      const { data } = await sb.rpc('admin_customers');
+      p.innerHTML = card('Клиенты', table(['Логин','Имя','Почта','Телефон','Telegram','Дата'],
+        (data||[]).map(u => [esc(u.username||'—'), esc(u.display_name||''), esc(u.email||'—'), esc(u.phone||'—'),
           u.telegram_id ? (u.telegram_username ? '@'+esc(u.telegram_username) : u.telegram_id) : '—', fdate(u.created_at)])));
     } else if (tab === 'demand') {
-      const { items } = await api('/admin/demand');
-      p.innerHTML = card('Спрос (просмотры / брони / заказы)', table(['Товар','Событие','Кол-во'],
-        items.map(d => [esc(d.product_id), d.event, d.n])));
+      const { data } = await sb.from('demand').select('*').order('n', { ascending: false }).limit(100);
+      p.innerHTML = card('Спрос', table(['Товар','Событие','Кол-во'], (data||[]).map(d => [esc(d.product_id), d.event, d.n])));
     } else if (tab === 'reservations') {
-      const { items } = await api('/admin/reservations');
-      p.innerHTML = card('Бронь', table(['#','Дата','Товар','Вкус','Город','Статус','Telegram'],
-        items.map(r => [r.id, fdate(r.created_at), esc(r.product_name||r.product_id), esc(r.flavor||'—'), r.city, `<span class="tag ${r.status==='waiting'?'new':''}">${r.status}</span>`, r.telegram_id||'—'])));
+      const { data } = await sb.from('reservations').select('*').order('id', { ascending: false }).limit(300);
+      p.innerHTML = card('Бронь', table(['#','Создана','Товар','Город','Дата выдачи','Тип','Статус','Telegram',''],
+        (data||[]).map(r => [r.id, fdate(r.created_at), esc(r.product_name||r.product_id), r.city,
+          r.reserve_date || '—', r.kind === 'reserve' ? 'бронь' : 'ждёт поступления',
+          `<span class="tag ${r.status==='active'||r.status==='waiting'?'new':''}">${stRu(r.status)}</span>`,
+          r.telegram_id||'—', resBtns(r)])));
+      p.querySelectorAll('[data-rst]').forEach(b => b.onclick = async () => {
+        b.disabled = true;
+        await sb.from('reservations').update({ status: b.dataset.rst }).eq('id', +b.dataset.id);
+        renderTab();
+      });
+    } else if (tab === 'products') {
+      const city = window._padCity || 'katowice';
+      const { data } = await sb.from('products').select('*').eq('city', city).order('id').order('flavor');
+      const cities = ['katowice', 'gliwice', 'warszawa'];
+      p.innerHTML = `<div class="card"><h2>Ассортимент · остатки и цены</h2>
+        <div class="tools" style="margin-bottom:12px">
+          ${cities.map(c => `<button class="btn ${c===city?'':'ghost'}" data-city="${c}">${c}</button>`).join('')}
+          <button class="btn ghost" id="prsave">Сохранить изменения</button><span class="muted" id="prres"></span>
+        </div>
+        <div class="wrapscroll">${(data||[]).length ? `<table><thead><tr><th>Товар</th><th>Вкус</th><th>Цена, zł</th><th>Остаток, шт</th><th></th></tr></thead><tbody>${
+          (data||[]).map((r,i) => `<tr data-i="${i}">
+            <td>${esc(r.name || r.id)}<div class="muted" style="font-size:11px">${esc(r.id)}</div></td>
+            <td>${esc(r.flavor || '—')}</td>
+            <td><input data-f="price" value="${r.price==null?'':r.price}" style="width:76px"></td>
+            <td><input data-f="qty" value="${r.qty==null?0:r.qty}" style="width:66px"></td>
+            <td><button class="btn ghost" data-del="${i}" title="удалить">×</button></td></tr>`).join('')
+        }</tbody></table>` : '<span class="muted">Пусто. База ассортимента ещё не заполнена (кнопка ниже добавит позиции).</span>'}</div>
+        <div class="hint" style="margin:14px 0 8px">Новая позиция или вкус:</div>
+        <div class="tools">
+          <input id="np_id" placeholder="id (например hqd)" style="width:150px">
+          <input id="np_name" placeholder="Название" style="width:150px">
+          <input id="np_flavor" placeholder="Вкус" style="width:150px">
+          <input id="np_price" placeholder="Цена" style="width:80px">
+          <input id="np_qty" placeholder="Шт" style="width:70px">
+          <button class="btn" id="np_add">Добавить</button>
+        </div></div>`;
+      const rows = data || [];
+      p.querySelectorAll('[data-city]').forEach(b => b.onclick = () => { window._padCity = b.dataset.city; renderTab(); });
+      p.querySelectorAll('[data-del]').forEach(b => b.onclick = async () => {
+        const r = rows[+b.dataset.del]; if (!r) return;
+        if (!confirm('Удалить ' + r.id + (r.flavor ? ' / ' + r.flavor : '') + '?')) return;
+        await sb.from('products').delete().match({ id: r.id, city: r.city, flavor: r.flavor });
+        renderTab();
+      });
+      document.getElementById('prsave').onclick = async () => {
+        const out = [];
+        p.querySelectorAll('tr[data-i]').forEach(tr => {
+          const r = rows[+tr.dataset.i]; if (!r) return;
+          const price = tr.querySelector('[data-f="price"]').value.trim();
+          const qty = tr.querySelector('[data-f="qty"]').value.trim();
+          const np = price === '' ? null : +price, nq = qty === '' ? 0 : +qty;
+          if (np !== r.price || nq !== r.qty)
+            out.push({ id: r.id, city: r.city, flavor: r.flavor, name: r.name, brand: r.brand,
+              category: r.category, nic: r.nic, price: np, qty: nq, updated_at: new Date().toISOString() });
+        });
+        if (!out.length) { document.getElementById('prres').textContent = 'Изменений нет'; return; }
+        const { error } = await sb.from('products').upsert(out, { onConflict: 'id,city,flavor' });
+        document.getElementById('prres').textContent = error ? 'Ошибка: ' + error.message : 'Сохранено ✓ (' + out.length + ')';
+      };
+      document.getElementById('np_add').onclick = async () => {
+        const id = document.getElementById('np_id').value.trim(); if (!id) return;
+        const { error } = await sb.from('products').upsert([{
+          id, city, flavor: document.getElementById('np_flavor').value.trim(),
+          name: document.getElementById('np_name').value.trim() || id,
+          price: +document.getElementById('np_price').value || null,
+          qty: +document.getElementById('np_qty').value || 0,
+          updated_at: new Date().toISOString()
+        }], { onConflict: 'id,city,flavor' });
+        if (error) alert('Ошибка: ' + error.message); else renderTab();
+      };
     } else if (tab === 'tools') {
       p.innerHTML = `
         <div class="card"><h2>Рассылка</h2>
           <textarea id="bctext" rows="4" placeholder="Текст рассылки всем, кто нажал /start у бота…"></textarea>
           <div class="tools" style="margin-top:12px"><button class="btn" id="bcsend">Отправить всем</button><span class="muted" id="bcres"></span></div>
-          <div class="hint">Уйдёт только тем, кто запускал бота (/start). Поддерживается HTML.</div>
+          <div class="hint">Строка ставится в очередь, бот на сервере разошлёт её тем, кто запускал бота. Поддерживается HTML.</div>
         </div>
         <div class="card"><h2>Синхронизация ассортимента</h2>
           <div class="tools"><button class="btn ghost" id="syncbtn">Синхронизировать из Google Sheets</button><span class="muted" id="syncres"></span></div>
-          <div class="hint">Тянет опубликованную CSV-таблицу в базу и рассылает уведомления по броням на появившиеся позиции. Нужен env KV_SHEETS_CSV на сервере.</div>
+          <div class="hint">Ставит задание синка; бот тянет опубликованную CSV в базу и рассылает уведомления по броням. Нужен env KV_SHEETS_CSV на боте.</div>
         </div>`;
       document.getElementById('bcsend').onclick = async () => {
         const text = document.getElementById('bctext').value.trim(); if (!text) return;
         document.getElementById('bcres').textContent = 'Отправка…';
-        try { const r = await api('/admin/broadcast', { method: 'POST', body: JSON.stringify({ text }) }); document.getElementById('bcres').textContent = 'В очереди: ' + r.queued; }
-        catch (e) { document.getElementById('bcres').textContent = 'Ошибка: ' + e.message; }
+        const { error } = await sb.from('broadcasts').insert({ text, author: me.id });
+        document.getElementById('bcres').textContent = error ? ('Ошибка: ' + error.message) : 'Поставлено в очередь ✓';
       };
       document.getElementById('syncbtn').onclick = async () => {
-        document.getElementById('syncres').textContent = 'Синк…';
-        try { const r = await api('/admin/sync', { method: 'POST' }); document.getElementById('syncres').textContent = 'Обновлено строк: ' + r.rows; }
-        catch (e) { document.getElementById('syncres').textContent = 'Ошибка: ' + e.message; }
+        document.getElementById('syncres').textContent = 'Задание поставлено…';
+        const { error } = await sb.from('sync_jobs').insert({ requested_by: me.id });
+        document.getElementById('syncres').textContent = error ? ('Ошибка: ' + error.message) : 'Синк запущен ботом ✓';
       };
     }
   } catch (e) { p.innerHTML = card('Ошибка', '<span class="muted">' + esc(e.message) + '</span>'); }
+}
+const ST_RU = { new: 'новый', confirmed: 'подтверждён', done: 'выдан', cancelled: 'отменён',
+  active: 'активна', notified: 'напомнили', expired: 'истекла', waiting: 'ждёт' };
+function stRu(s) { return ST_RU[s] || s || ''; }
+function itemsStr(items) {
+  return (items || []).map(i => typeof i === 'string' ? i : (i.name || i.id) + (i.flavor ? ' ' + i.flavor : '') + ' ×' + (i.n || 1)).join(', ');
+}
+function contactStr(c) {
+  if (!c) return '—';
+  const rows = [c.name, c.phone, c.email, c.paczkomat ? 'пачкомат ' + c.paczkomat : ''].filter(Boolean);
+  return rows.map(esc).join('<br>') || '—';
+}
+function orderBtns(o) {
+  if (o.status === 'new') return btnSt('ost', o.id, 'confirmed', 'Подтвердить') + btnSt('ost', o.id, 'cancelled', 'Отказ');
+  if (o.status === 'confirmed') return btnSt('ost', o.id, 'done', 'Выдан') + btnSt('ost', o.id, 'cancelled', 'Отказ');
+  return '';
+}
+function resBtns(r) {
+  if (r.kind === 'reserve' && (r.status === 'active' || r.status === 'notified'))
+    return btnSt('rst', r.id, 'done', 'Выдана') + btnSt('rst', r.id, 'cancelled', 'Отмена');
+  return '';
+}
+function btnSt(kind, id, st, label) {
+  return `<button class="btn ghost" style="padding:6px 10px;font-size:12px;margin:2px" data-${kind}="${st}" data-id="${id}">${label}</button>`;
 }
 function card(title, inner) { return `<div class="card"><h2>${esc(title)}</h2><div class="wrapscroll">${inner}</div></div>`; }
 function table(head, rows) {
@@ -185,12 +281,11 @@ function table(head, rows) {
   return `<table><thead><tr>${head.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${
     rows.map(r=>`<tr>${r.map(c=>`<td>${c==null?'':c}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
 }
-const fdate = s => { try { return new Date((s||'').replace(' ','T')+'Z').toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}); } catch { return s; } };
 
-// ---- старт ----
+// ---- старт: есть сессия и админ? ----
 (async function(){
-  if (!API) return loginView('Не задан адрес API (KV_CONFIG.LOCAL_API в config.js).');
-  if (token) { try { const r = await api('/auth/me'); if (r.user && r.user.is_admin) { me = r.user; return dashboard(); } } catch (e) {} }
+  const { data: { session } } = await sb.auth.getSession();
+  if (session) { const { data: ov } = await sb.rpc('admin_overview'); if (ov) { const { data: { user } } = await sb.auth.getUser(); me = user; return dashboard(ov); } }
   loginView();
 })();
 </script>

@@ -175,6 +175,28 @@ footer a{color:var(--mint)}
   font-weight:700;font-size:13.5px;padding:13px 24px;border-radius:99px;opacity:0;pointer-events:none;transition:.28s;z-index:var(--z-toast);max-width:90vw;text-align:center;box-shadow:0 16px 40px -12px rgba(99,245,207,.5)}
 .kv-toast.show{opacity:1;transform:translate(-50%,0)}
 
+/* ── фирменные детали: листовые кнопки, зерно плёнки, штрих в герое ── */
+/* лёгкое зерно поверх дыма, чтобы фон дышал как плёнка, а не как чистый градиент */
+.grain{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.05;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E")}
+html[data-theme="light"] .grain{opacity:.03}
+/* лист: два острых угла, при наведении форма «переворачивается» */
+.chip{border-radius:12px 5px 12px 5px;transition:color .2s,border-color .2s,background .2s,box-shadow .2s,border-radius .35s cubic-bezier(.2,.85,.25,1)}
+.chip:hover,.chip.on{border-radius:5px 12px 5px 12px}
+.cartbtn{border-radius:12px 5px 12px 5px;transition:border-color .2s,border-radius .35s cubic-bezier(.2,.85,.25,1)}
+.cartbtn:hover{border-radius:5px 12px 5px 12px}
+.kvd-go,.kvm-add-cta,.kvm-res-go,.kvc-go,.kvc-apply,.kva-submit,.kva-login-btn,.kvp-ct-apply,.kv-gate-yes{
+  border-radius:16px 6px 16px 6px!important;
+  transition:border-radius .35s cubic-bezier(.2,.85,.25,1),filter .2s,opacity .2s!important}
+.kvd-go:hover,.kvm-add-cta:not([disabled]):hover,.kvm-res-go:hover,.kvc-go:hover,.kvc-apply:hover,
+.kva-submit:hover,.kva-login-btn:hover,.kvp-ct-apply:hover,.kv-gate-yes:hover{
+  border-radius:6px 16px 6px 16px!important;filter:brightness(1.06)}
+/* рисованный мятный штрих под акцентными словами героя */
+.hero h1 span{position:relative}
+.hero h1 span::after{content:"";position:absolute;left:2%;right:2%;bottom:-.06em;height:.16em;pointer-events:none;
+  background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 320 24' preserveAspectRatio='none'%3E%3Cpath d='M4 16 C 60 8, 140 22, 316 10' fill='none' stroke='%2363f5cf' stroke-width='5' stroke-linecap='round' opacity='.7'/%3E%3C/svg%3E") no-repeat center/100% 100%}
+html[data-theme="light"] .hero h1 span::after{filter:saturate(1.5) brightness(.65)}
+
 @media(prefers-reduced-motion:reduce){
   *{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}
   .hero h1,.hero p,.hero-meta,.card{opacity:1;transform:none}
@@ -184,6 +206,7 @@ footer a{color:var(--mint)}
 <body>
 <canvas id="vapor" aria-hidden="true"></canvas>
 <div class="aura" aria-hidden="true"></div>
+<div class="grain" aria-hidden="true"></div>
 
 <header>
   <div class="wrap nav">
@@ -219,9 +242,9 @@ footer a{color:var(--mint)}
 </footer>
 
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
-<script src="../../../shared/config.js?v=3"></script>
-<script src="../../../shared/core.js?v=18"></script>
-<script src="../../../shared/auth.js?v=6"></script>
+<script src="../../../shared/config.js?v=4"></script>
+<script src="../../../shared/core.js?v=19"></script>
+<script src="../../../shared/auth.js?v=7"></script>
 <script>
 // ── живой дым: дрейфующее фрактальное поле шума (fBm), а не цветные шары ──
 // текстура печётся один раз, дальше каждый кадр это несколько drawImage через

@@ -88,7 +88,27 @@ window.KV = (function () {
       delivery: 'Получение', delPickup: 'Самовывоз', delInpost: 'Доставка InPost',
       delCourier: 'Курьер', delFree: 'бесплатно', delivPay: 'Доставка',
       inpostPh: 'Номер посылкомата (напр. KAT01M)', courierPh: 'Адрес доставки',
-      needAddr: 'Укажите адрес доставки', needPaczko: 'Укажите номер посылкомата'
+      needAddr: 'Укажите адрес доставки', needPaczko: 'Укажите номер посылкомата',
+      contactTitle: 'Данные для получения', fio: 'Фамилия и имя',
+      phoneF: 'Телефон', emailF: 'Эл. почта', paczkoF: 'Пачкомат InPost',
+      paczkoHint: 'нужен только при доставке InPost',
+      edit: 'Изменить', apply: 'Применить',
+      dataWarn: 'Проверьте данные внимательно: по ним оформляется отправка. Ошибка задержит посылку.',
+      confirmTitle: 'Проверьте данные получателя', confirmOk: 'Всё верно, оформить',
+      errFio: 'Укажите фамилию и имя', errPhone2: 'Телефон в формате +48 600 000 000',
+      errEmail2: 'Проверьте адрес почты', errPaczko2: 'Номер пачкомата выглядит как KAT01M',
+      savedOk: 'Сохранено', needLogin: 'Войдите, чтобы оформить заказ',
+      orderDone: 'Заказ оформлен! Менеджер получил уведомление и свяжется с вами.',
+      orderFail: 'Не получилось отправить заказ, попробуйте ещё раз',
+      resTitle: 'Дата брони', resNote: 'Бронь держим до конца выбранного дня. Утром в день выдачи напомним в Telegram.',
+      resOk: 'Забронировать', resDone: 'Бронь принята', resFail: 'Не получилось оформить бронь',
+      today: 'Сегодня', tomorrow: 'Завтра',
+      myRes: 'Мои брони', resCancel: 'Отменить', resCancelled: 'Бронь отменена, позиция вернулась в наличие',
+      revNeedBuy: 'Отзыв можно оставить на купленный вкус после выдачи заказа',
+      noRevsYet: 'Отзывов пока нет. Ваш будет первым после покупки.',
+      stNew: 'оформлен', stConfirmed: 'подтверждён', stDone: 'выдан', stCancelled: 'отменён',
+      stActive: 'активна', stExpired: 'истекла', stNotified: 'ждёт выдачи',
+      pickMap: 'Выбрать на карте'
     },
     uk: {
       profile: 'Профіль', guest: 'Гість', yourName: 'Ваше ім’я', save: 'Зберегти',
@@ -106,7 +126,27 @@ window.KV = (function () {
       delivery: 'Отримання', delPickup: 'Самовивіз', delInpost: 'Доставка InPost',
       delCourier: 'Кур’єр', delFree: 'безкоштовно', delivPay: 'Доставка',
       inpostPh: 'Номер поштомата (напр. KAT01M)', courierPh: 'Адреса доставки',
-      needAddr: 'Вкажіть адресу доставки', needPaczko: 'Вкажіть номер поштомата'
+      needAddr: 'Вкажіть адресу доставки', needPaczko: 'Вкажіть номер поштомата',
+      contactTitle: 'Дані для отримання', fio: 'Прізвище та ім’я',
+      phoneF: 'Телефон', emailF: 'Ел. пошта', paczkoF: 'Поштомат InPost',
+      paczkoHint: 'потрібен лише при доставці InPost',
+      edit: 'Змінити', apply: 'Застосувати',
+      dataWarn: 'Перевірте дані уважно: за ними оформлюється відправка. Помилка затримає посилку.',
+      confirmTitle: 'Перевірте дані отримувача', confirmOk: 'Все вірно, оформити',
+      errFio: 'Вкажіть прізвище та ім’я', errPhone2: 'Телефон у форматі +48 600 000 000',
+      errEmail2: 'Перевірте адресу пошти', errPaczko2: 'Номер поштомата виглядає як KAT01M',
+      savedOk: 'Збережено', needLogin: 'Увійдіть, щоб оформити замовлення',
+      orderDone: 'Замовлення оформлено! Менеджер отримав сповіщення і зв’яжеться з вами.',
+      orderFail: 'Не вдалося надіслати замовлення, спробуйте ще раз',
+      resTitle: 'Дата броні', resNote: 'Бронь тримаємо до кінця обраного дня. Вранці в день видачі нагадаємо в Telegram.',
+      resOk: 'Забронювати', resDone: 'Бронь прийнято', resFail: 'Не вдалося оформити бронь',
+      today: 'Сьогодні', tomorrow: 'Завтра',
+      myRes: 'Мої броні', resCancel: 'Скасувати', resCancelled: 'Бронь скасовано, позиція повернулась у наявність',
+      revNeedBuy: 'Відгук можна залишити на куплений смак після видачі замовлення',
+      noRevsYet: 'Відгуків поки немає. Ваш буде першим після покупки.',
+      stNew: 'оформлено', stConfirmed: 'підтверджено', stDone: 'видано', stCancelled: 'скасовано',
+      stActive: 'активна', stExpired: 'минула', stNotified: 'чекає видачі',
+      pickMap: 'Обрати на мапі'
     },
     pl: {
       profile: 'Profil', guest: 'Gość', yourName: 'Twoje imię', save: 'Zapisz',
@@ -124,7 +164,27 @@ window.KV = (function () {
       delivery: 'Odbiór', delPickup: 'Odbiór osobisty', delInpost: 'Dostawa InPost',
       delCourier: 'Kurier', delFree: 'gratis', delivPay: 'Dostawa',
       inpostPh: 'Numer paczkomatu (np. KAT01M)', courierPh: 'Adres dostawy',
-      needAddr: 'Podaj adres dostawy', needPaczko: 'Podaj numer paczkomatu'
+      needAddr: 'Podaj adres dostawy', needPaczko: 'Podaj numer paczkomatu',
+      contactTitle: 'Dane do odbioru', fio: 'Imię i nazwisko',
+      phoneF: 'Telefon', emailF: 'E-mail', paczkoF: 'Paczkomat InPost',
+      paczkoHint: 'potrzebny tylko przy dostawie InPost',
+      edit: 'Zmień', apply: 'Zastosuj',
+      dataWarn: 'Sprawdź dane uważnie: na ich podstawie wysyłamy paczkę. Błąd opóźni dostawę.',
+      confirmTitle: 'Sprawdź dane odbiorcy', confirmOk: 'Zgadza się, zamawiam',
+      errFio: 'Podaj imię i nazwisko', errPhone2: 'Telefon w formacie +48 600 000 000',
+      errEmail2: 'Sprawdź adres e-mail', errPaczko2: 'Numer paczkomatu wygląda jak KAT01M',
+      savedOk: 'Zapisano', needLogin: 'Zaloguj się, aby złożyć zamówienie',
+      orderDone: 'Zamówienie złożone! Manager dostał powiadomienie i odezwie się.',
+      orderFail: 'Nie udało się wysłać zamówienia, spróbuj ponownie',
+      resTitle: 'Data rezerwacji', resNote: 'Rezerwację trzymamy do końca wybranego dnia. Rano w dniu odbioru przypomnimy w Telegramie.',
+      resOk: 'Zarezerwuj', resDone: 'Rezerwacja przyjęta', resFail: 'Nie udało się zarezerwować',
+      today: 'Dziś', tomorrow: 'Jutro',
+      myRes: 'Moje rezerwacje', resCancel: 'Anuluj', resCancelled: 'Rezerwacja anulowana, pozycja wróciła do asortymentu',
+      revNeedBuy: 'Opinię można dodać o kupionym smaku po wydaniu zamówienia',
+      noRevsYet: 'Brak opinii. Twoja będzie pierwsza po zakupie.',
+      stNew: 'złożone', stConfirmed: 'potwierdzone', stDone: 'wydane', stCancelled: 'anulowane',
+      stActive: 'aktywna', stExpired: 'wygasła', stNotified: 'czeka na odbiór',
+      pickMap: 'Wybierz na mapie'
     }
   };
   for (const l in EXTRA) Object.assign(STR[l], EXTRA[l]);
@@ -241,6 +301,46 @@ window.KV = (function () {
     db.categories.forEach(cc => cc.items.forEach(it => { it._cat = cc.id; }));
     city = c.id;
     currentCity = c;
+    // живые остатки и цены из облака поверх файла (файл остаётся запасным)
+    try { applyStock(await cloudStock()); } catch (e) {}
+  }
+
+  // ---- ассортимент из Supabase: остатки и цены правит менеджер в админке ----
+  async function cloudStock() {
+    const cfg = window.KV_CONFIG || {};
+    if (!(cfg.SUPABASE_URL && cfg.SUPABASE_ANON_KEY) || cfg.BACKEND !== 'supabase') return null;
+    try {
+      const res = await fetch(cfg.SUPABASE_URL.replace(/\/$/, '') + '/rest/v1/products?city=eq.' +
+        encodeURIComponent(city) + '&select=id,flavor,price,qty', {
+        headers: { apikey: cfg.SUPABASE_ANON_KEY }, cache: 'no-store'
+      });
+      if (!res.ok) return null;
+      return await res.json();
+    } catch (e) { return null; }
+  }
+  function applyStock(rows) {
+    if (!rows || !rows.length || !db) return;
+    const byId = {};
+    rows.forEach(r => { (byId[r.id] = byId[r.id] || []).push(r); });
+    db.categories.forEach(cat => cat.items.forEach(it => {
+      const rs = byId[it.id]; if (!rs) return;
+      if (it.flavors && it.flavors.length) {
+        it.flavors.forEach(f => {
+          const r = rs.find(x => (x.flavor || '') === f.name);
+          if (r) f.qty = r.qty;
+        });
+        // вкусы, которые менеджер завёл в облаке, а в файле их ещё нет
+        rs.forEach(r => {
+          if (r.flavor && !it.flavors.some(f => f.name === r.flavor))
+            it.flavors.push({ name: r.flavor, qty: r.qty });
+        });
+      } else {
+        const r = rs.find(x => !x.flavor) || rs[0];
+        if (r && typeof r.qty === 'number') it.qty = r.qty;
+      }
+      const pr = rs.find(x => x.price != null);
+      if (pr) it.price = pr.price;
+    }));
   }
 
   // перевод одного вкуса пословно
@@ -464,34 +564,227 @@ window.KV = (function () {
     }, 350);
   }
 
+  // ---- проверки данных получателя ----
+  function validFio(s) { return (s || '').trim().split(/\s+/).filter(Boolean).length >= 2; }
+  function normPhonePl(s) {
+    let d = (s || '').replace(/[^\d+]/g, '');
+    if (/^\d{9}$/.test(d)) d = '+48' + d;       // 9 цифр без кода = польский номер
+    if (/^48\d{9}$/.test(d)) d = '+' + d;
+    return d;
+  }
+  function validPhone(s) { return /^\+\d{10,14}$/.test(normPhonePl(s)); }
+  function validEmail(s) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((s || '').trim()); }
+  function normPaczko(s) { return (s || '').trim().toUpperCase().replace(/\s+/g, ''); }
+  function validPaczko(s) { return /^[A-Z]{3}\d{2,4}[A-Z]{0,2}$/.test(normPaczko(s)); }
+
   function checkout() {
     if (!cartCount()) return;
     const cur = currentDelivery();
-    if (cur.method === 'inpost' && !(cur.addr || '').trim()) { toast(t('needPaczko')); openCart(); return; }
     if (cur.method === 'courier' && !(cur.addr || '').trim()) { toast(t('needAddr')); openCart(); return; }
+    const logged = window.KVAuth && KVAuth.loggedIn && KVAuth.loggedIn();
+    const cloud = window.KVAuth && KVAuth.cloudOn && KVAuth.cloudOn();
+    if (logged) { openConfirm(); return; }
+    if (cloud) { toast(t('needLogin')); KVAuth.openModal(); return; }
+    // демо без бэкенда: заказ уходит текстом в чат менеджера, как раньше
+    if (cur.method === 'inpost' && !(cur.addr || '').trim()) { toast(t('needPaczko')); openCart(); return; }
     saveLastOrder();
     logOrder();
     track('checkout', { total: grandTotal(), delivery: cur.method });
-    // сохраняем заказ на бэкенде (для админки), если человек вошёл
-    if (window.KVAuth && KVAuth.apiOrder)
-      KVAuth.apiOrder({ city, sum: grandTotal(), delivery: cur.method, address: cur.addr || '',
-        items: cartLines().map(l => l.item.name + (l.flavor ? ' (' + flavorName(l.flavor) + ')' : '') + ' ×' + l.n) });
     tgSend(orderText(), t('copied'));
   }
 
+  // ---- подтверждение данных перед заказом ----
+  // показываем ФИО, телефон, почту (и пачкомат при InPost), можно тут же поправить
+  let confirmEdit = false;
+  function ensureConfirm() {
+    if (document.getElementById('kvc')) return;
+    const d = document.createElement('div');
+    d.id = 'kvc'; d.className = 'kvc'; d.hidden = true;
+    d.innerHTML = '<div class="kvc-box"><button class="kvc-x" aria-label="close">&times;</button><div class="kvc-body"></div></div>';
+    document.body.appendChild(d);
+    d.addEventListener('click', e => {
+      if (e.target === d || e.target.closest('.kvc-x')) { closeConfirm(); return; }
+      if (e.target.closest('.kvc-edit')) { confirmEdit = true; renderConfirm(); return; }
+      if (e.target.closest('.kvc-apply')) { applyConfirm(); return; }
+      if (e.target.closest('.kvc-map')) { openGeo(); return; }
+      if (e.target.closest('.kvc-go')) { placeOrder(); return; }
+    });
+  }
+  function contactOf() {
+    return (window.KVAuth && KVAuth.contact) ? KVAuth.contact() : { name: '', phone: '', email: '', paczkomat: '' };
+  }
+  function openConfirm() { confirmEdit = false; ensureConfirm(); renderConfirm(); document.getElementById('kvc').hidden = false; document.body.classList.add('kv-noscroll'); }
+  function closeConfirm() {
+    const d = document.getElementById('kvc'); if (d) d.hidden = true;
+    const kvd = document.getElementById('kvd');
+    if (!kvd || kvd.hidden) document.body.classList.remove('kv-noscroll');
+  }
+  function renderConfirm() {
+    const d = document.getElementById('kvc'); if (!d) return;
+    const ct = contactOf();
+    const cur = currentDelivery();
+    const inpost = cur.method === 'inpost';
+    const need = [
+      { k: 'name', lbl: t('fio'), v: ct.name },
+      { k: 'phone', lbl: t('phoneF'), v: ct.phone },
+      { k: 'email', lbl: t('emailF'), v: ct.email }
+    ];
+    if (inpost) need.push({ k: 'paczkomat', lbl: t('paczkoF'), v: ct.paczkomat });
+    let inner;
+    if (confirmEdit) {
+      inner = need.map(f =>
+        '<label class="kvc-f"><span>' + f.lbl + '</span>' +
+        '<input data-ct="' + f.k + '" type="' + (f.k === 'email' ? 'email' : f.k === 'phone' ? 'tel' : 'text') + '" value="' + esc(f.v || '') + '"' +
+        (f.k === 'phone' ? ' placeholder="+48 600 000 000"' : f.k === 'paczkomat' ? ' placeholder="KAT01M"' : '') + '></label>' +
+        (f.k === 'paczkomat' && geoReady() ? '<button class="kvc-map" type="button">' + t('pickMap') + '</button>' : '')
+      ).join('') +
+        '<div class="kvc-warn">' + t('dataWarn') + '</div>' +
+        '<button class="kvc-apply">' + t('apply') + '</button>';
+    } else {
+      inner = need.map(f =>
+        '<div class="kvc-row"><span>' + f.lbl + '</span><b>' + (esc(f.v || '') || '<i class="kvc-none">—</i>') + '</b></div>').join('') +
+        '<div class="kvc-sum"><span>' + t('total') + '</span><b>' + grandTotal() + ' zł</b></div>' +
+        '<div class="kvc-row"><span>' + t('delivery') + '</span><b>' + deliveryLabel(cur.method) + '</b></div>' +
+        '<div class="kvc-warn">' + t('dataWarn') + '</div>' +
+        '<div class="kvc-btns"><button class="kvc-edit">' + t('edit') + '</button>' +
+        '<button class="kvc-go">' + t('confirmOk') + '</button></div>';
+    }
+    d.querySelector('.kvc-body').innerHTML = '<h3 class="kvc-title">' + t('confirmTitle') + '</h3>' + inner;
+  }
+  async function applyConfirm() {
+    const d = document.getElementById('kvc'); if (!d) return;
+    const f = {};
+    d.querySelectorAll('[data-ct]').forEach(i => { f[i.dataset.ct] = i.value; });
+    const ct = Object.assign(contactOf(), f);
+    const inpost = currentDelivery().method === 'inpost';
+    if (!validFio(ct.name)) { toast(t('errFio')); return; }
+    if (!validPhone(ct.phone)) { toast(t('errPhone2')); return; }
+    if (!validEmail(ct.email)) { toast(t('errEmail2')); return; }
+    if (inpost && !validPaczko(ct.paczkomat)) { toast(t('errPaczko2')); return; }
+    ct.phone = normPhonePl(ct.phone);
+    ct.paczkomat = normPaczko(ct.paczkomat);
+    try {
+      if (window.KVAuth && KVAuth.saveContact) await KVAuth.saveContact(ct);
+    } catch (e) { toast((e && e.message) || t('orderFail')); return; }
+    confirmEdit = false;
+    toast(t('savedOk'));
+    renderConfirm();
+  }
+  async function placeOrder() {
+    const ct = contactOf();
+    const cur = currentDelivery();
+    const inpost = cur.method === 'inpost';
+    if (!validFio(ct.name) || !validPhone(ct.phone) || !validEmail(ct.email) || (inpost && !validPaczko(ct.paczkomat))) {
+      confirmEdit = true; renderConfirm();
+      toast(!validFio(ct.name) ? t('errFio') : !validPhone(ct.phone) ? t('errPhone2')
+        : !validEmail(ct.email) ? t('errEmail2') : t('errPaczko2'));
+      return;
+    }
+    const items = cartLines().map(l => ({
+      id: l.item.id, name: l.item.name,
+      flavor: l.flavor ? l.flavor.name : '', n: l.n, sum: l.sum
+    }));
+    const data = {
+      city, sum: grandTotal(), delivery: cur.method,
+      address: inpost ? normPaczko(ct.paczkomat) : (cur.addr || ''),
+      contact: { name: ct.name.trim(), phone: normPhonePl(ct.phone), email: ct.email.trim(),
+        paczkomat: inpost ? normPaczko(ct.paczkomat) : '' },
+      items
+    };
+    const btn = document.querySelector('#kvc .kvc-go');
+    if (btn) { btn.disabled = true; btn.textContent = '…'; }
+    const ok = await KVAuth.apiOrder(data);
+    if (btn) { btn.disabled = false; btn.textContent = t('confirmOk'); }
+    if (!ok) { toast(t('orderFail')); return; }
+    saveLastOrder();
+    logOrder();
+    track('checkout', { total: grandTotal(), delivery: cur.method });
+    cart = {};
+    saveCart();
+    closeConfirm();
+    const kvd = document.getElementById('kvd'); if (kvd) kvd.hidden = true;
+    document.body.classList.remove('kv-noscroll');
+    toast(t('orderDone'));
+    if (hooks.cart) hooks.cart();
+    loadMyReviewState();
+  }
+
+  // ---- карта пачкоматов InPost (виджет подключается, если в config задан токен) ----
+  function geoReady() { return !!(window.KV_CONFIG && window.KV_CONFIG.INPOST_GEO_TOKEN); }
+  function openGeo() {
+    if (!geoReady()) return;
+    let d = document.getElementById('kvg');
+    if (!d) {
+      if (!document.getElementById('kvg-sdk')) {
+        const l = document.createElement('link');
+        l.rel = 'stylesheet'; l.href = 'https://geowidget.inpost.pl/inpost-geowidget.css';
+        document.head.appendChild(l);
+        const s = document.createElement('script');
+        s.id = 'kvg-sdk'; s.defer = true; s.src = 'https://geowidget.inpost.pl/inpost-geowidget.js';
+        document.head.appendChild(s);
+      }
+      d = document.createElement('div');
+      d.id = 'kvg'; d.className = 'kvg';
+      d.innerHTML = '<div class="kvg-box"><button class="kvg-x" aria-label="close">&times;</button>' +
+        '<inpost-geowidget token="' + esc(window.KV_CONFIG.INPOST_GEO_TOKEN) + '" language="pl" config="parcelCollect" onpoint="kvGeoPick"></inpost-geowidget></div>';
+      document.body.appendChild(d);
+      d.addEventListener('click', e => { if (e.target === d || e.target.closest('.kvg-x')) d.hidden = true; });
+      window.kvGeoPick = pt => {
+        const code = pt && pt.name;
+        if (code) {
+          const inp = document.querySelector('#kvc [data-ct="paczkomat"]');
+          if (inp) inp.value = code;
+          setDelivery(undefined, code);
+        }
+        d.hidden = true;
+      };
+    }
+    d.hidden = false;
+  }
+
+  // бронь всегда идёт через окно товара: там выбор вкуса и даты выдачи
   function reserve(id) {
-    const item = find(id); if (!item) return;
-    const fl = (modal && modal.id === id && item.flavors && modal.fl >= 0) ? item.flavors[modal.fl] : null;
+    if (!modal || modal.id !== id) openProduct(id);
+    if (!modal) return;
+    modal.resOpen = true;
+    renderModal();
+  }
+  async function confirmReserve() {
+    const item = find(modal.id); if (!item) return;
+    const hasFl = !!(item.flavors && item.flavors.length);
+    const fl = hasFl && modal.fl >= 0 ? item.flavors[modal.fl] : null;
+    if (hasFl && (!fl || fl.qty <= 0)) { toast(t('chooseFirst')); return; }
+    const date = modal.resDate;
+    const logged = window.KVAuth && KVAuth.loggedIn && KVAuth.loggedIn();
+    // вошедший пользователь: бронь в базу, остаток спишется, бот подтвердит в личку
+    if (logged && window.KVAuth.apiReserve) {
+      const ok = await KVAuth.apiReserve({
+        city, product_id: item.id,
+        product_name: item.name + (fl ? ' ' + fl.name : ''),
+        flavor: fl ? fl.name : '', qty: 1, reserve_date: date
+      });
+      if (!ok) { toast(t('resFail')); return; }
+      if (fl) fl.qty = Math.max(0, fl.qty - 1); else if (item.qty) item.qty--;
+      modal.resOpen = false;
+      toast(t('resDone'));
+      track('reserve', { id: item.id });
+      renderModal();
+      if (hooks.render) hooks.render();
+      return;
+    }
     const bot = window.KV_CONFIG && window.KV_CONFIG.TELEGRAM_BOT;
     if (bot) {
-      // бронь уходит боту диплинком: он сохранит и уведомит, когда товар появится
-      toast(t('reserved'));
-      const url = 'https://t.me/' + bot + '?start=res_' + id + '_' + city;
+      // гость: бронь уходит боту диплинком, дата зашита в payload
+      toast(t('resDone'));
+      const url = 'https://t.me/' + bot + '?start=res_' + item.id + '_' + (date || '').replace(/-/g, '') + '_' + city;
       const tg = window.Telegram && window.Telegram.WebApp;
       if (tg && tg.initData) tg.openTelegramLink(url); else window.open(url, '_blank');
     } else {
-      tgSend(t('reserve') + ': ' + item.name + (fl ? ', ' + flavorName(fl) : '') + '. ' + pickup(), t('reserved'));
+      tgSend(t('reserve') + ': ' + item.name + (fl ? ', ' + flavorName(fl) : '') +
+        (date ? ', ' + date : '') + '. ' + pickup(), t('reserved'));
     }
+    modal.resOpen = false;
+    renderModal();
   }
 
   function toast(msg) {
@@ -688,32 +981,29 @@ window.KV = (function () {
   // если рейтинга в meta нет, генерим стабильный по id: 4.3-4.9, чтобы демо
   // не выглядело пустым, но одна позиция всегда показывала одно и то же
   function hashId(s) { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0; return h; }
+  // рейтинг считается только из настоящих отзывов; нет отзывов - нет звёзд
   function ratingOf(item) {
-    const m = meta[item.id];
-    let avg, count;
-    if (m && m.rating) { avg = m.rating.avg; count = m.rating.count; }
-    else { const h = hashId(item.id); avg = +(4.3 + (h % 7) / 10).toFixed(1); count = 5 + (h % 55); }
-    const ur = userReviews(item.id);
-    if (ur.length) {
-      const sum = avg * count + ur.reduce((s, x) => s + (x.r || 5), 0);
-      count += ur.length;
-      avg = +(sum / count).toFixed(1);
-    }
-    return { avg, count };
+    const list = reviewsFor(item.id);
+    if (!list.length) return null;
+    const sum = list.reduce((s, x) => s + (x.stars || 5), 0);
+    return { avg: +(sum / list.length).toFixed(1), count: list.length };
   }
   function starsHTML(item) {
     if (status(item) === 'out') return '';
-    const r = ratingOf(item), full = Math.round(r.avg);
+    const r = ratingOf(item);
+    if (!r) return '';
+    const full = Math.round(r.avg);
     let s = '';
     for (let i = 1; i <= 5; i++) s += '<span class="kv-star' + (i <= full ? ' on' : '') + '">★</span>';
     return '<span class="kv-stars">' + s + '<i>' + r.avg.toFixed(1) + ' · ' + r.count + '</i></span>';
   }
   function reviewsHTML(item) {
-    const m = meta[item.id];
-    if (!m || !m.reviews || !m.reviews.length) return '';
-    return '<div class="kv-revs"><b>' + ui('reviews') + '</b>' + m.reviews.map(rv =>
-      '<div class="kv-rev"><span class="kv-rev-h">' + rv.a +
-      ' <em>' + '★'.repeat(rv.r) + '</em></span>' + rv.t + '</div>').join('') + '</div>';
+    const list = reviewsFor(item.id);
+    if (!list.length) return '';
+    return '<div class="kv-revs"><b>' + ui('reviews') + '</b>' + list.map(rv =>
+      '<div class="kv-rev"><span class="kv-rev-h">' + esc(rv.author || t('you')) +
+      (rv.flavor ? ' <i class="kv-rev-fl">' + esc(rv.flavor) + '</i>' : '') +
+      ' <em>' + '★'.repeat(rv.stars || 5) + '</em></span>' + esc(rv.body || '') + '</div>').join('') + '</div>';
   }
 
   // ==== бейджи (10): хит / выбор менеджера / осталось мало ====
@@ -1049,28 +1339,36 @@ window.KV = (function () {
     return f.includes(id);
   }
 
-  // ==== отзывы пользователей поверх отзывов из meta.json ====
-  function revKey(id) { return 'kv_rev_' + id; }
-  function userReviews(id) { try { return JSON.parse(localStorage.getItem(revKey(id)) || '[]'); } catch (e) { return []; } }
-  function addReview(id, rate, text, name) {
-    const list = userReviews(id);
-    list.unshift({ a: (name || profileName || t('you')).trim() || t('you'), r: rate, t: text, ts: Date.now(), mine: true });
-    localStorage.setItem(revKey(id), JSON.stringify(list));
+  // ==== отзывы: только настоящие, живут в Supabase ====
+  // оставить отзыв можно на вкус из выданного заказа, витринных заглушек больше нет
+  let cloudRevs = null;      // все отзывы магазина по товарам: {product_id: [строки]}
+  let myRevs = [];           // мои отзывы (для раздела в профиле)
+  let reviewables = null;    // какие пары товар+вкус мне можно оценить
+  function reviewsFor(id) { return (cloudRevs && cloudRevs[id]) || []; }
+  function canReviewNow(id, flName) {
+    if (!reviewables) return false;
+    return reviewables.some(r => r.product_id === id && (r.flavor || '') === (flName || ''));
   }
-  function allReviews(item) {
-    const m = meta[item.id];
-    return userReviews(item.id).concat((m && m.reviews) || []);
+  async function loadReviews() {
+    if (!(window.KVAuth && KVAuth.apiAllReviews)) { cloudRevs = {}; return; }
+    const list = await KVAuth.apiAllReviews();
+    const map = {};
+    (list || []).forEach(r => { (map[r.product_id] = map[r.product_id] || []).push(r); });
+    cloudRevs = map;
+    if (hooks.render) hooks.render();
+    const d = document.getElementById('kvm');
+    if (d && !d.hidden) renderModal();
   }
-  function myReviewsAll() {
-    const out = [];
-    for (let i = 0; i < localStorage.length; i++) {
-      const k = localStorage.key(i);
-      if (k && k.indexOf('kv_rev_') === 0) {
-        const id = k.slice(7), item = find(id);
-        userReviews(id).forEach(r => out.push({ id, item, r }));
-      }
-    }
-    return out.sort((a, b) => (b.r.ts || 0) - (a.r.ts || 0));
+  async function loadMyReviewState() {
+    if (!(window.KVAuth && KVAuth.loggedIn && KVAuth.loggedIn())) { reviewables = null; myRevs = []; return; }
+    const [rv, mine] = await Promise.all([
+      KVAuth.apiReviewables ? KVAuth.apiReviewables() : null,
+      KVAuth.apiMyReviews ? KVAuth.apiMyReviews() : null
+    ]);
+    reviewables = rv || [];
+    myRevs = mine || [];
+    const d = document.getElementById('kvm');
+    if (d && !d.hidden) renderModal();
   }
 
   function starsRow(r) {
@@ -1117,20 +1415,11 @@ window.KV = (function () {
   }
   function renderModal() {
     const body = document.querySelector('#kvm .kvm-body'); if (!body || !modal) return;
-    const prev = body.querySelector('.kvm-flavstrip');
-    const sc = prev ? prev.scrollLeft : 0;
+    const prev = body.querySelector('.kvm-flavs');
+    const sc = prev ? prev.scrollTop : 0;
     body.innerHTML = modalHTML(find(modal.id));
-    const strip = body.querySelector('.kvm-flavstrip');
-    if (strip) {
-      strip.scrollLeft = sc;
-      // на сайте колесо мыши крутит ленту вкусов вбок (в мини-аппе свайп и так работает)
-      if (!isApp) strip.onwheel = e => {
-        if (strip.scrollWidth <= strip.clientWidth) return;
-        if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
-        e.preventDefault();
-        strip.scrollLeft += e.deltaY;
-      };
-    }
+    const list = body.querySelector('.kvm-flavs');
+    if (list) list.scrollTop = sc;
   }
   function modalHTML(item) {
     if (!item) return '';
@@ -1147,7 +1436,7 @@ window.KV = (function () {
         '<span class="kvm-cat">' + (catObj ? catName(catObj) : '') + '</span>' +
         '<h3 class="kvm-name">' + item.name + '</h3>' +
         badgesHTML(item) +
-        '<div class="kvm-hrow"><span class="kvm-price">' + (price(item) || '') + '</span>' + starsRow(r) + '</div>' +
+        '<div class="kvm-hrow"><span class="kvm-price">' + (price(item) || '') + '</span>' + (r ? starsRow(r) : '') + '</div>' +
       '</div>' +
       '<button class="kvm-fav' + (isFav(item.id) ? ' on' : '') + '" data-fav="' + item.id + '" aria-label="fav">' +
         (isFav(item.id) ? '♥' : '♡') + '</button>' +
@@ -1156,15 +1445,15 @@ window.KV = (function () {
     // фото товара (в эскизе "фото с жижей")
     const bigPhoto = '<div class="kvm-photo-big">' + photo(item) + '</div>';
 
-    // выбор вкуса горизонтальной полосой со скроллом
+    // выбор вкуса вертикальным списком со скроллом (как в боте ElfDuck)
     const flavStrip = hasFl ?
       '<div class="kvm-sec-t">' + t('flavors') + ' · ' + item.flavors.length + '</div>' +
-      '<div class="kvm-flavstrip">' + item.flavors.map((f, i) => {
+      '<div class="kvm-flavs">' + item.flavors.map((f, i) => {
         const have = f.qty > 0;
-        return '<button class="kvm-chip' + (i === modal.fl ? ' sel' : '') + (have ? '' : ' off') + '" data-fl-sel="' + i + '"' + (have ? '' : ' disabled') + '>' +
-          '<span class="kvm-chip-ic">' + (flavorIcon(f.name) || '•') + '</span>' +
-          '<span class="kvm-chip-n">' + flavorName(f) + '</span>' +
-          '<span class="kvm-chip-q">' + (have ? f.qty + ' ' + t('pcs') : t('qtyNone')) + '</span>' +
+        return '<button class="kvm-flav' + (i === modal.fl ? ' sel' : '') + (have ? '' : ' off') + '" data-fl-sel="' + i + '"' + (have ? '' : ' disabled') + '>' +
+          '<span class="kvm-flav-ic">' + (flavorIcon(f.name) || '•') + '</span>' +
+          '<span class="kvm-flav-n">' + flavorName(f) + '</span>' +
+          '<span class="kvm-flav-q">' + (have ? f.qty + ' ' + t('pcs') : t('qtyNone')) + '</span>' +
         '</button>';
       }).join('') + '</div>' : '';
 
@@ -1204,23 +1493,46 @@ window.KV = (function () {
       '<div class="kvm-tiers">' + tiers.map(x =>
         '<span class="kvm-tier"><b>' + x.q + '</b> ' + t('pcs') + '<em>' + x.p + ' zł</em></span>').join('') + '</div>' : '';
     const resBtn = st !== 'out' ? '<button class="kvm-res" data-res="' + item.id + '">' + t('reserve') + '</button>' : '';
-    const buy = '<div class="kvm-buy">' + preview + addBtn + tiersHTML + resBtn + '</div>';
 
-    // отзывы + форма
-    const reviews = allReviews(item);
-    const revList = reviews.map(rv =>
-      '<div class="kv-rev"><span class="kv-rev-h">' + esc(rv.a) +
-      (rv.mine ? ' <small class="kvm-mine">(' + t('you') + ')</small>' : '') +
-      ' <em>' + '★'.repeat(rv.r || 5) + '</em></span>' + esc(rv.t) + '</div>').join('');
+    // панель брони: дата выдачи, не дальше недели от сегодня
+    let resPanel = '';
+    if (modal.resOpen && st !== 'out') {
+      const days = [];
+      const now = new Date();
+      for (let i = 0; i <= 7; i++) {
+        const dd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + i);
+        const iso = dd.getFullYear() + '-' + String(dd.getMonth() + 1).padStart(2, '0') + '-' + String(dd.getDate()).padStart(2, '0');
+        const label = i === 0 ? t('today') : i === 1 ? t('tomorrow')
+          : dd.getDate() + '.' + String(dd.getMonth() + 1).padStart(2, '0');
+        days.push({ iso, label });
+      }
+      if (!modal.resDate) modal.resDate = days[0].iso;
+      resPanel = '<div class="kvm-resbox"><b>' + t('resTitle') + '</b>' +
+        '<div class="kvm-rdays">' + days.map(x =>
+          '<button class="kvm-rday' + (x.iso === modal.resDate ? ' sel' : '') + '" data-res-date="' + x.iso + '" type="button">' + x.label + '</button>').join('') + '</div>' +
+        '<p class="kvm-rnote">' + t('resNote') + '</p>' +
+        '<button class="kvm-res-go" data-res-go="1" type="button">' + t('resOk') + '</button></div>';
+    }
+    const buy = '<div class="kvm-buy">' + preview + addBtn + tiersHTML + resBtn + resPanel + '</div>';
+
+    // отзывы: показываем настоящие, форма только на купленный вкус
+    const flavorKey = fl ? fl.name : '';
+    const reviews = reviewsFor(item.id);
+    const revList = reviews.length ? reviews.map(rv =>
+      '<div class="kv-rev"><span class="kv-rev-h">' + esc(rv.author || t('you')) +
+      (rv.flavor ? ' <i class="kv-rev-fl">' + esc(rv.flavor) + '</i>' : '') +
+      ' <em>' + '★'.repeat(rv.stars || 5) + '</em></span>' + esc(rv.body || '') + '</div>').join('')
+      : '<p class="kvm-norevs">' + t('noRevsYet') + '</p>';
     const starPick = [1, 2, 3, 4, 5].map(i =>
       '<button class="kvm-rstar' + (i <= (modal.rate || 0) ? ' on' : '') + '" data-star="' + i + '" type="button">★</button>').join('');
-    const revForm =
-      '<div class="kvm-revform"><b>' + t('reviewAdd') + '</b>' +
+    const canRev = canReviewNow(item.id, flavorKey);
+    const revForm = canRev
+      ? '<div class="kvm-revform"><b>' + t('reviewAdd') + (fl ? ' · ' + flavorName(fl) : '') + '</b>' +
         '<div class="kvm-rrate"><span>' + t('reviewYourRate') + '</span><div class="kvm-rstars">' + starPick + '</div></div>' +
-        '<input class="kvm-rev-name" type="text" placeholder="' + t('reviewName') + '" value="' + esc(modal.name || '') + '">' +
         '<textarea class="kvm-rev-text" placeholder="' + t('reviewText') + '" rows="2">' + esc(modal.text || '') + '</textarea>' +
         '<button class="kvm-rev-send" type="button">' + t('reviewSend') + '</button>' +
-      '</div>';
+      '</div>'
+      : '<p class="kvm-revnote">' + t('revNeedBuy') + '</p>';
     const reviewsBlock = '<div class="kvm-reviews"><div class="kvm-sec-t">' + ui('reviews') + ' · ' + reviews.length + '</div>' +
       revList + revForm + '</div>';
 
@@ -1244,8 +1556,12 @@ window.KV = (function () {
       e.stopPropagation();
       const ok = cartAdd(add.dataset.add, add.dataset.fl !== undefined ? +add.dataset.fl : undefined);
       toast(t(ok ? 'added' : 'maxQty'));
-      if (ok) track('add_to_cart', { id: add.dataset.add });
-      renderModal();
+      if (ok) {
+        track('add_to_cart', { id: add.dataset.add });
+        // по ТЗ: после добавления сразу показываем корзину, а не оставляем её сзади
+        closeProduct();
+        openCart();
+      } else renderModal();
       return;
     }
     const star = e.target.closest('[data-star]');
@@ -1254,18 +1570,40 @@ window.KV = (function () {
     if (send) {
       e.stopPropagation();
       if (!modal.text || !modal.text.trim()) { toast(t('reviewNoText')); return; }
-      addReview(modal.id, modal.rate || 5, modal.text.trim(), modal.name);
-      modal.rate = 0; modal.text = '';
-      toast(t('reviewThanks'));
-      track('review', { id: modal.id });
-      renderModal();
-      if (hooks.render) hooks.render();
+      sendReview();
       return;
     }
+    const rdate = e.target.closest('[data-res-date]');
+    if (rdate) { modal.resDate = rdate.dataset.resDate; renderModal(); return; }
+    const rgo = e.target.closest('[data-res-go]');
+    if (rgo) { e.stopPropagation(); confirmReserve(); return; }
     const res = e.target.closest('[data-res]');
-    if (res) { e.stopPropagation(); reserve(res.dataset.res); return; }
+    if (res) { e.stopPropagation(); modal.resOpen = !modal.resOpen; renderModal(); return; }
     const goto = e.target.closest('[data-goto]');
     if (goto) { e.stopPropagation(); openProduct(goto.dataset.goto); return; }
+  }
+
+  // отправка отзыва: он привязан к выбранному вкусу и уходит в облако
+  async function sendReview() {
+    const item = find(modal.id); if (!item) return;
+    const fl = item.flavors && modal.fl >= 0 ? item.flavors[modal.fl] : null;
+    if (!(window.KVAuth && KVAuth.apiReview)) return;
+    const r = await KVAuth.apiReview({
+      product_id: item.id,
+      flavor: fl ? fl.name : '',
+      product_name: item.name + (fl ? ' ' + fl.name : ''),
+      author: profileName || t('you'),
+      stars: modal.rate || 5,
+      body: modal.text.trim()
+    });
+    if (r && r.error) { toast(t('revNeedBuy')); return; }
+    modal.rate = 0; modal.text = '';
+    toast(t('reviewThanks'));
+    track('review', { id: item.id });
+    await loadReviews();
+    loadMyReviewState();
+    renderModal();
+    if (hooks.render) hooks.render();
   }
 
   // ==== профиль пользователя ====
@@ -1309,7 +1647,29 @@ window.KV = (function () {
     renderProfile();
     document.getElementById('kvp').hidden = false;
     document.body.classList.add('kv-noscroll');
+    loadCloudProfile();
     track('open_profile');
+  }
+  // облачная часть профиля: заказы, брони и мои отзывы тянутся из Supabase
+  let cloudProf = { orders: null, res: null };
+  async function loadCloudProfile() {
+    if (!(window.KVAuth && KVAuth.loggedIn && KVAuth.loggedIn())) {
+      cloudProf = { orders: null, res: null };
+      return;
+    }
+    const [o, r] = await Promise.all([
+      KVAuth.apiMyOrders ? KVAuth.apiMyOrders() : null,
+      KVAuth.apiMyReservations ? KVAuth.apiMyReservations() : null
+    ]);
+    cloudProf = { orders: o, res: r };
+    await loadMyReviewState();
+    const d = document.getElementById('kvp');
+    if (d && !d.hidden) renderProfile();
+  }
+  function stLabel(s) {
+    const k = { new: 'stNew', confirmed: 'stConfirmed', done: 'stDone', cancelled: 'stCancelled',
+      active: 'stActive', expired: 'stExpired', notified: 'stNotified' }[s];
+    return k ? t(k) : s || '';
   }
   function closeProfile() {
     const d = document.getElementById('kvp'); if (d) d.hidden = true;
@@ -1327,8 +1687,33 @@ window.KV = (function () {
     const uname = u && u.username ? '@' + esc(u.username) : t('guest');
 
     const favList = favs().map(id => find(id)).filter(Boolean);
-    const myRev = myReviewsAll();
-    const orders = orderLog();
+    const logged = window.KVAuth && KVAuth.loggedIn && KVAuth.loggedIn();
+
+    // данные для получения посылки: просмотр или редактирование
+    const ct = contactOf();
+    let contactBlock = '';
+    if (logged) {
+      const fields = [
+        { k: 'name', lbl: t('fio'), v: ct.name },
+        { k: 'phone', lbl: t('phoneF'), v: ct.phone },
+        { k: 'email', lbl: t('emailF'), v: ct.email },
+        { k: 'paczkomat', lbl: t('paczkoF'), v: ct.paczkomat, hint: t('paczkoHint') }
+      ];
+      contactBlock = '<div class="kvp-sec kvp-ct"><b>' + t('contactTitle') + '</b>' +
+        (profileEdit
+          ? '<div class="kvp-ct-warn">' + t('dataWarn') + '</div>' +
+            fields.map(f =>
+              '<label class="kvp-ct-f"><span>' + f.lbl + (f.hint ? ' <i>' + f.hint + '</i>' : '') + '</span>' +
+              '<input data-ct="' + f.k + '" type="' + (f.k === 'email' ? 'email' : f.k === 'phone' ? 'tel' : 'text') + '" value="' + esc(f.v || '') + '"' +
+              (f.k === 'phone' ? ' placeholder="+48 600 000 000"' : f.k === 'paczkomat' ? ' placeholder="KAT01M"' : '') + '></label>' +
+              (f.k === 'paczkomat' && geoReady() ? '<button class="kvp-ct-map" type="button">' + t('pickMap') + '</button>' : '')
+            ).join('') +
+            '<button class="kvp-ct-apply">' + t('apply') + '</button>'
+          : fields.map(f =>
+              '<div class="kvp-ct-row"><span>' + f.lbl + '</span><b>' + (esc(f.v || '') || '—') + '</b></div>').join('') +
+            '<button class="kvp-ct-edit">' + t('edit') + '</button>') +
+        '</div>';
+    }
 
     const favBlock = '<div class="kvp-sec"><b>' + t('myFavs') + ' · ' + favList.length + '</b>' +
       (favList.length
@@ -1338,27 +1723,54 @@ window.KV = (function () {
               '<span>' + it.name + '</span><em>' + price(it) + '</em></button>').join('') + '</div>'
         : '<p class="kvp-empty">' + t('noFavs') + '</p>') + '</div>';
 
-    const revBlock = '<div class="kvp-sec"><b>' + t('myReviews') + ' · ' + myRev.length + '</b>' +
-      (myRev.length
-        ? myRev.map(x => '<div class="kvp-rev"><span class="kvp-rev-h">' +
-            (x.item ? x.item.name : x.id) + ' <em>' + '★'.repeat(x.r.r || 5) + '</em></span>' + esc(x.r.t) + '</div>').join('')
+    // мои отзывы: полное название вкуса, звёзды и текст
+    const revBlock = '<div class="kvp-sec"><b>' + t('myReviews') + ' · ' + myRevs.length + '</b>' +
+      (myRevs.length
+        ? myRevs.map(x => '<div class="kvp-rev"><span class="kvp-rev-h">' +
+            esc(x.product_name || x.product_id) + ' <em>' + '★'.repeat(x.stars || 5) + '</em></span>' + esc(x.body || '') + '</div>').join('')
         : '<p class="kvp-empty">' + t('noReviews') + '</p>') + '</div>';
 
-    const ordBlock = '<div class="kvp-sec"><b>' + t('myOrders') + ' · ' + orders.length + '</b>' +
-      (orders.length
+    // брони: активные можно отменить, позиция вернётся в наличие
+    const resList = (cloudProf.res || []).filter(x => x.status !== 'cancelled');
+    const resBlock = logged && resList.length
+      ? '<div class="kvp-sec"><b>' + t('myRes') + ' · ' + resList.length + '</b>' +
+        resList.map(x => '<div class="kvp-ord"><div class="kvp-ord-h"><span>' +
+          esc(x.product_name || x.product_id) + '</span><b>' + (x.reserve_date || '') + '</b></div>' +
+          '<p>' + stLabel(x.status) +
+          (x.status === 'active' || x.status === 'notified'
+            ? ' · <button class="kvp-res-cancel" data-res-cancel="' + x.id + '">' + t('resCancel') + '</button>' : '') +
+          '</p></div>').join('') + '</div>'
+      : '';
+
+    // заказы: из облака со статусами, для гостя локальная история
+    const cOrders = cloudProf.orders;
+    let ordInner, ordCount;
+    if (cOrders) {
+      ordCount = cOrders.length;
+      ordInner = cOrders.length
+        ? cOrders.slice(0, 6).map(o => '<div class="kvp-ord"><div class="kvp-ord-h"><span>' +
+            fmtDate(new Date(o.created_at).getTime()) + ' · <i class="kvp-st kvp-st-' + o.status + '">' + stLabel(o.status) + '</i></span><b>' + o.sum + ' zł</b></div>' +
+            '<p>' + esc((o.items || []).map(i => typeof i === 'string' ? i : i.name + (i.flavor ? ' ' + i.flavor : '') + ' ×' + i.n).join(', ')) + '</p></div>').join('')
+        : '<p class="kvp-empty">' + t('noOrders') + '</p>';
+    } else {
+      const orders = orderLog();
+      ordCount = orders.length;
+      ordInner = orders.length
         ? orders.slice(0, 6).map(o => '<div class="kvp-ord"><div class="kvp-ord-h"><span>' +
             fmtDate(o.ts) + '</span><b>' + o.total + ' zł</b></div><p>' + esc((o.items || []).join(', ')) + '</p></div>').join('') +
           (hasLastOrder() ? '<button class="kvp-repeat">' + ui('repeat') + '</button>' : '')
-        : '<p class="kvp-empty">' + t('noOrders') + '</p>') + '</div>';
+        : '<p class="kvp-empty">' + t('noOrders') + '</p>';
+    }
+    const ordBlock = '<div class="kvp-sec"><b>' + t('myOrders') + ' · ' + ordCount + '</b>' + ordInner + '</div>';
 
     d.querySelector('.kvp-body').innerHTML =
       '<div id="kvp-auth"></div>' +
       '<div class="kvp-stats">' +
-        '<div><b>' + orders.length + '</b><span>' + t('ordersN') + '</span></div>' +
+        '<div><b>' + ordCount + '</b><span>' + t('ordersN') + '</span></div>' +
         '<div><b>' + favList.length + '</b><span>' + t('favsN') + '</span></div>' +
-        '<div><b>' + myRev.length + '</b><span>' + t('reviewsN') + '</span></div>' +
+        '<div><b>' + myRevs.length + '</b><span>' + t('reviewsN') + '</span></div>' +
       '</div>' +
-      favBlock + revBlock + ordBlock;
+      contactBlock + favBlock + resBlock + revBlock + ordBlock;
     // блок входа/аккаунта рисует модуль auth.js, если он подключён
     if (window.KVAuth && window.KVAuth.decorateProfile)
       window.KVAuth.decorateProfile(d.querySelector('#kvp-auth'));
@@ -1372,7 +1784,11 @@ window.KV = (function () {
     const d = document.getElementById('kvp');
     if (d && !d.hidden) renderProfile();
     if (hooks.render) hooks.render();
+    // после входа/выхода обновляем, какие вкусы можно оценить, и облачную часть профиля
+    loadMyReviewState();
+    if (d && !d.hidden) loadCloudProfile();
   }
+  let profileEdit = false;   // режим правки данных получателя
   function onProfileClick(e) {
     const d = e.currentTarget;
     if (e.target === d || e.target.closest('.kvp-x')) { closeProfile(); return; }
@@ -1383,9 +1799,39 @@ window.KV = (function () {
       renderProfile();
       return;
     }
+    if (e.target.closest('.kvp-ct-edit')) { profileEdit = true; renderProfile(); return; }
+    if (e.target.closest('.kvp-ct-map')) { openGeo(); return; }
+    if (e.target.closest('.kvp-ct-apply')) { applyProfileContact(d); return; }
+    const rc = e.target.closest('[data-res-cancel]');
+    if (rc) { cancelReservation(+rc.dataset.resCancel); return; }
     const goto = e.target.closest('[data-goto]');
     if (goto) { closeProfile(); openProduct(goto.dataset.goto); return; }
     if (e.target.closest('.kvp-repeat')) { closeProfile(); repeatOrder(); return; }
+  }
+  async function applyProfileContact(d) {
+    const f = {};
+    d.querySelectorAll('[data-ct]').forEach(i => { f[i.dataset.ct] = i.value; });
+    // пустые поля можно оставить на потом, заполненные проверяем строго
+    if (f.name && !validFio(f.name)) { toast(t('errFio')); return; }
+    if (f.phone && !validPhone(f.phone)) { toast(t('errPhone2')); return; }
+    if (f.email && !validEmail(f.email)) { toast(t('errEmail2')); return; }
+    if (f.paczkomat && !validPaczko(f.paczkomat)) { toast(t('errPaczko2')); return; }
+    if (f.phone) f.phone = normPhonePl(f.phone);
+    if (f.paczkomat) f.paczkomat = normPaczko(f.paczkomat);
+    try {
+      if (window.KVAuth && KVAuth.saveContact) await KVAuth.saveContact(f);
+    } catch (e) { toast((e && e.message) || t('orderFail')); return; }
+    profileEdit = false;
+    toast(t('savedOk'));
+    renderProfile();
+  }
+  async function cancelReservation(id) {
+    if (!(window.KVAuth && KVAuth.apiCancelReservation)) return;
+    const ok = await KVAuth.apiCancelReservation(id);
+    if (!ok) { toast(t('resFail')); return; }
+    toast(t('resCancelled'));
+    loadCloudProfile();
+    try { applyStock(await cloudStock()); if (hooks.render) hooks.render(); } catch (e) {}
   }
 
   // ==== способ получения: самовывоз / InPost / курьер ====
@@ -1646,7 +2092,59 @@ body.kv-noscroll{overflow:hidden}
 .kvd-dopt.on i{color:var(--kv-accent-2,var(--kv-accent))}
 .kvd-daddr{width:100%;margin-top:9px;background:var(--kv-field);border:1px solid var(--kv-line);color:var(--kv-text);border-radius:9px;padding:10px 12px;font-family:inherit;font-size:13px}
 .kvd-dnote{margin-top:9px;font-size:12px;color:var(--kv-muted);line-height:1.4}
-.kvd-fee{color:var(--kv-muted)}`;
+.kvd-fee{color:var(--kv-muted)}
+.kv-rev-fl{font-style:normal;font-size:11px;font-weight:700;color:var(--kv-accent-2,var(--kv-accent));background:var(--kv-surface);border:1px solid var(--kv-line);border-radius:99px;padding:1px 7px;margin-left:4px}
+.kvm-norevs,.kvm-revnote{font-size:12.5px;color:var(--kv-muted);line-height:1.5;padding:8px 0}
+.kvm-revnote{border:1px dashed var(--kv-line);border-radius:10px;padding:10px 12px;margin-top:12px}
+.kvm-resbox{border:1px solid var(--kv-line);border-radius:12px;padding:13px 14px;background:var(--kv-surface)}
+.kvm-resbox>b{display:block;font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:var(--kv-muted);margin-bottom:9px}
+.kvm-rdays{display:flex;gap:6px;flex-wrap:wrap}
+.kvm-rday{background:var(--kv-field);border:1px solid var(--kv-line);color:var(--kv-text);border-radius:9px;padding:7px 11px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit}
+.kvm-rday.sel{border-color:var(--kv-accent);color:var(--kv-accent-2,var(--kv-accent));box-shadow:inset 0 0 0 1px var(--kv-accent)}
+.kvm-rnote{font-size:11.5px;color:var(--kv-muted);line-height:1.5;margin:9px 0}
+.kvm-res-go{width:100%;background:var(--kv-accent);color:var(--kv-accent-ink);border:none;border-radius:10px;padding:11px;font-weight:800;font-size:13px;cursor:pointer;font-family:inherit}
+.kvc{position:fixed;inset:0;z-index:170;background:rgba(6,6,10,.74);display:flex;align-items:flex-end;justify-content:center}
+@media(min-width:640px){.kvc{align-items:center;padding:24px}}
+.kvc[hidden]{display:none}
+.kvc-box{position:relative;width:min(420px,100%);max-height:92vh;overflow-y:auto;background:var(--kv-surface2);border:1px solid var(--kv-line);border-radius:20px 20px 0 0;padding:22px 20px 26px;box-shadow:var(--kv-shadow)}
+@media(min-width:640px){.kvc-box{border-radius:20px}}
+.kvc-x{position:absolute;top:12px;right:12px;width:34px;height:34px;border:none;background:var(--kv-surface);color:var(--kv-muted);border-radius:50%;font-size:22px;cursor:pointer}
+.kvc-title{font-size:17px;margin-bottom:14px;padding-right:40px}
+.kvc-row,.kvc-sum{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid var(--kv-line);font-size:13.5px}
+.kvc-row span,.kvc-sum span{color:var(--kv-muted)}
+.kvc-row b{text-align:right;word-break:break-word}
+.kvc-sum b{color:var(--kv-accent-2,var(--kv-accent))}
+.kvc-none{color:var(--kv-muted);font-style:normal}
+.kvc-warn{margin-top:14px;background:rgba(255,176,32,.1);border:1px solid rgba(255,176,32,.35);color:#d29a2b;border-radius:10px;padding:10px 12px;font-size:12px;line-height:1.5}
+.kvc-btns{display:flex;gap:9px;margin-top:14px}
+.kvc-edit{flex:1;background:none;border:1px solid var(--kv-line);color:var(--kv-text);border-radius:11px;padding:12px;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit}
+.kvc-go{flex:2;background:var(--kv-accent);color:var(--kv-accent-ink);border:none;border-radius:11px;padding:12px;font-weight:800;font-size:13px;cursor:pointer;font-family:inherit}
+.kvc-go[disabled]{opacity:.6;cursor:default}
+.kvc-f{display:flex;flex-direction:column;gap:5px;margin-bottom:10px;font-size:12px;font-weight:700;color:var(--kv-muted)}
+.kvc-f input{background:var(--kv-field);border:1px solid var(--kv-line);color:var(--kv-text);border-radius:10px;padding:11px 13px;font-family:inherit;font-size:13.5px}
+.kvc-f input:focus{outline:none;border-color:var(--kv-accent)}
+.kvc-apply{width:100%;margin-top:6px;background:var(--kv-accent);color:var(--kv-accent-ink);border:none;border-radius:11px;padding:12px;font-weight:800;font-size:13px;cursor:pointer;font-family:inherit}
+.kvc-map,.kvp-ct-map{background:none;border:1px dashed var(--kv-line);color:var(--kv-accent-2,var(--kv-accent));border-radius:9px;padding:8px 12px;font-weight:700;font-size:12px;cursor:pointer;font-family:inherit;margin-bottom:10px}
+.kvp-ct-warn{background:rgba(255,176,32,.1);border:1px solid rgba(255,176,32,.35);color:#d29a2b;border-radius:10px;padding:9px 11px;font-size:11.5px;line-height:1.5;margin-bottom:10px}
+.kvp-ct-f{display:flex;flex-direction:column;gap:4px;margin-bottom:9px;font-size:11.5px;font-weight:700;color:var(--kv-muted)}
+.kvp-ct-f i{font-style:normal;font-weight:400;opacity:.8}
+.kvp-ct-f input{background:var(--kv-field);border:1px solid var(--kv-line);color:var(--kv-text);border-radius:9px;padding:10px 12px;font-family:inherit;font-size:13px}
+.kvp-ct-f input:focus{outline:none;border-color:var(--kv-accent)}
+.kvp-ct-row{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px solid var(--kv-line);font-size:12.5px}
+.kvp-ct-row span{color:var(--kv-muted)}
+.kvp-ct-row b{text-align:right;word-break:break-word}
+.kvp-ct-edit,.kvp-ct-apply{width:100%;margin-top:9px;border-radius:10px;padding:10px;font-weight:700;font-size:12.5px;cursor:pointer;font-family:inherit}
+.kvp-ct-edit{background:none;border:1px solid var(--kv-line);color:var(--kv-text)}
+.kvp-ct-apply{background:var(--kv-accent);border:none;color:var(--kv-accent-ink);font-weight:800}
+.kvp-st{font-style:normal;font-weight:700}
+.kvp-st-new{color:#d29a2b}.kvp-st-confirmed{color:var(--kv-accent-2,var(--kv-accent))}
+.kvp-st-done{color:#3dbb6e}.kvp-st-cancelled{color:var(--kv-muted)}
+.kvp-res-cancel{background:none;border:none;color:#ff6a86;font-weight:700;font-size:12px;cursor:pointer;font-family:inherit;padding:0}
+.kvg{position:fixed;inset:0;z-index:180;background:rgba(6,6,10,.8);display:flex;align-items:center;justify-content:center;padding:16px}
+.kvg[hidden]{display:none}
+.kvg-box{position:relative;width:min(760px,100%);height:min(80vh,620px);background:var(--kv-surface2);border:1px solid var(--kv-line);border-radius:16px;overflow:hidden}
+.kvg-box inpost-geowidget{display:block;width:100%;height:100%}
+.kvg-x{position:absolute;top:10px;right:10px;z-index:2;width:34px;height:34px;border:none;background:var(--kv-surface);color:var(--kv-text);border-radius:50%;font-size:22px;cursor:pointer}`;
     const s = document.createElement('style');
     s.id = 'kv-shared'; s.textContent = css;
     document.head.appendChild(s);
@@ -1717,6 +2215,7 @@ body.kv-noscroll{overflow:hidden}
     loadCart();
     ensureDrawer();
     drawDrawer();
+    loadReviews();   // настоящие отзывы из облака, без блокировки отрисовки
     const cs = document.getElementById('city');
     if (cs) citySwitch(cs);
     const ts = document.getElementById('theme');
