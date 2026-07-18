@@ -1679,12 +1679,16 @@ window.KV = (function () {
     const d = document.getElementById('kvp'); if (!d) return;
     d.querySelector('.kvp-title').textContent = t('profile');
     const u = tgUser();
+    const prof = window.KVAuth && KVAuth.profile;
     const name = profileName || (u && u.first_name) || '';
     const initial = (name || 'K').trim()[0].toUpperCase();
-    const avatar = u && u.photo_url
-      ? '<img src="' + esc(u.photo_url) + '" alt="">'
+    // аватар: сперва фото из Telegram (мини-апп), затем сохранённый в профиле, иначе буква
+    const avaSrc = (u && u.photo_url) || (prof && prof.avatar) || '';
+    const avatar = avaSrc
+      ? '<img src="' + esc(avaSrc) + '" alt="">'
       : '<span>' + esc(initial) + '</span>';
     const uname = u && u.username ? '@' + esc(u.username) : t('guest');
+    const isAdm = window.KVAuth && KVAuth.isAdmin && KVAuth.isAdmin();
 
     const favList = favs().map(id => find(id)).filter(Boolean);
     const logged = window.KVAuth && KVAuth.loggedIn && KVAuth.loggedIn();

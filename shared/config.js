@@ -11,8 +11,9 @@ window.KV_CONFIG = {
   SUPABASE_ANON_KEY: 'sb_publishable_1SUnHJJpoxKPTkh3_ox4Xg_ONLBue9z',
   FUNCTIONS_URL: 'https://vffqnydxofvunwausakv.supabase.co/functions/v1',
 
-  TELEGRAM_BOT: 'KatoVape_bot',   // бронь уходит боту диплинком, кнопка "Войти через Telegram" на сайте
+  TELEGRAM_BOT: 'KatoVape_bot',   // username бота: бронь диплинком, вход в мини-аппе, кнопка "Открыть в Telegram"
   ADMIN_IDS: [5301671230],
+  ADMIN_URL: 'https://nexlyy.github.io/KatoVape/demos/admin/',   // куда ведёт кнопка "В админку" для админов
 
   // токен геовиджета InPost (кабинет manager.paczkomaty.pl, раздел Geowidget).
   // пустой = ручной ввод номера пачкомата, с токеном появится выбор на карте

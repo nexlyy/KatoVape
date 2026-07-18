@@ -1,9 +1,3 @@
-// KatoVape bot для прода (режим Supabase). ЧИСТО бот: никакого http-сервера.
-// Poll Telegram (getUpdates) + poll Supabase: подтверждение броней, напоминание
-// в 10:00 по Варшаве в день выдачи, просрочка брони (остаток вернёт триггер),
-// заказы менеджеру, статусы клиенту, рассылки, уведомления о поступлении.
-// env: TELEGRAM_BOT_TOKEN, SUPABASE_URL, SUPABASE_SERVICE_KEY, MINIAPP_URL,
-//      KV_MANAGER_IDS (через запятую, по умолчанию владелец), KV_SHEETS_CSV (опц.)
 import { BOT_TOKEN, sendMessage, getUpdates, deleteWebhook, setMenuButton } from './tg.mjs';
 
 const SUPA = (process.env.SUPABASE_URL || '').replace(/\/$/, '');
@@ -12,10 +6,11 @@ const MINIAPP_URL = process.env.MINIAPP_URL || '';
 const SHEETS = process.env.KV_SHEETS_CSV || '';
 const JOBS_MS = Number(process.env.KV_JOBS_MS || 10000);
 const MANAGERS = (process.env.KV_MANAGER_IDS || '5301671230').split(',').map(s => +s.trim()).filter(Boolean);
+const ADMIN_URL = process.env.KV_ADMIN_URL || '';
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const esc = s => String(s == null ? '' : s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+const enc = encodeURIComponent;
 
-// ---- Supabase REST (PostgREST) под service_role ----
 async function sb(method, path, body, extra) {
   const res = await fetch(SUPA + '/rest/v1/' + path, {
     method, headers: { apikey: KEY, Authorization: 'Bearer ' + KEY, 'Content-Type': 'application/json', 'User-Agent': 'katovape-bot/2.0', ...(extra || {}) },
@@ -31,7 +26,6 @@ const sbUpdate = (t, q, patch) => sb('PATCH', t + '?' + q, patch, { Prefer: 'ret
 const sbUpsert = (t, rows, onConflict) => sb('POST', t + (onConflict ? '?on_conflict=' + onConflict : ''), rows, { Prefer: 'resolution=merge-duplicates,return=minimal' });
 const sbRpc = (fn, args) => sb('POST', 'rpc/' + fn, args || {});
 
-// ---- время по Варшаве: дата и час, чтобы напоминать ровно с 10:00 ----
 function warsaw() {
   const parts = new Intl.DateTimeFormat('en-GB', {
     timeZone: 'Europe/Warsaw', hour12: false,
@@ -46,7 +40,6 @@ function plusDays(iso, n) {
   return d.toISOString().slice(0, 10);
 }
 
-// ---- разбор CSV Google Sheets (опциональный синк, если задан KV_SHEETS_CSV) ----
 function parseCSV(text) {
   const rows = []; let row = [], field = '', q = false;
   for (let i = 0; i < text.length; i++) {
@@ -61,11 +54,16 @@ function parseCSV(text) {
   return rows.filter(r => r.some(x => x.trim() !== ''));
 }
 
-// ---- входящие Telegram-апдейты ----
 async function handleUpdate(u) {
   const m = u.message; if (!m || !m.text) return;
-  if (!m.text.startsWith('/start')) return;
   const f = m.from || {};
+  const text = m.text.trim();
+  // команды управления ассортиментом — только для менеджеров
+  if (MANAGERS.includes(f.id) && /^\/(admin|stock|set|price|help)\b/.test(text)) {
+    await handleAdmin(m, text).catch(e => sendMessage(m.chat.id, 'Ошибка: ' + esc(String(e.message || e))));
+    return;
+  }
+  if (!text.startsWith('/start')) return;
   await sbUpsert('bot_users', { telegram_id: f.id, username: f.username || null, first_name: f.first_name || null, lang: f.language_code || null, opted_in: true }, 'telegram_id').catch(() => {});
   const param = (m.text.split(' ')[1] || '').trim();
   if (param.startsWith('res_')) { await handleReserveLink(m, param.slice(4)); return; }
@@ -73,8 +71,6 @@ async function handleUpdate(u) {
   await sendMessage(m.chat.id, 'Привет! Это <b>KatoVape</b>. Открывай магазин кнопкой ниже, выбирай вкус, оформляй заказ или бронь. О брони напомним в день выдачи.', kb);
 }
 
-// бронь по диплинку: res_<id>_<город> (старый вид, заявка на поступление)
-// или res_<id>_<ггггммдд>_<город> (бронь на дату из витрины)
 async function handleReserveLink(m, rest) {
   const f = m.from || {};
   const parts = rest.split('_');
@@ -90,7 +86,6 @@ async function handleReserveLink(m, rest) {
     if (p && p[0] && p[0].name) name = p[0].name;
   } catch {}
   if (dateRaw) {
-    // бронь на дату: зажимаем в окно сегодня..+7 по Варшаве
     const today = warsaw().date;
     let date = dateRaw.slice(0, 4) + '-' + dateRaw.slice(4, 6) + '-' + dateRaw.slice(6, 8);
     if (date < today) date = today;
@@ -112,6 +107,68 @@ async function handleReserveLink(m, rest) {
     await sendMessage(m.chat.id, 'Заявка принята: <b>' + esc(name) + '</b>. Сообщим, как только появится в наличии.');
   }
 }
+
+// ---- управление ассортиментом из бота (только менеджеры) ----
+function adminHelp() {
+  return 'Управление ассортиментом (для менеджеров):\n\n' +
+    '<b>/stock</b> [город] — показать остатки\n' +
+    '<b>/set</b> id|вкус|штук[|город] — задать количество\n' +
+    '<b>/price</b> id|вкус|цена[|город] — задать цену\n\n' +
+    'Вкус можно оставить пустым: <code>/set vaporesso-04||8</code>\n' +
+    'Города: katowice (по умолчанию), gliwice, warszawa.\n' +
+    'Полное редактирование — в панели по кнопке ниже.';
+}
+async function handleAdmin(m, text) {
+  const chat = m.chat.id;
+  const sp = text.indexOf(' ');
+  const cmd = (sp < 0 ? text : text.slice(0, sp)).toLowerCase();
+  const arg = sp < 0 ? '' : text.slice(sp + 1).trim();
+  if (cmd === '/admin' || cmd === '/help') {
+    const kb = ADMIN_URL ? { reply_markup: { inline_keyboard: [[{ text: '🛠 Открыть панель управления', web_app: { url: ADMIN_URL } }]] } } : {};
+    await sendMessage(chat, adminHelp(), kb); return;
+  }
+  if (cmd === '/stock') { await adminStock(chat, (arg || 'katowice').toLowerCase()); return; }
+  if (cmd === '/set') { await adminSet(chat, arg, 'qty'); return; }
+  if (cmd === '/price') { await adminSet(chat, arg, 'price'); return; }
+}
+async function adminStock(chat, city) {
+  const rows = await sbSelect('products', 'city=eq.' + enc(city) + '&select=id,name,flavor,qty,price&order=name.asc,flavor.asc').catch(() => []);
+  if (!rows || !rows.length) { await sendMessage(chat, 'Пусто для города «' + esc(city) + '». Города: katowice, gliwice, warszawa.'); return; }
+  let buf = 'Ассортимент «' + esc(city) + '» (' + rows.length + '):\n';
+  for (const r of rows) {
+    const line = '<code>' + esc(r.id) + '</code>' + (r.flavor ? ' | ' + esc(r.flavor) : '') +
+      ' — <b>' + r.qty + '</b> шт' + (r.price != null ? ', ' + r.price + ' zł' : '') + '\n';
+    if (buf.length + line.length > 3800) { await sendMessage(chat, buf); buf = ''; }
+    buf += line;
+  }
+  if (buf.trim()) await sendMessage(chat, buf);
+}
+async function adminSet(chat, arg, field) {
+  const parts = arg.split('|').map(s => s.trim());
+  const label = field === 'qty' ? 'штук' : 'цена';
+  const cmd = field === 'qty' ? 'set' : 'price';
+  if (parts.length < 3) {
+    await sendMessage(chat, 'Формат: <code>/' + cmd + ' id|вкус|' + label + '[|город]</code>\n' +
+      'Вкус можно оставить пустым: <code>/' + cmd + ' vaporesso-04||8</code>');
+    return;
+  }
+  const id = parts[0], flavor = parts[1], city = (parts[3] || 'katowice').toLowerCase();
+  const val = Number(parts[2]);
+  if (!Number.isFinite(val) || val < 0) { await sendMessage(chat, 'Число указано неверно: ' + esc(parts[2])); return; }
+  const q = 'id=eq.' + enc(id) + '&city=eq.' + enc(city) + '&flavor=eq.' + enc(flavor);
+  const patch = { updated_at: new Date().toISOString() };
+  patch[field] = Math.round(val);
+  const upd = await sb('PATCH', 'products?' + q, patch, { Prefer: 'return=representation' });
+  if (!upd || !upd.length) {
+    await sendMessage(chat, 'Не нашёл позицию <code>' + esc(id) + '</code>' + (flavor ? ' | ' + esc(flavor) : '') +
+      ' в городе «' + esc(city) + '». Сверься с /stock.');
+    return;
+  }
+  const r = upd[0];
+  await sendMessage(chat, '✅ <b>' + esc(r.name || r.id) + '</b>' + (r.flavor ? ' | ' + esc(r.flavor) : '') +
+    ' → ' + (field === 'qty' ? r.qty + ' шт' : r.price + ' zł'));
+}
+
 async function tgLoop() {
   await deleteWebhook().catch(() => {});
   let offset = 0;
@@ -125,7 +182,6 @@ async function tgLoop() {
   }
 }
 
-// ---- бронь из витрины: бот подтверждает в личку ----
 async function confirmReservations() {
   const list = await sbSelect('reservations',
     'kind=eq.reserve&confirmed_at=is.null&select=id,product_name,reserve_date,telegram_id,profiles(telegram_id)').catch(() => []);
@@ -136,7 +192,6 @@ async function confirmReservations() {
   }
 }
 
-// ---- в день брони с 10:00 по Варшаве шлём забронированный вкус ----
 async function dayReminders() {
   const w = warsaw();
   if (w.hour < 10) return;
@@ -150,8 +205,6 @@ async function dayReminders() {
   }
 }
 
-// ---- просроченные брони: дата прошла, товар не забрали ----
-// статус expired, остаток вернёт триггер в базе (это и есть «отказ от покупки»)
 async function expireReservations() {
   const w = warsaw();
   await sbUpdate('reservations',
@@ -159,7 +212,6 @@ async function expireReservations() {
     { status: 'expired' }).catch(() => {});
 }
 
-// ---- новый заказ: сообщение менеджеру ----
 async function notifyOrders() {
   const list = await sbSelect('orders',
     'manager_notified_at=is.null&select=id,city,items,sum,delivery,address,contact,profiles(username,telegram_username,telegram_id)').catch(() => []);
@@ -179,7 +231,6 @@ async function notifyOrders() {
   }
 }
 
-// ---- смена статуса заказа: сообщение клиенту ----
 async function notifyOrderStatus() {
   const list = await sbSelect('orders',
     'status=in.(confirmed,done,cancelled)&select=id,status,client_notified_status,profiles(telegram_id)').catch(() => []);
@@ -196,7 +247,6 @@ async function notifyOrderStatus() {
   }
 }
 
-// ---- задания из админки: рассылки ----
 async function doBroadcasts() {
   const list = await sbSelect('broadcasts', 'status=eq.pending&select=id,text&order=id.asc').catch(() => []);
   for (const b of list || []) {
@@ -207,7 +257,6 @@ async function doBroadcasts() {
     await sbUpdate('broadcasts', 'id=eq.' + b.id, { status: 'done', sent, failed, sent_at: new Date().toISOString() }).catch(() => {});
   }
 }
-// ---- задания из админки: синк ассортимента из Sheets (опционально) ----
 async function doSyncJobs() {
   const jobs = await sbSelect('sync_jobs', 'status=eq.pending&select=id&order=id.asc').catch(() => []);
   for (const j of jobs || []) {
@@ -229,7 +278,6 @@ async function syncSheets() {
   if (batch.length) await sbUpsert('products', batch, 'id,city,flavor');
   return batch.length;
 }
-// ---- «сообщить о поступлении»: товар снова в наличии ----
 async function notifyRestocks() {
   const list = await sbRpc('restock_list').catch(() => []);
   for (const r of list || []) {
@@ -253,7 +301,6 @@ async function jobsLoop() {
   }
 }
 
-// ---- старт ----
 if (!(BOT_TOKEN && SUPA && KEY)) {
   console.error('bot.mjs: нужны TELEGRAM_BOT_TOKEN, SUPABASE_URL, SUPABASE_SERVICE_KEY в .env');
   process.exit(1);

@@ -17,6 +17,7 @@ window.KVAuth = (function () {
   let sb = null;        // клиент supabase-js
   let user = null;      // запись из auth.users
   let profile = null;   // строка public.profiles
+  let admin = false;    // текущий пользователь в списке админов
   let tab = 'login';    // вкладка в модалке
   let ready = false;
 
@@ -37,7 +38,9 @@ window.KVAuth = (function () {
       noAccount: 'Аккаунт не найден', badCreds: 'Неверный логин или пароль',
       noTg: 'Вход через Telegram не настроен', tgFail: 'Не вышло войти через Telegram',
       generic: 'Что-то пошло не так, попробуйте ещё раз', needTg: 'Открой в Telegram для входа',
-      changeAvatar: 'Сменить фото', avatarBig: 'Фото слишком большое', hi: 'Привет'
+      changeAvatar: 'Сменить фото', avatarBig: 'Фото слишком большое', hi: 'Привет',
+      adminPanel: 'Панель управления', openTg: 'Открыть в Telegram',
+      tgHint: 'Быстрый вход без пароля — в приложении Telegram, там магазин узнаёт вас сам.'
     },
     uk: {
       account: 'Акаунт', login: 'Вхід', register: 'Реєстрація', logout: 'Вийти',
@@ -55,7 +58,9 @@ window.KVAuth = (function () {
       noAccount: 'Акаунт не знайдено', badCreds: 'Невірний логін або пароль',
       noTg: 'Вхід через Telegram не налаштований', tgFail: 'Не вдалося увійти через Telegram',
       generic: 'Щось пішло не так, спробуйте ще раз', needTg: 'Відкрий у Telegram для входу',
-      changeAvatar: 'Змінити фото', avatarBig: 'Фото завелике', hi: 'Привіт'
+      changeAvatar: 'Змінити фото', avatarBig: 'Фото завелике', hi: 'Привіт',
+      adminPanel: 'Панель керування', openTg: 'Відкрити в Telegram',
+      tgHint: 'Швидкий вхід без пароля — у застосунку Telegram, там магазин впізнає вас сам.'
     },
     pl: {
       account: 'Konto', login: 'Logowanie', register: 'Rejestracja', logout: 'Wyloguj',
@@ -73,7 +78,9 @@ window.KVAuth = (function () {
       noAccount: 'Nie znaleziono konta', badCreds: 'Błędny login lub hasło',
       noTg: 'Logowanie przez Telegram nie jest skonfigurowane', tgFail: 'Nie udało się zalogować przez Telegram',
       generic: 'Coś poszło nie tak, spróbuj ponownie', needTg: 'Otwórz w Telegramie, aby się zalogować',
-      changeAvatar: 'Zmień zdjęcie', avatarBig: 'Zdjęcie za duże', hi: 'Cześć'
+      changeAvatar: 'Zmień zdjęcie', avatarBig: 'Zdjęcie za duże', hi: 'Cześć',
+      adminPanel: 'Panel zarządzania', openTg: 'Otwórz w Telegramie',
+      tgHint: 'Szybkie logowanie bez hasła — w aplikacji Telegram, sklep rozpozna Cię sam.'
     }
   };
   const lang = () => (window.KV && KV.lang) || 'ru';
@@ -212,7 +219,7 @@ window.KVAuth = (function () {
   async function signOut() {
     if (LOCAL()) { try { await lapi('/auth/logout', { method: 'POST' }); } catch (e) {} setLtoken(''); }
     else if (sb) { try { await sb.auth.signOut(); } catch (e) {} }
-    user = null; profile = null;
+    user = null; profile = null; admin = false;
     if (window.KV) { KV.setProfileName('', true); }
     updateAll();
   }
@@ -222,6 +229,7 @@ window.KVAuth = (function () {
     if (LOCAL()) {
       try { const out = await lapi('/auth/me', {}); user = out.user; profile = out.user; }
       catch (e) { user = null; profile = null; setLtoken(''); }
+      admin = !!(profile && profile.is_admin);
       const nm = profile && (profile.display_name || profile.username);
       if (window.KV && nm) KV.setProfileName(nm, true);
       updateAll(); return;
@@ -229,13 +237,15 @@ window.KVAuth = (function () {
     const c = await client();
     const g = await c.auth.getUser();
     user = (g && g.data && g.data.user) || null;
-    profile = null;
+    profile = null; admin = false;
     if (user) {
       const pr = await c.from('profiles').select('*').eq('id', user.id).maybeSingle();
       profile = (pr && pr.data) || null;
       const nm = (profile && (profile.display_name || profile.username)) ||
         (user.user_metadata && user.user_metadata.username) || '';
       if (window.KV && nm) KV.setProfileName(nm, true);
+      // спрашиваем сервер, админ ли — чтобы показать кнопку перехода в админку
+      try { const a = await c.rpc('is_admin'); admin = !!(a && a.data); } catch (e) { admin = false; }
     }
     updateAll();
   }
@@ -251,7 +261,24 @@ window.KVAuth = (function () {
 
   // иконка профиля в шапке: если есть аватар (из Telegram или загруженный) — показываем его
   const PROF_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>';
-  function avatarOf() { return (profile && profile.avatar) || (user && user.avatar) || null; }
+  // фото профиля: сохранённый аватар, иначе живое фото из Telegram (в мини-аппе доступно сразу)
+  function tgPhoto() {
+    const tg = window.Telegram && window.Telegram.WebApp;
+    return (tg && tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.photo_url) || null;
+  }
+  function avatarOf() { return (profile && profile.avatar) || (user && user.avatar) || tgPhoto() || null; }
+  // текущий пользователь — админ? (его telegram_id в списке ADMIN_IDS). Кнопку показываем
+  // по этому флагу, реальный доступ всё равно проверяет is_admin() в базе.
+  function isAdmin() {
+    const ids = CFG.ADMIN_IDS || [];
+    const tid = (profile && profile.telegram_id) || (user && user.telegram_id) ||
+      (tgUserObj() && tgUserObj().id) || null;
+    return !!tid && ids.map(Number).includes(Number(tid));
+  }
+  function tgUserObj() {
+    const tg = window.Telegram && window.Telegram.WebApp;
+    return (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) || null;
+  }
   function updateProfileBtn() {
     const btn = document.querySelector('#profile .kv-prof'); if (!btn) return;
     const av = avatarOf();
@@ -268,7 +295,7 @@ window.KVAuth = (function () {
     if (user) {
       const p = profile || user;
       const name = p.display_name || p.username || '';
-      const av = p.avatar || null;
+      const av = p.avatar || tgPhoto() || null;
       const initial = (name || 'K').trim()[0].toUpperCase();
       const avaInner = av ? '<img src="' + esc(av) + '" alt="">' : '<span>' + esc(initial) + '</span>';
       const rows = [];
@@ -277,6 +304,10 @@ window.KVAuth = (function () {
       if (p.phone) rows.push('<span>' + esc(p.phone) + '</span>');
       if (p.telegram_id) rows.push('<span class="kva-tg">✈ ' + tr('linked') +
         (p.telegram_username ? ' @' + esc(p.telegram_username) : '') + '</span>');
+      // админу — кнопка перехода в панель управления
+      const adminBtn = (isAdmin() && CFG.ADMIN_URL)
+        ? '<a class="kva-admin" href="' + esc(CFG.ADMIN_URL) + '" target="_blank" rel="noopener">⚙ ' + tr('adminPanel') + '</a>'
+        : '';
       el.innerHTML =
         '<div class="kva-me">' +
           '<div class="kva-ava' + (inTg ? '' : ' editable') + '">' + avaInner +
@@ -285,6 +316,7 @@ window.KVAuth = (function () {
           '<div class="kva-me-info"><b>' + esc(name) + '</b>' +
             '<div class="kva-me-rows">' + rows.join('') + '</div></div>' +
         '</div>' +
+        adminBtn +
         '<button class="kva-logout">' + tr('logout') + '</button>';
       el.querySelector('.kva-logout').onclick = signOut;
       if (!inTg) {
@@ -324,7 +356,15 @@ window.KVAuth = (function () {
       if (window.KV) KV.toast(tr('changeAvatar'));
       return;
     }
-    // supabase: загрузка в Storage делается на этапе продакшена (см. AUTH_SETUP.md)
+    // supabase: кладём сжатый data-URL прямо в profiles.avatar (RLS пускает своё, грант на avatar есть)
+    if (cloudOn() && user) {
+      const c = await client();
+      const { error } = await c.from('profiles').update({ avatar: dataUrl, updated_at: new Date().toISOString() }).eq('id', user.id);
+      if (error) throw { message: error.message };
+      if (profile) profile.avatar = dataUrl;
+      updateAll();
+      if (window.KV) KV.toast(tr('changeAvatar'));
+    }
   }
 
   // ---- модалка входа/регистрации ----
@@ -367,18 +407,20 @@ window.KVAuth = (function () {
     const tg = window.Telegram && window.Telegram.WebApp;
     const inTg = !!(tg && tg.initData);
     const localHost = /^(127\.0\.0\.1|localhost|0\.0\.0\.0|\[::1\])$/.test(location.hostname);
-    const localDemo = LOCAL() && localHost;                       // локальный бэкенд на локальном хосте
-    const realWidget = !!CFG.TELEGRAM_BOT && !inTg && !localDemo;  // виджет только на реальном домене бота
+    const localDemo = LOCAL() && localHost;   // локальный бэкенд на локальном хосте
+    // Виджет Telegram на сайте убран намеренно: он гонял через вход в Telegram Web
+    // с запросом телефона, что пугает. Вместо него ведём в приложение Telegram, где
+    // мини-апп узнаёт человека сам по initData — без пароля и без запроса данных.
     let tgBlock = '';
-    if (!inTg && (realWidget || localDemo)) {
+    if (!inTg && (CFG.TELEGRAM_BOT || localDemo)) {
       tgBlock = '<div class="kva-or"><span>' + tr('or') + '</span></div>' +
         (localDemo
           ? '<button class="kva-tg-demo" type="button">✈ ' + tr('tgLogin') + '</button>'
-          : '<div class="kva-tg" id="kva-tg-widget"></div>');
+          : '<a class="kva-tg-open" href="https://t.me/' + esc(CFG.TELEGRAM_BOT) + '" target="_blank" rel="noopener">✈ ' + tr('openTg') + '</a>' +
+            '<div class="kva-note kva-tg-hint">' + tr('tgHint') + '</div>');
     }
     d.querySelector('.kva-body').innerHTML = notCfg + '<div class="kva-form">' + form + '</div>' +
       '<div class="kva-err" hidden></div>' + tgBlock;
-    if (realWidget) mountTgWidget();
   }
   // демо-вход через Telegram для локального показа (реальный виджет требует публичный домен).
   // Заводит стабильный демо-аккаунт с аватаром, чтобы показать поток и аватарку в шапке.
@@ -404,7 +446,8 @@ window.KVAuth = (function () {
     s.setAttribute('data-telegram-login', CFG.TELEGRAM_BOT);
     s.setAttribute('data-size', 'large');
     s.setAttribute('data-userpic', 'false');
-    s.setAttribute('data-request-access', 'write');
+    // без data-request-access=write: виджет делится только именем и фото, не просит
+    // разрешение боту писать и не показывает телефон — так вход не пугает клиента
     s.setAttribute('data-onauth', 'KVAuth._tgWidget(user)');
     box.appendChild(s);
   }
@@ -476,6 +519,11 @@ window.KVAuth = (function () {
 .kva-tg{display:flex;justify-content:center;min-height:34px}
 .kva-tg-demo{width:100%;background:#2aabee;color:#fff;border:none;border-radius:12px;padding:13px;font-weight:800;font-size:13.5px;cursor:pointer;font-family:inherit}
 .kva-tg-demo:hover{filter:brightness(1.06)}
+.kva-tg-open{display:block;width:100%;text-align:center;background:#2aabee;color:#fff;border:none;border-radius:12px;padding:13px;font-weight:800;font-size:13.5px;cursor:pointer;font-family:inherit;text-decoration:none}
+.kva-tg-open:hover{filter:brightness(1.06)}
+.kva-tg-hint{margin-top:10px}
+.kva-admin{display:block;text-align:center;background:var(--kv-surface);border:1px solid var(--kv-accent);color:var(--kv-accent-2,var(--kv-accent));border-radius:11px;padding:11px;font-weight:800;font-size:13px;text-decoration:none;margin-bottom:10px}
+.kva-admin:hover{background:var(--kv-accent);color:var(--kv-accent-ink)}
 .kva-acc{border:1px solid var(--kv-line);border-radius:12px;padding:14px 15px;background:var(--kv-surface)}
 .kva-acc>b{font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:var(--kv-muted);display:block;margin-bottom:9px}
 .kva-acc-rows{display:flex;flex-direction:column;gap:4px;margin-bottom:12px}
@@ -679,6 +727,7 @@ window.KVAuth = (function () {
     apiReserve, apiOrder, loggedIn, contact, saveContact,
     apiMyReservations, apiCancelReservation, apiMyOrders,
     apiAllReviews, apiMyReviews, apiReviewables, apiReview, cloudOn,
+    isAdmin,
     _tgWidget: tgWidget,
     get user() { return user; }, get profile() { return profile; },
     get configured() { return configured(); }

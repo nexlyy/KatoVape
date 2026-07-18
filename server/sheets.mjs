@@ -1,12 +1,7 @@
-// Синхронизация ассортимента из Google Sheets.
-// Проще всего: в таблице «Файл → Поделиться → Опубликовать в интернете → CSV»,
-// полученный URL кладём в env KV_SHEETS_CSV. Здесь тянем CSV и заливаем в products.
-// Колонки (первая строка — заголовки): city, category, id, name, brand, flavor, price, qty, nic
 import { db } from './db.mjs';
 
 const CSV_URL = process.env.KV_SHEETS_CSV || '';
 
-// маленький разбор CSV с поддержкой кавычек
 function parseCSV(text) {
   const rows = []; let row = [], field = '', q = false;
   for (let i = 0; i < text.length; i++) {
@@ -18,7 +13,7 @@ function parseCSV(text) {
     } else if (c === '"') q = true;
     else if (c === ',') { row.push(field); field = ''; }
     else if (c === '\n') { row.push(field); rows.push(row); row = []; field = ''; }
-    else if (c === '\r') { /* skip */ }
+    else if (c === '\r') {}
     else field += c;
   }
   if (field.length || row.length) { row.push(field); rows.push(row); }
@@ -60,7 +55,6 @@ export async function syncSheets() {
   return { rows: n };
 }
 
-// после синка: позиции с qty>0, на которые есть ожидающая бронь
 export function reservationsNowInStock() {
   return db.prepare(
     `select r.* from reservations r

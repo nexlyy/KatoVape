@@ -44,6 +44,7 @@ async function verifyWidget(payload: Record<string, unknown>, token: string) {
     id: Number(payload.id),
     username: payload.username ? String(payload.username) : null,
     first_name: payload.first_name ? String(payload.first_name) : null,
+    photo_url: payload.photo_url ? String(payload.photo_url) : null,
   };
 }
 
@@ -62,6 +63,7 @@ async function verifyInitData(initData: string, token: string) {
     id: Number(u.id),
     username: u.username ? String(u.username) : null,
     first_name: u.first_name ? String(u.first_name) : null,
+    photo_url: u.photo_url ? String(u.photo_url) : null,
   };
 }
 
@@ -88,7 +90,7 @@ Deno.serve(async (req) => {
     { auth: { autoRefreshToken: false, persistSession: false } },
   );
 
-  const email = `tg_${tgUser.id}@telegram.katovape.local`;
+  const email = `tg_${tgUser.id}@telegram.katovape.pl`;
 
   // если такого телеграм-пользователя ещё нет, заводим. username делаем гарантированно
   // уникальным (tg_<id>), настоящий @username кладём отдельным полем.
@@ -118,12 +120,18 @@ Deno.serve(async (req) => {
     }
   }
 
-  // привязку Telegram выставляет только сервер, после проверки подписи (доверенный путь)
+  // привязку Telegram выставляет только сервер, после проверки подписи (доверенный путь).
+  // аватар берём из photo_url телеги, но не затираем уже загруженный пользователем.
   if (userId) {
-    await admin.from("profiles").update({
+    const patch: Record<string, unknown> = {
       telegram_id: tgUser.id,
       telegram_username: tgUser.username,
-    }).eq("id", userId);
+    };
+    if (tgUser.photo_url) {
+      const { data: cur } = await admin.from("profiles").select("avatar").eq("id", userId).maybeSingle();
+      if (!cur?.avatar) patch.avatar = tgUser.photo_url;
+    }
+    await admin.from("profiles").update(patch).eq("id", userId);
   }
 
   // одноразовый OTP, который фронт обменяет на сессию (verifyOtp, type: magiclink)

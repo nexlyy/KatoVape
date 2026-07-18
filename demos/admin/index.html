@@ -54,7 +54,8 @@ textarea:focus,input:focus{outline:none;border-color:var(--mint)}
 <body>
 <div id="app" class="wrap"></div>
 
-<script src="../../shared/config.js?v=4"></script>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="../../shared/config.js?v=5"></script>
 <script type="module">
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 const CFG = window.KV_CONFIG || {};
@@ -100,6 +101,23 @@ window.onTgAuth = async (u) => {
     await afterLogin();
   } catch (e) { loginView(e.message || 'ошибка входа'); }
 };
+// авто-вход, когда панель открыта из бота как мини-апп (initData уже подписан)
+async function tgInitLogin() {
+  const tg = window.Telegram && window.Telegram.WebApp;
+  if (!tg || !tg.initData) return false;
+  try {
+    const res = await fetch(CFG.FUNCTIONS_URL.replace(/\/$/, '') + '/telegram-auth', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', apikey: CFG.SUPABASE_ANON_KEY },
+      body: JSON.stringify({ mode: 'initdata', initData: tg.initData })
+    });
+    const out = await res.json().catch(() => ({}));
+    if (!res.ok || !out.email || !out.otp) return false;
+    const { error } = await sb.auth.verifyOtp({ email: out.email, token: out.otp, type: 'magiclink' });
+    if (error) return false;
+    await afterLogin();
+    return true;
+  } catch (e) { return false; }
+}
 async function afterLogin() {
   const { data: { user } } = await sb.auth.getUser();
   const { data: ov, error } = await sb.rpc('admin_overview');
@@ -177,7 +195,7 @@ async function renderTab() {
         </div>
         <div class="wrapscroll">${(data||[]).length ? `<table><thead><tr><th>Товар</th><th>Вкус</th><th>Цена, zł</th><th>Остаток, шт</th><th></th></tr></thead><tbody>${
           (data||[]).map((r,i) => `<tr data-i="${i}">
-            <td>${esc(r.name || r.id)}<div class="muted" style="font-size:11px">${esc(r.id)}</div></td>
+            <td><input data-f="name" value="${esc(r.name || '')}" style="width:130px"><div class="muted" style="font-size:11px">${esc(r.id)}</div></td>
             <td>${esc(r.flavor || '—')}</td>
             <td><input data-f="price" value="${r.price==null?'':r.price}" style="width:76px"></td>
             <td><input data-f="qty" value="${r.qty==null?0:r.qty}" style="width:66px"></td>
@@ -206,9 +224,10 @@ async function renderTab() {
           const r = rows[+tr.dataset.i]; if (!r) return;
           const price = tr.querySelector('[data-f="price"]').value.trim();
           const qty = tr.querySelector('[data-f="qty"]').value.trim();
+          const name = tr.querySelector('[data-f="name"]').value.trim();
           const np = price === '' ? null : +price, nq = qty === '' ? 0 : +qty;
-          if (np !== r.price || nq !== r.qty)
-            out.push({ id: r.id, city: r.city, flavor: r.flavor, name: r.name, brand: r.brand,
+          if (np !== r.price || nq !== r.qty || name !== (r.name || ''))
+            out.push({ id: r.id, city: r.city, flavor: r.flavor, name: name || r.id, brand: r.brand,
               category: r.category, nic: r.nic, price: np, qty: nq, updated_at: new Date().toISOString() });
         });
         if (!out.length) { document.getElementById('prres').textContent = 'Изменений нет'; return; }
@@ -284,8 +303,11 @@ function table(head, rows) {
 
 // ---- старт: есть сессия и админ? ----
 (async function(){
+  const tg = window.Telegram && window.Telegram.WebApp;
+  if (tg) { try { tg.ready(); tg.expand(); } catch (e) {} }
   const { data: { session } } = await sb.auth.getSession();
   if (session) { const { data: ov } = await sb.rpc('admin_overview'); if (ov) { const { data: { user } } = await sb.auth.getUser(); me = user; return dashboard(ov); } }
+  if (tg && tg.initData) { if (await tgInitLogin()) return; }
   loginView();
 })();
 </script>
