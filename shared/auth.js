@@ -95,11 +95,12 @@ window.KVAuth = (function () {
   const normPhone = s => (s || '').replace(/[^\d+]/g, '');
   const looksEmail = s => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s || '');
   const looksPhone = s => /^\+?\d[\d\s()-]{6,}$/.test(s || '');
-  // если реальной почты нет, вход по синтетическому адресу (в auth.users нужен email)
+  // если реальной почты нет, вход по синтетическому адресу (в auth.users нужен email).
+  // домен на реальном TLD: .local зарезервирован и не проходит валидацию Supabase Auth.
   function authEmailFor(f) {
     if (f.email && looksEmail(f.email)) return f.email.toLowerCase();
-    if (f.username) return 'u_' + f.username.toLowerCase().replace(/[^a-z0-9_]/g, '') + '@users.katovape.local';
-    if (f.phone) return 'p_' + normPhone(f.phone).replace(/\D/g, '') + '@users.katovape.local';
+    if (f.username) return 'u_' + f.username.toLowerCase().replace(/[^a-z0-9_]/g, '') + '@users.katovape.pl';
+    if (f.phone) return 'p_' + normPhone(f.phone).replace(/\D/g, '') + '@users.katovape.pl';
     return null;
   }
   function mapErr(e) {
@@ -138,22 +139,19 @@ window.KVAuth = (function () {
       const out = await lapi('/auth/register', { method: 'POST', body: JSON.stringify({ username, password, email, phone }) });
       setLtoken(out.token); await afterAuth(); return { ok: true };
     }
-    const c = await client();
-    // предварительная проверка занятости, финальную гарантию даёт уникальный индекс в БД
-    const av = await c.rpc('login_availability', { p_username: username, p_email: email || null, p_phone: phone || null });
-    const a = av && (Array.isArray(av.data) ? av.data[0] : av.data);
-    if (a) {
-      if (a.username_taken) throw msg('takenUser');
-      if (a.email_taken) throw msg('takenEmail');
-      if (a.phone_taken) throw msg('takenPhone');
-    }
-    const authEmail = authEmailFor({ username, email, phone });
-    const { data, error } = await c.auth.signUp({
-      email: authEmail, password,
-      options: { data: { username, email_real: email || null, phone: phone || null, display_name: username } }
+    // аккаунт заводит edge-функция на service_role: клиентский signUp отбраковывает
+    // синтетические адреса. Она проверяет занятость, создаёт юзера и отдаёт OTP.
+    if (!CFG.FUNCTIONS_URL) throw msg('generic');
+    const res = await fetch(CFG.FUNCTIONS_URL.replace(/\/$/, '') + '/signup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', apikey: CFG.SUPABASE_ANON_KEY },
+      body: JSON.stringify({ username, email, phone, password })
     });
+    const out = await res.json().catch(() => ({}));
+    if (!res.ok || !out.email || !out.otp) throw msg(out.error || 'generic');
+    const c = await client();
+    const { error } = await c.auth.verifyOtp({ email: out.email, token: out.otp, type: 'magiclink' });
     if (error) throw mapErr(error);
-    if (!data.session && email) return { pending: true };  // ждёт подтверждения почты
     await afterAuth();
     return { ok: true };
   }

@@ -5,3 +5,5 @@ server/*.db-wal
 server/node_modules/
 server/katovape.db-shm
 server/katovape.db-wal
+
+supabase/.temp/

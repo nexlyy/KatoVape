@@ -171,5 +171,5 @@ language sql stable security definer set search_path = public as $$
     and (r.flavor = '' or pr.flavor = r.flavor)
   where r.status = 'waiting' and pr.qty > 0
     and coalesce(r.telegram_id, p.telegram_id) is not null
-  group by r.id, telegram_id, product_name;
+  group by 1, 2, 3;
 $$;
