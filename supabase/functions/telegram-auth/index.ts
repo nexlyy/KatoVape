@@ -92,23 +92,38 @@ Deno.serve(async (req) => {
 
   // если такого телеграм-пользователя ещё нет, заводим. username делаем гарантированно
   // уникальным (tg_<id>), настоящий @username кладём отдельным полем.
+  // ВАЖНО: telegram_id НЕ передаём в user_metadata — триггер профиля ему не доверяет
+  // (клиент может подделать при обычном signUp). Привязку ставим ниже сами.
   const { data: existing } = await admin.from("profiles").select("id").eq("telegram_id", tgUser.id).maybeSingle();
+  let userId = existing?.id as string | undefined;
   if (!existing) {
-    const { error: cErr } = await admin.auth.admin.createUser({
+    const { data: created, error: cErr } = await admin.auth.admin.createUser({
       email,
       email_confirm: true,
       password: crypto.randomUUID() + crypto.randomUUID(),
       user_metadata: {
         username: `tg_${tgUser.id}`,
-        telegram_id: String(tgUser.id),
-        telegram_username: tgUser.username,
         display_name: tgUser.first_name || tgUser.username || `tg_${tgUser.id}`,
       },
     });
+    userId = created?.user?.id;
     // 422 = пользователь уже есть (гонка), это не ошибка для нас
     if (cErr && !String(cErr.message || "").toLowerCase().includes("already")) {
       return json({ error: "cannot create user" }, 500);
     }
+    // добираем id, если создание попало в гонку
+    if (!userId) {
+      const { data: u } = await admin.auth.admin.listUsers();
+      userId = u?.users?.find((x) => x.email === email)?.id;
+    }
+  }
+
+  // привязку Telegram выставляет только сервер, после проверки подписи (доверенный путь)
+  if (userId) {
+    await admin.from("profiles").update({
+      telegram_id: tgUser.id,
+      telegram_username: tgUser.username,
+    }).eq("id", userId);
   }
 
   // одноразовый OTP, который фронт обменяет на сессию (verifyOtp, type: magiclink)

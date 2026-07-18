@@ -4,13 +4,13 @@
 
 create extension if not exists citext;
 
--- ---- профиль пользователя ----
+-- профиль пользователя
 create table if not exists public.profiles (
   id                uuid primary key references auth.users(id) on delete cascade,
   username          citext unique,
-  email             citext unique,          -- реальная почта, если её указали
-  phone             text   unique,          -- только цифры и +
-  auth_email        citext not null,        -- адрес, под которым заведён auth.users (может быть синтетическим)
+  email             citext unique,
+  phone             text   unique,
+  auth_email        citext not null,
   telegram_id       bigint unique,
   telegram_username text,
   display_name      text,
@@ -20,7 +20,6 @@ create table if not exists public.profiles (
 
 alter table public.profiles enable row level security;
 
--- свой профиль пользователь читает и меняет сам, чужие недоступны
 drop policy if exists profiles_select_own on public.profiles;
 create policy profiles_select_own on public.profiles
   for select using (auth.uid() = id);
@@ -33,9 +32,7 @@ drop policy if exists profiles_insert_own on public.profiles;
 create policy profiles_insert_own on public.profiles
   for insert with check (auth.uid() = id);
 
--- ---- профиль создаётся автоматически при регистрации ----
--- поля берём из user_metadata, которые кладёт клиент при signUp,
--- либо из метаданных, которые ставит Edge Function при входе через Telegram
+
 create or replace function public.handle_new_user()
 returns trigger
 language plpgsql
@@ -63,9 +60,6 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
 
--- ---- проверка занятости логина/почты/телефона (для подсказок в форме) ----
--- отдаём только булевы флаги, чужих данных не раскрываем.
--- последнее слово всё равно за уникальными индексами таблицы.
 create or replace function public.login_availability(p_username citext, p_email citext, p_phone text)
 returns table(username_taken boolean, email_taken boolean, phone_taken boolean)
 language sql
@@ -77,9 +71,6 @@ as $$
     (p_phone    is not null and exists(select 1 from public.profiles where phone = p_phone));
 $$;
 
--- ---- по логину/почте/телефону вернуть auth-email для входа ----
--- нужно, потому что Supabase логинит по email, а человек вводит любой идентификатор.
--- security definer, возвращаем ровно один email и ничего лишнего.
 create or replace function public.resolve_login(p_identifier text)
 returns text
 language sql

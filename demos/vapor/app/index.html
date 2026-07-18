@@ -54,6 +54,26 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--mint);outline-o
 .chips::-webkit-scrollbar{display:none}
 .chip{flex:0 0 auto;border:1px solid var(--line);background:var(--panel);color:var(--mut);padding:8px 14px;border-radius:99px;font-size:13px;font-weight:600;cursor:pointer}
 .chip.on{background:linear-gradient(100deg,var(--mint),var(--cyan));border-color:transparent;color:#04120e}
+/* каталог кубами (как в ElfDuck): плитка на категорию с фото, названием и наличием */
+.cathead{position:relative;z-index:1;padding:16px 16px 2px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.cathead h2{font-family:'Clash Display';font-size:16px;font-weight:700;color:var(--txt)}
+.cattoggle{display:flex;gap:6px}
+.cattoggle button{border:1px solid var(--line);background:var(--panel);color:var(--mut);padding:7px 13px;border-radius:11px 4px 11px 4px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit}
+.cattoggle button.on{background:linear-gradient(100deg,var(--mint),var(--cyan));border-color:transparent;color:#04120e}
+.cubes{position:relative;z-index:1;display:grid;grid-template-columns:1fr 1fr;gap:11px;padding:12px 16px 96px}
+.cube{position:relative;aspect-ratio:1/1;border-radius:20px;overflow:hidden;border:1px solid var(--line);background:linear-gradient(160deg,var(--panel),var(--panel2));cursor:pointer;padding:0;opacity:0;transform:translateY(10px);animation:rise .45s forwards}
+.cube:active{transform:scale(.985)}
+.cube img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.cube-emo{position:absolute;top:11px;right:13px;font-size:25px;filter:drop-shadow(0 2px 6px rgba(0,0,0,.45))}
+.cube-grad{position:absolute;inset:0;background:linear-gradient(180deg,rgba(8,11,16,.04) 34%,rgba(8,11,16,.86))}
+.cube-label{position:absolute;left:13px;right:12px;bottom:31px;font-family:'Clash Display';font-weight:700;font-size:16px;line-height:1.1;color:#fff;text-align:left;text-shadow:0 2px 12px rgba(0,0,0,.7)}
+.cube-count{position:absolute;left:13px;bottom:12px;font-size:11.5px;font-weight:700;color:var(--mint);text-shadow:0 1px 6px rgba(0,0,0,.75)}
+.cube.cube-all{background:linear-gradient(150deg,var(--mint),var(--cyan))}
+.cube.cube-all .cube-grad{display:none}
+.cube.cube-all .cube-label,.cube.cube-all .cube-count{color:#04120e;text-shadow:none}
+.cube.cube-all .cube-emo{filter:none;opacity:.9}
+.catback{position:relative;z-index:1;padding:12px 16px 0}
+.backcats{border:1px solid var(--line);background:var(--panel);color:var(--txt);padding:8px 14px;border-radius:11px 4px 11px 4px;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit}
 .sec{position:relative;z-index:1;padding:14px 16px 4px}
 .sec h2{font-family:'Clash Display';font-size:12px;letter-spacing:1px;text-transform:uppercase;color:var(--mut);margin-bottom:10px}
 .sec h2 b{color:var(--mint)}
@@ -189,15 +209,31 @@ if (inTg) {
   tg.ready(); tg.expand(); tg.setHeaderColor('#080b10'); tg.setBackgroundColor('#080b10');
   tg.BackButton.onClick(()=>history.back()); tg.BackButton.show();
 }
+// подписи и эмодзи для каталога кубами
+const CATD={
+  ru:{title:'Наш каталог',cats:'Категории',all:'Все товары'},
+  uk:{title:'Наш каталог',cats:'Категорії',all:'Усі товари'},
+  pl:{title:'Nasz katalog',cats:'Kategorie',all:'Wszystko'}
+};
+const CAT_EMO={liquids:'🧴',disposables:'💨',snus:'⚪',cartridges:'🔋',pods:'🎛️'};
 function App(){
   const [tick,setTick]=useState(0); const [ready,setReady]=useState(false);
   const [cat,setCat]=useState('all'); const [q,setQ]=useState('');
+  const [view,setView]=useState('cats');   // 'cats' — сетка кубов, 'list' — товары
   useEffect(()=>{
     const qi=document.getElementById('q');
     qi.addEventListener('input',e=>setQ(e.target.value));
     KV.init({ app:true, render(){ chrome(); setTick(t=>t+1); }, cart:cartHook, fail(){ setReady(true); } });
     setReady(true);
   },[]);
+  const cd = k => (CATD[KV.lang]||CATD.ru)[k];
+  const showCats = view==='cats' && !q.trim();
+  // на экране категорий верхняя лента чипов не нужна — прячем её
+  useEffect(()=>{ const s=document.querySelector('.chips'); if(s) s.style.display=showCats?'none':'flex'; },[showCats,tick]);
+  // чипы строит chrome() по текущей категории — перерисовываем при её смене
+  useEffect(()=>{ if(ready&&KV.db&&view==='list') chrome(); },[cat,view]);
+  function catThumb(c){ const it=c.items.find(i=>KV.status(i)!=='out')||c.items[0]; return it?'../../../data/photos/'+it.id+'.jpg':''; }
+  function catCount(c){ return c.items.filter(i=>KV.status(i)!=='out').length+'/'+c.items.length; }
   function chrome(){ document.getElementById('upd').textContent=KV.t('updated')+' '+KV.fmtDate(KV.db.updated);
     document.getElementById('q').placeholder=KV.t('search'); document.getElementById('logoImg').src=KV.cityLogo();
     const cs=[{id:'all',name:null},...KV.db.categories];
@@ -224,8 +260,36 @@ function App(){
     return g;
   },[tick,ready,cat,q]);
 
+  if(showCats){
+    const cs = ready && KV.db ? KV.db.categories : [];
+    return (
+      <React.Fragment>
+        <div className="cathead">
+          <h2>{cd('title')}</h2>
+          <div className="cattoggle">
+            <button className="on">{cd('cats')}</button>
+            <button onClick={()=>{setCat('all');setView('list');}}>{cd('all')}</button>
+          </div>
+        </div>
+        <div className="cubes">
+          {cs.map((c,idx)=>(
+            <button className="cube" key={c.id} style={{animationDelay:(Math.min(idx,8)*45)+'ms'}}
+                    onClick={()=>{setCat(c.id);setView('list');}}>
+              <img src={catThumb(c)} alt="" loading="lazy" onError={e=>e.target.remove()}/>
+              <span className="cube-emo">{CAT_EMO[c.id]||'📦'}</span>
+              <span className="cube-grad"></span>
+              <span className="cube-label">{KV.catName(c)}</span>
+              <span className="cube-count">{catCount(c)}</span>
+            </button>
+          ))}
+        </div>
+      </React.Fragment>
+    );
+  }
+
   return (
     <React.Fragment>
+      <div className="catback"><button className="backcats" onClick={()=>{setView('cats');setCat('all');}}>‹ {cd('cats')}</button></div>
       {groups.length===0 && <div className="empty">{ready?KV.t('empty'):'…'}</div>}
       {groups.map(g=>(
         <div className="sec" key={g.c.id}>
