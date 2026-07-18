@@ -40,7 +40,7 @@ window.KVAuth = (function () {
       generic: 'Что-то пошло не так, попробуйте ещё раз', needTg: 'Открой в Telegram для входа',
       changeAvatar: 'Сменить фото', avatarBig: 'Фото слишком большое', hi: 'Привет',
       adminPanel: 'Панель управления', openTg: 'Открыть в Telegram',
-      tgHint: 'Быстрый вход без пароля — в приложении Telegram, там магазин узнаёт вас сам.'
+      tgHint: 'Ещё проще без пароля в приложении Telegram: там магазин узнаёт вас сам.'
     },
     uk: {
       account: 'Акаунт', login: 'Вхід', register: 'Реєстрація', logout: 'Вийти',
@@ -60,7 +60,7 @@ window.KVAuth = (function () {
       generic: 'Щось пішло не так, спробуйте ще раз', needTg: 'Відкрий у Telegram для входу',
       changeAvatar: 'Змінити фото', avatarBig: 'Фото завелике', hi: 'Привіт',
       adminPanel: 'Панель керування', openTg: 'Відкрити в Telegram',
-      tgHint: 'Швидкий вхід без пароля — у застосунку Telegram, там магазин впізнає вас сам.'
+      tgHint: 'Ще простіше без пароля у застосунку Telegram: там магазин впізнає вас сам.'
     },
     pl: {
       account: 'Konto', login: 'Logowanie', register: 'Rejestracja', logout: 'Wyloguj',
@@ -80,7 +80,7 @@ window.KVAuth = (function () {
       generic: 'Coś poszło nie tak, spróbuj ponownie', needTg: 'Otwórz w Telegramie, aby się zalogować',
       changeAvatar: 'Zmień zdjęcie', avatarBig: 'Zdjęcie za duże', hi: 'Cześć',
       adminPanel: 'Panel zarządzania', openTg: 'Otwórz w Telegramie',
-      tgHint: 'Szybkie logowanie bez hasła — w aplikacji Telegram, sklep rozpozna Cię sam.'
+      tgHint: 'Jeszcze prościej bez hasła w aplikacji Telegram: sklep rozpozna Cię sam.'
     }
   };
   const lang = () => (window.KV && KV.lang) || 'ru';
@@ -407,20 +407,21 @@ window.KVAuth = (function () {
     const tg = window.Telegram && window.Telegram.WebApp;
     const inTg = !!(tg && tg.initData);
     const localHost = /^(127\.0\.0\.1|localhost|0\.0\.0\.0|\[::1\])$/.test(location.hostname);
-    const localDemo = LOCAL() && localHost;   // локальный бэкенд на локальном хосте
-    // Виджет Telegram на сайте убран намеренно: он гонял через вход в Telegram Web
-    // с запросом телефона, что пугает. Вместо него ведём в приложение Telegram, где
-    // мини-апп узнаёт человека сам по initData — без пароля и без запроса данных.
+    const localDemo = LOCAL() && localHost;                       // локальный бэкенд на локальном хосте
+    const realWidget = !!CFG.TELEGRAM_BOT && !inTg && !localDemo;  // виджет только на реальном домене бота
+    // На десктопе даём и логин/пароль, и виджет Telegram (он реально логинит браузер;
+    // ссылка на бота сессию сайта не авторизует). В мини-аппе вход идёт сам по initData.
     let tgBlock = '';
-    if (!inTg && (CFG.TELEGRAM_BOT || localDemo)) {
+    if (!inTg && (realWidget || localDemo)) {
       tgBlock = '<div class="kva-or"><span>' + tr('or') + '</span></div>' +
         (localDemo
           ? '<button class="kva-tg-demo" type="button">✈ ' + tr('tgLogin') + '</button>'
-          : '<a class="kva-tg-open" href="https://t.me/' + esc(CFG.TELEGRAM_BOT) + '" target="_blank" rel="noopener">✈ ' + tr('openTg') + '</a>' +
+          : '<div class="kva-tg" id="kva-tg-widget"></div>' +
             '<div class="kva-note kva-tg-hint">' + tr('tgHint') + '</div>');
     }
     d.querySelector('.kva-body').innerHTML = notCfg + '<div class="kva-form">' + form + '</div>' +
       '<div class="kva-err" hidden></div>' + tgBlock;
+    if (realWidget) mountTgWidget();
   }
   // демо-вход через Telegram для локального показа (реальный виджет требует публичный домен).
   // Заводит стабильный демо-аккаунт с аватаром, чтобы показать поток и аватарку в шапке.
