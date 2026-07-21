@@ -115,7 +115,11 @@ window.KV = (function () {
       noRevsYet: 'Отзывов пока нет. Ваш будет первым после покупки.',
       stNew: 'оформлен', stConfirmed: 'подтверждён', stDone: 'выдан', stCancelled: 'отменён',
       stActive: 'активна', stExpired: 'истекла', stNotified: 'ждёт выдачи',
-      pickMap: 'Выбрать на карте'
+      pickMap: 'Выбрать пачкомат',
+      lockerTitle: 'Пачкоматы InPost', lockerSearch: 'Улица, район или код',
+      lockerNone: 'Ничего не нашлось. Попробуйте название улицы.',
+      lockerMore: 'Ещё {n} точек. Уточните поиск.',
+      lockerLoad: 'Загружаем список точек…', lockerPicked: 'Выбран пачкомат'
     },
     uk: {
       profile: 'Профіль', guest: 'Гість', yourName: 'Ваше ім’я', save: 'Зберегти',
@@ -160,7 +164,11 @@ window.KV = (function () {
       noRevsYet: 'Відгуків поки немає. Ваш буде першим після покупки.',
       stNew: 'оформлено', stConfirmed: 'підтверджено', stDone: 'видано', stCancelled: 'скасовано',
       stActive: 'активна', stExpired: 'минула', stNotified: 'чекає видачі',
-      pickMap: 'Обрати на мапі'
+      pickMap: 'Обрати поштомат',
+      lockerTitle: 'Поштомати InPost', lockerSearch: 'Вулиця, район або код',
+      lockerNone: 'Нічого не знайшлось. Спробуйте назву вулиці.',
+      lockerMore: 'Ще {n} точок. Уточніть пошук.',
+      lockerLoad: 'Завантажуємо список точок…', lockerPicked: 'Обрано поштомат'
     },
     pl: {
       profile: 'Profil', guest: 'Gość', yourName: 'Twoje imię', save: 'Zapisz',
@@ -205,7 +213,11 @@ window.KV = (function () {
       noRevsYet: 'Brak opinii. Twoja będzie pierwsza po zakupie.',
       stNew: 'złożone', stConfirmed: 'potwierdzone', stDone: 'wydane', stCancelled: 'anulowane',
       stActive: 'aktywna', stExpired: 'wygasła', stNotified: 'czeka na odbiór',
-      pickMap: 'Wybierz na mapie'
+      pickMap: 'Wybierz paczkomat',
+      lockerTitle: 'Paczkomaty InPost', lockerSearch: 'Ulica, dzielnica lub kod',
+      lockerNone: 'Nic nie znaleziono. Spróbuj nazwy ulicy.',
+      lockerMore: 'Jeszcze {n} punktów. Doprecyzuj wyszukiwanie.',
+      lockerLoad: 'Ładujemy listę punktów…', lockerPicked: 'Wybrano paczkomat'
     }
   };
   for (const l in EXTRA) Object.assign(STR[l], EXTRA[l]);
@@ -766,37 +778,89 @@ window.KV = (function () {
     }
   }
 
-  // ---- карта пачкоматов InPost (виджет подключается, если в config задан токен) ----
-  function geoReady() { return !!(window.KV_CONFIG && window.KV_CONFIG.INPOST_GEO_TOKEN); }
-  function openGeo() {
-    if (!geoReady()) return;
+  // ---- выбор пачкомата InPost ----
+  // Список точек лежит в data/inpost/<город>.json: он выгружен из открытого справочника
+  // InPost (server/inpost-fetch.mjs), поэтому ни ключа, ни стороннего виджета не нужно.
+  // Файл города подтягиваем только когда человек открыл выбор.
+  let lockers = null, lockersCity = null, lockersBusy = false;
+  function geoReady() { return true; }
+  async function loadLockers(cid) {
+    if (lockers && lockersCity === cid) return lockers;
+    try {
+      const r = await fetch(ROOT + 'data/inpost/' + cid + '.json');
+      lockers = await r.json();
+    } catch (e) { lockers = []; }
+    lockersCity = cid;
+    return lockers;
+  }
+  function ensureLockerBox() {
     let d = document.getElementById('kvg');
-    if (!d) {
-      if (!document.getElementById('kvg-sdk')) {
-        const l = document.createElement('link');
-        l.rel = 'stylesheet'; l.href = 'https://geowidget.inpost.pl/inpost-geowidget.css';
-        document.head.appendChild(l);
-        const s = document.createElement('script');
-        s.id = 'kvg-sdk'; s.defer = true; s.src = 'https://geowidget.inpost.pl/inpost-geowidget.js';
-        document.head.appendChild(s);
-      }
-      d = document.createElement('div');
-      d.id = 'kvg'; d.className = 'kvg';
-      d.innerHTML = '<div class="kvg-box"><button class="kvg-x" aria-label="close">&times;</button>' +
-        '<inpost-geowidget token="' + esc(window.KV_CONFIG.INPOST_GEO_TOKEN) + '" language="pl" config="parcelCollect" onpoint="kvGeoPick"></inpost-geowidget></div>';
-      document.body.appendChild(d);
-      d.addEventListener('click', e => { if (e.target === d || e.target.closest('.kvg-x')) d.hidden = true; });
-      window.kvGeoPick = pt => {
-        const code = pt && pt.name;
-        if (code) {
-          const inp = document.querySelector('#kvc [data-ct="paczkomat"]');
-          if (inp) inp.value = code;
-          setDelivery(undefined, code);
-        }
+    if (d) return d;
+    d = document.createElement('div');
+    d.id = 'kvg'; d.className = 'kvg'; d.hidden = true;
+    d.innerHTML = '<div class="kvg-box">' +
+      '<div class="kvg-head"><b>' + t('lockerTitle') + '</b>' +
+      '<button class="kvg-x" aria-label="close">&times;</button></div>' +
+      '<input class="kvg-q" type="search" placeholder="' + t('lockerSearch') + '">' +
+      '<div class="kvg-list"></div></div>';
+    document.body.appendChild(d);
+    d.addEventListener('click', e => {
+      if (e.target === d || e.target.closest('.kvg-x')) { d.hidden = true; document.body.classList.remove('kv-noscroll'); return; }
+      const pick = e.target.closest('[data-locker]');
+      if (pick) {
+        const code = pick.dataset.locker;
+        const addr = pick.dataset.addr || '';
+        document.querySelectorAll('[data-ct="paczkomat"]').forEach(i => { i.value = code; });
+        setDelivery(undefined, code);
+        savePaczkomat(code);
         d.hidden = true;
-      };
-    }
+        document.body.classList.remove('kv-noscroll');
+        toast(t('lockerPicked') + ' ' + code + (addr ? ', ' + addr : ''));
+      }
+    });
+    d.querySelector('.kvg-q').addEventListener('input', e => drawLockers(e.target.value));
+    return d;
+  }
+  // сохраняем выбранный пачкомат в профиль, чтобы он подставлялся в следующий раз
+  function savePaczkomat(code) {
+    if (!(window.KVAuth && KVAuth.saveContact)) return;
+    const cur = contactOf();
+    if (cur.paczkomat === code) return;
+    KVAuth.saveContact(Object.assign({}, cur, { paczkomat: code })).catch(() => {});
+  }
+  function drawLockers(q) {
+    const box = document.querySelector('#kvg .kvg-list'); if (!box) return;
+    const list = lockers || [];
+    const s = (q || '').trim().toLowerCase();
+    const hit = s
+      ? list.filter(x => (x.c + ' ' + x.a + ' ' + (x.p || '') + ' ' + (x.d || '')).toLowerCase().indexOf(s) >= 0)
+      : list;
+    if (!hit.length) { box.innerHTML = '<p class="kvg-none">' + t('lockerNone') + '</p>'; return; }
+    // рисуем первую сотню: в Варшаве точек больше полутора тысяч
+    box.innerHTML = hit.slice(0, 100).map(x =>
+      '<button class="kvg-i" type="button" data-locker="' + esc(x.c) + '" data-addr="' + esc(x.a) + '">' +
+        '<b>' + esc(x.c) + '</b>' +
+        '<span>' + esc(x.a) + (x.p ? ', ' + esc(x.p) : '') + '</span>' +
+        (x.d ? '<i>' + esc(x.d) + '</i>' : '') +
+      '</button>').join('') +
+      (hit.length > 100 ? '<p class="kvg-none">' + t('lockerMore').replace('{n}', hit.length - 100) + '</p>' : '');
+  }
+  async function openGeo() {
+    const d = ensureLockerBox();
+    const box = d.querySelector('.kvg-list');
     d.hidden = false;
+    document.body.classList.add('kv-noscroll');
+    if (lockersBusy) return;
+    if (!lockers || lockersCity !== city) {
+      lockersBusy = true;
+      box.innerHTML = '<p class="kvg-none">' + t('lockerLoad') + '</p>';
+      await loadLockers(city);
+      lockersBusy = false;
+    }
+    const q = d.querySelector('.kvg-q');
+    q.value = '';
+    drawLockers('');
+    if (!isApp) setTimeout(() => q.focus(), 50);
   }
 
   // бронь всегда идёт через окно товара: там выбор вкуса и даты выдачи
@@ -2225,11 +2289,23 @@ body.kv-noscroll{overflow:hidden}
 .kvp-st-new{color:#d29a2b}.kvp-st-confirmed{color:var(--kv-accent-2,var(--kv-accent))}
 .kvp-st-done{color:#3dbb6e}.kvp-st-cancelled{color:var(--kv-muted)}
 .kvp-res-cancel{background:none;border:none;color:#ff6a86;font-weight:700;font-size:12px;cursor:pointer;font-family:inherit;padding:0}
-.kvg{position:fixed;inset:0;z-index:180;background:rgba(6,6,10,.8);display:flex;align-items:center;justify-content:center;padding:16px}
+.kvg{position:fixed;inset:0;z-index:180;background:rgba(6,6,10,.8);display:flex;align-items:flex-end;justify-content:center}
+@media(min-width:640px){.kvg{align-items:center;padding:20px}}
 .kvg[hidden]{display:none}
-.kvg-box{position:relative;width:min(760px,100%);height:min(80vh,620px);background:var(--kv-surface2);border:1px solid var(--kv-line);border-radius:16px;overflow:hidden}
-.kvg-box inpost-geowidget{display:block;width:100%;height:100%}
-.kvg-x{position:absolute;top:10px;right:10px;z-index:2;width:34px;height:34px;border:none;background:var(--kv-surface);color:var(--kv-text);border-radius:50%;font-size:22px;cursor:pointer}`;
+.kvg-box{display:flex;flex-direction:column;width:min(560px,100%);height:min(86vh,640px);background:var(--kv-surface2);border:1px solid var(--kv-line);border-radius:18px 18px 0 0;overflow:hidden}
+@media(min-width:640px){.kvg-box{border-radius:18px}}
+.kvg-head{display:flex;align-items:center;justify-content:space-between;padding:16px 18px 12px}
+.kvg-head b{font-size:16px}
+.kvg-x{width:34px;height:34px;border:none;background:var(--kv-surface);color:var(--kv-muted);border-radius:50%;font-size:22px;line-height:1;cursor:pointer}
+.kvg-q{margin:0 18px 12px;background:var(--kv-field);border:1px solid var(--kv-line);color:var(--kv-text);border-radius:11px;padding:11px 14px;font-family:inherit;font-size:14px}
+.kvg-q:focus{outline:none;border-color:var(--kv-accent)}
+.kvg-list{flex:1;overflow-y:auto;padding:0 12px 16px;display:flex;flex-direction:column;gap:6px}
+.kvg-i{display:block;width:100%;text-align:left;background:var(--kv-surface);border:1px solid var(--kv-line);color:var(--kv-text);border-radius:11px;padding:10px 13px;cursor:pointer;font-family:inherit}
+.kvg-i:hover{border-color:var(--kv-accent)}
+.kvg-i b{display:block;font-size:13px;font-weight:800;color:var(--kv-accent-2,var(--kv-accent))}
+.kvg-i span{display:block;font-size:13px;margin-top:1px}
+.kvg-i i{display:block;font-style:normal;font-size:11.5px;color:var(--kv-muted);margin-top:2px}
+.kvg-none{padding:14px 6px;font-size:12.5px;color:var(--kv-muted);text-align:center;line-height:1.5}`;
     const s = document.createElement('style');
     s.id = 'kv-shared'; s.textContent = css;
     document.head.appendChild(s);

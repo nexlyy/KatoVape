@@ -13,9 +13,10 @@ window.KV_CONFIG = {
 
   TELEGRAM_BOT: 'KatoVape_bot',   // username бота: бронь диплинком, вход в мини-аппе, кнопка "Открыть в Telegram"
   ADMIN_IDS: [5301671230],
-  ADMIN_URL: 'https://nexlyy.github.io/KatoVape/demos/admin/',   // куда ведёт кнопка "В админку" для админов
+  ADMIN_URL: 'https://nexlyy.github.io/KatoVape/demos/admin/?v=2',   // куда ведёт кнопка "В админку" для админов
 
-  // токен геовиджета InPost (кабинет manager.paczkomaty.pl, раздел Geowidget).
-  // пустой = ручной ввод номера пачкомата, с токеном появится выбор на карте
-  INPOST_GEO_TOKEN: ''
+  // Пачкоматы выбираются из своего списка (data/inpost/<город>.json, выгрузка
+  // server/inpost-fetch.mjs из открытого справочника InPost), поэтому ключ не нужен.
+  // Обновить список: node server/inpost-fetch.mjs
+  INPOST_SOURCE: 'data/inpost'
 };
