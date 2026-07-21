@@ -90,15 +90,20 @@ Deno.serve(async (req) => {
     { auth: { autoRefreshToken: false, persistSession: false } },
   );
 
-  const email = `tg_${tgUser.id}@telegram.katovape.pl`;
+  // Аккаунт ищем по telegram_id, а адрес для OTP берём из самого профиля. Вычислять его
+  // нельзя: домен синтетической почты со временем менялся, и на несовпадении generateLink
+  // заводил второй пустой аккаунт, в который человек и попадал (без имени и аватара).
+  const { data: existing } = await admin.from("profiles")
+    .select("id, auth_email, display_name")
+    .eq("telegram_id", tgUser.id).maybeSingle();
+  let userId = existing?.id as string | undefined;
+  const email = existing?.auth_email || `tg_${tgUser.id}@telegram.katovape.pl`;
 
   // если такого телеграм-пользователя ещё нет, заводим. username делаем гарантированно
   // уникальным (tg_<id>), настоящий @username кладём отдельным полем.
   // ВАЖНО: telegram_id НЕ передаём в user_metadata — триггер профиля ему не доверяет
   // (клиент может подделать при обычном signUp). Привязку ставим ниже сами.
-  const { data: existing } = await admin.from("profiles").select("id").eq("telegram_id", tgUser.id).maybeSingle();
-  let userId = existing?.id as string | undefined;
-  if (!existing) {
+  if (!userId) {
     const { data: created, error: cErr } = await admin.auth.admin.createUser({
       email,
       email_confirm: true,
@@ -122,15 +127,18 @@ Deno.serve(async (req) => {
 
   // привязку Telegram выставляет только сервер, после проверки подписи (доверенный путь).
   // аватар берём из photo_url телеги, но не затираем уже загруженный пользователем.
+  // имя и логин дозаполняем, если профиль остался пустым после прежних сбоев.
   if (userId) {
+    const { data: cur } = await admin.from("profiles")
+      .select("avatar, display_name, username").eq("id", userId).maybeSingle();
     const patch: Record<string, unknown> = {
       telegram_id: tgUser.id,
       telegram_username: tgUser.username,
+      updated_at: new Date().toISOString(),
     };
-    if (tgUser.photo_url) {
-      const { data: cur } = await admin.from("profiles").select("avatar").eq("id", userId).maybeSingle();
-      if (!cur?.avatar) patch.avatar = tgUser.photo_url;
-    }
+    if (tgUser.photo_url && !cur?.avatar) patch.avatar = tgUser.photo_url;
+    if (!cur?.display_name) patch.display_name = tgUser.first_name || tgUser.username || `tg_${tgUser.id}`;
+    if (!cur?.username) patch.username = `tg_${tgUser.id}`;
     await admin.from("profiles").update(patch).eq("id", userId);
   }
 
