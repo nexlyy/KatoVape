@@ -54,9 +54,23 @@ function parseCSV(text) {
   return rows.filter(r => r.some(x => x.trim() !== ''));
 }
 
+// Любое сообщение боту значит, что человек его запустил и может получать рассылку.
+// opted_in в payload не кладём: при вставке сработает значение по умолчанию, а у тех,
+// кто отписался, флаг не перезапишется.
+async function rememberUser(f) {
+  if (!f || !f.id) return;
+  await sbUpsert('bot_users', {
+    telegram_id: f.id, username: f.username || null,
+    first_name: f.first_name || null, lang: f.language_code || null
+  }, 'telegram_id');
+}
+
 async function handleUpdate(u) {
   const m = u.message; if (!m) return;
   const f = m.from || {};
+  // регистрируем до разбора команд: раньше админ-команды и /phone выходили раньше,
+  // и такие люди не попадали в список рассылки
+  await rememberUser(f).catch(() => {});
   // человек прислал свой контакт кнопкой — подставляем телефон в профиль
   if (m.contact) { await handleContact(m).catch(() => {}); return; }
   if (!m.text) return;
@@ -68,7 +82,6 @@ async function handleUpdate(u) {
   }
   if (text === '/phone') { await askPhone(m.chat.id); return; }
   if (!text.startsWith('/start')) return;
-  await sbUpsert('bot_users', { telegram_id: f.id, username: f.username || null, first_name: f.first_name || null, lang: f.language_code || null, opted_in: true }, 'telegram_id').catch(() => {});
   const param = (m.text.split(' ')[1] || '').trim();
   if (param.startsWith('res_')) { await handleReserveLink(m, param.slice(4)); return; }
   if (param === 'phone') { await askPhone(m.chat.id); return; }
@@ -293,7 +306,18 @@ async function doBroadcasts() {
     await sbUpdate('broadcasts', 'id=eq.' + b.id, { status: 'sending' }).catch(() => {});
     const users = await sbSelect('bot_users', 'opted_in=eq.true&select=telegram_id').catch(() => []);
     let sent = 0, failed = 0;
-    for (const u of users || []) { const r = await sendMessage(u.telegram_id, b.text); r && r.ok ? sent++ : failed++; await sleep(60); }
+    for (const u of users || []) {
+      const r = await sendMessage(u.telegram_id, b.text);
+      if (r && r.ok) sent++;
+      else {
+        failed++;
+        // 403 значит человек не запускал бота или заблокировал его: чистим список,
+        // чтобы следующая рассылка не тратила время на мёртвые адреса
+        if (r && (r.error_code === 403 || r.error_code === 400))
+          await sbUpdate('bot_users', 'telegram_id=eq.' + u.telegram_id, { opted_in: false }).catch(() => {});
+      }
+      await sleep(60);
+    }
     await sbUpdate('broadcasts', 'id=eq.' + b.id, { status: 'done', sent, failed, sent_at: new Date().toISOString() }).catch(() => {});
   }
 }

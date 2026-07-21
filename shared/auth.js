@@ -629,8 +629,24 @@ window.KVAuth = (function () {
         flavor: data.flavor || '', qty: data.qty || 1,
         reserve_date: data.reserve_date
       });
-      return !error;
+      if (!error) return true;
+      // ограничения из базы приходят текстом исключения, переводим в понятный код
+      const m = String(error.message || '');
+      if (m.indexOf('RES_LIMIT_COUNT') >= 0) return 'limitCount';
+      if (m.indexOf('RES_LIMIT_QTY') >= 0) return 'limitQty';
+      if (m.indexOf('RES_NOSHOW') >= 0) return 'noshow';
+      return false;
     } catch (e) { return false; }
+  }
+  // сколько броней человек уже держит (для подсказки в окне брони)
+  async function reservationLoad() {
+    if (!user || !cloudOn()) return null;
+    try {
+      const c = await client();
+      const { data, error } = await c.rpc('my_reservation_load');
+      if (error) return null;
+      return Array.isArray(data) ? data[0] : data;
+    } catch (e) { return null; }
   }
   async function apiMyReservations() {
     if (!user || !cloudOn()) return null;
@@ -728,7 +744,7 @@ window.KVAuth = (function () {
     apiReserve, apiOrder, loggedIn, contact, saveContact,
     apiMyReservations, apiCancelReservation, apiMyOrders,
     apiAllReviews, apiMyReviews, apiReviewables, apiReview, cloudOn,
-    isAdmin, refresh: afterAuth,
+    isAdmin, refresh: afterAuth, reservationLoad,
     _tgWidget: tgWidget,
     get user() { return user; }, get profile() { return profile; },
     get configured() { return configured(); }

@@ -105,6 +105,10 @@ window.KV = (function () {
       orderFail: 'Не получилось отправить заказ, попробуйте ещё раз',
       resTitle: 'Дата брони', resNote: 'Бронь держим до конца выбранного дня. Утром в день выдачи напомним в Telegram.',
       resOk: 'Забронировать', resDone: 'Бронь принята', resFail: 'Не получилось оформить бронь',
+      resLimitCount: 'Больше трёх броней сразу держать нельзя. Выкупите или отмените одну.',
+      resLimitQty: 'Одновременно можно держать до 5 единиц товара.',
+      resNoshow: 'Три брони подряд остались невыкупленными, бронь временно закрыта. Напишите менеджеру.',
+      resHeld: 'У вас в брони: {n} из 5',
       today: 'Сегодня', tomorrow: 'Завтра',
       myRes: 'Мои брони', resCancel: 'Отменить', resCancelled: 'Бронь отменена, позиция вернулась в наличие',
       revNeedBuy: 'Отзыв можно оставить на купленный вкус после выдачи заказа',
@@ -146,6 +150,10 @@ window.KV = (function () {
       orderFail: 'Не вдалося надіслати замовлення, спробуйте ще раз',
       resTitle: 'Дата броні', resNote: 'Бронь тримаємо до кінця обраного дня. Вранці в день видачі нагадаємо в Telegram.',
       resOk: 'Забронювати', resDone: 'Бронь прийнято', resFail: 'Не вдалося оформити бронь',
+      resLimitCount: 'Більше трьох броней одразу тримати не можна. Викупіть або скасуйте одну.',
+      resLimitQty: 'Одночасно можна тримати до 5 одиниць товару.',
+      resNoshow: 'Три броні поспіль лишились невикупленими, бронь тимчасово закрита. Напишіть менеджеру.',
+      resHeld: 'У вас у броні: {n} з 5',
       today: 'Сьогодні', tomorrow: 'Завтра',
       myRes: 'Мої броні', resCancel: 'Скасувати', resCancelled: 'Бронь скасовано, позиція повернулась у наявність',
       revNeedBuy: 'Відгук можна залишити на куплений смак після видачі замовлення',
@@ -187,6 +195,10 @@ window.KV = (function () {
       orderFail: 'Nie udało się wysłać zamówienia, spróbuj ponownie',
       resTitle: 'Data rezerwacji', resNote: 'Rezerwację trzymamy do końca wybranego dnia. Rano w dniu odbioru przypomnimy w Telegramie.',
       resOk: 'Zarezerwuj', resDone: 'Rezerwacja przyjęta', resFail: 'Nie udało się zarezerwować',
+      resLimitCount: 'Nie można trzymać więcej niż trzech rezerwacji naraz. Odbierz lub anuluj jedną.',
+      resLimitQty: 'Jednocześnie można trzymać do 5 sztuk towaru.',
+      resNoshow: 'Trzy rezerwacje z rzędu nie zostały odebrane, rezerwacja jest chwilowo zamknięta. Napisz do managera.',
+      resHeld: 'W rezerwacji masz: {n} z 5',
       today: 'Dziś', tomorrow: 'Jutro',
       myRes: 'Moje rezerwacje', resCancel: 'Anuluj', resCancelled: 'Rezerwacja anulowana, pozycja wróciła do asortymentu',
       revNeedBuy: 'Opinię można dodać o kupionym smaku po wydaniu zamówienia',
@@ -258,6 +270,7 @@ window.KV = (function () {
   let appliedPromo = null;           // применённый промокод {code, type, value}
   let filters = { brand: '', maxPrice: 0 };
   let modal = null;                  // открытая карточка товара {id, fl, rate}
+  let resLoad = null;                // сколько броней человек уже держит (для подсказки)
   let delivery = null;               // способ получения {method, addr}
   let profileName = '';              // имя из профиля (или из Telegram)
   let isApp = false;                 // true в мини-аппе Telegram (opts.app)
@@ -807,7 +820,11 @@ window.KV = (function () {
         product_name: item.name + (fl ? ' ' + fl.name : ''),
         flavor: fl ? fl.name : '', qty: 1, reserve_date: date
       });
-      if (!ok) { toast(t('resFail')); return; }
+      if (ok !== true) {
+        toast(t(ok === 'limitCount' ? 'resLimitCount' : ok === 'limitQty' ? 'resLimitQty'
+          : ok === 'noshow' ? 'resNoshow' : 'resFail'));
+        return;
+      }
       if (fl) fl.qty = Math.max(0, fl.qty - 1); else if (item.qty) item.qty--;
       modal.resOpen = false;
       toast(t('resDone'));
@@ -1551,9 +1568,12 @@ window.KV = (function () {
         days.push({ iso, label });
       }
       if (!modal.resDate) modal.resDate = days[0].iso;
+      const heldNote = resLoad
+        ? '<p class="kvm-rheld">' + t('resHeld').replace('{n}', resLoad.held_qty || 0) + '</p>' : '';
       resPanel = '<div class="kvm-resbox"><b>' + t('resTitle') + '</b>' +
         '<div class="kvm-rdays">' + days.map(x =>
           '<button class="kvm-rday' + (x.iso === modal.resDate ? ' sel' : '') + '" data-res-date="' + x.iso + '" type="button">' + x.label + '</button>').join('') + '</div>' +
+        heldNote +
         '<p class="kvm-rnote">' + t('resNote') + '</p>' +
         '<button class="kvm-res-go" data-res-go="1" type="button">' + t('resOk') + '</button></div>';
     }
@@ -1622,7 +1642,20 @@ window.KV = (function () {
     const rgo = e.target.closest('[data-res-go]');
     if (rgo) { e.stopPropagation(); confirmReserve(); return; }
     const res = e.target.closest('[data-res]');
-    if (res) { e.stopPropagation(); modal.resOpen = !modal.resOpen; renderModal(); return; }
+    if (res) {
+      e.stopPropagation();
+      modal.resOpen = !modal.resOpen;
+      renderModal();
+      // подтягиваем, сколько человек уже держит, чтобы предупредить до отказа базы
+      if (modal.resOpen && window.KVAuth && KVAuth.reservationLoad) {
+        KVAuth.reservationLoad().then(l => {
+          resLoad = l;
+          const d = document.getElementById('kvm');
+          if (l && d && !d.hidden && modal && modal.resOpen) renderModal();
+        });
+      }
+      return;
+    }
     const goto = e.target.closest('[data-goto]');
     if (goto) { e.stopPropagation(); openProduct(goto.dataset.goto); return; }
   }
@@ -2152,6 +2185,7 @@ body.kv-noscroll{overflow:hidden}
 .kvm-rday{background:var(--kv-field);border:1px solid var(--kv-line);color:var(--kv-text);border-radius:9px;padding:7px 11px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit}
 .kvm-rday.sel{border-color:var(--kv-accent);color:var(--kv-accent-2,var(--kv-accent));box-shadow:inset 0 0 0 1px var(--kv-accent)}
 .kvm-rnote{font-size:11.5px;color:var(--kv-muted);line-height:1.5;margin:9px 0}
+.kvm-rheld{font-size:11.5px;font-weight:700;color:var(--kv-accent-2,var(--kv-accent));margin:9px 0 0}
 .kvm-res-go{width:100%;background:var(--kv-accent);color:var(--kv-accent-ink);border:none;border-radius:10px;padding:11px;font-weight:800;font-size:13px;cursor:pointer;font-family:inherit}
 .kvc{position:fixed;inset:0;z-index:170;background:rgba(6,6,10,.74);display:flex;align-items:flex-end;justify-content:center}
 @media(min-width:640px){.kvc{align-items:center;padding:24px}}

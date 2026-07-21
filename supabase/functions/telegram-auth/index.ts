@@ -142,6 +142,14 @@ Deno.serve(async (req) => {
     await admin.from("profiles").update(patch).eq("id", userId);
   }
 
+  // вход через Telegram означает, что человек дошёл до бота: держим его в списке
+  // рассылки. Мёртвые адреса бот сам пометит opted_in=false при первой неудаче.
+  await admin.from("bot_users").upsert({
+    telegram_id: tgUser.id,
+    username: tgUser.username,
+    first_name: tgUser.first_name,
+  }, { onConflict: "telegram_id" });
+
   // одноразовый OTP, который фронт обменяет на сессию (verifyOtp, type: magiclink)
   const { data: link, error: lErr } = await admin.auth.admin.generateLink({ type: "magiclink", email });
   if (lErr || !link || !link.properties || !link.properties.email_otp) {
