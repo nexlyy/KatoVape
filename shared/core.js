@@ -92,6 +92,9 @@ window.KV = (function () {
       contactTitle: 'Данные для получения', fio: 'Фамилия и имя',
       phoneF: 'Телефон', emailF: 'Эл. почта', paczkoF: 'Пачкомат InPost',
       paczkoHint: 'нужен только при доставке InPost',
+      tgPhone: 'Взять из Telegram',
+      phoneAsked: 'Откройте бота и нажмите «Поделиться номером»',
+      phoneGot: 'Номер подставлен из Telegram',
       edit: 'Изменить', apply: 'Применить',
       dataWarn: 'Проверьте данные внимательно: по ним оформляется отправка. Ошибка задержит посылку.',
       confirmTitle: 'Проверьте данные получателя', confirmOk: 'Всё верно, оформить',
@@ -130,6 +133,9 @@ window.KV = (function () {
       contactTitle: 'Дані для отримання', fio: 'Прізвище та ім’я',
       phoneF: 'Телефон', emailF: 'Ел. пошта', paczkoF: 'Поштомат InPost',
       paczkoHint: 'потрібен лише при доставці InPost',
+      tgPhone: 'Взяти з Telegram',
+      phoneAsked: 'Відкрийте бота й натисніть «Поділитися номером»',
+      phoneGot: 'Номер підставлено з Telegram',
       edit: 'Змінити', apply: 'Застосувати',
       dataWarn: 'Перевірте дані уважно: за ними оформлюється відправка. Помилка затримає посилку.',
       confirmTitle: 'Перевірте дані отримувача', confirmOk: 'Все вірно, оформити',
@@ -168,6 +174,9 @@ window.KV = (function () {
       contactTitle: 'Dane do odbioru', fio: 'Imię i nazwisko',
       phoneF: 'Telefon', emailF: 'E-mail', paczkoF: 'Paczkomat InPost',
       paczkoHint: 'potrzebny tylko przy dostawie InPost',
+      tgPhone: 'Pobierz z Telegrama',
+      phoneAsked: 'Otwórz bota i naciśnij „Udostępnij numer”',
+      phoneGot: 'Numer pobrany z Telegrama',
       edit: 'Zmień', apply: 'Zastosuj',
       dataWarn: 'Sprawdź dane uważnie: na ich podstawie wysyłamy paczkę. Błąd opóźni dostawę.',
       confirmTitle: 'Sprawdź dane odbiorcy', confirmOk: 'Zgadza się, zamawiam',
@@ -606,6 +615,7 @@ window.KV = (function () {
       if (e.target === d || e.target.closest('.kvc-x')) { closeConfirm(); return; }
       if (e.target.closest('.kvc-edit')) { confirmEdit = true; renderConfirm(); return; }
       if (e.target.closest('.kvc-apply')) { applyConfirm(); return; }
+      if (e.target.closest('.kvc-tgphone')) { requestPhone(); return; }
       if (e.target.closest('.kvc-map')) { openGeo(); return; }
       if (e.target.closest('.kvc-go')) { placeOrder(); return; }
     });
@@ -636,6 +646,7 @@ window.KV = (function () {
         '<label class="kvc-f"><span>' + f.lbl + '</span>' +
         '<input data-ct="' + f.k + '" type="' + (f.k === 'email' ? 'email' : f.k === 'phone' ? 'tel' : 'text') + '" value="' + esc(f.v || '') + '"' +
         (f.k === 'phone' ? ' placeholder="+48 600 000 000"' : f.k === 'paczkomat' ? ' placeholder="KAT01M"' : '') + '></label>' +
+        (f.k === 'phone' && tgPhoneReady() ? '<button class="kvc-tgphone" type="button">✈ ' + t('tgPhone') + '</button>' : '') +
         (f.k === 'paczkomat' && geoReady() ? '<button class="kvc-map" type="button">' + t('pickMap') + '</button>' : '')
       ).join('') +
         '<div class="kvc-warn">' + t('dataWarn') + '</div>' +
@@ -707,6 +718,39 @@ window.KV = (function () {
     toast(t('orderDone'));
     if (hooks.cart) hooks.cart();
     loadMyReviewState();
+  }
+
+  // ---- телефон из Telegram ----
+  // Ни виджет входа, ни initData номер не отдают: его может прислать только сам человек
+  // боту кнопкой «Поделиться номером». В мини-аппе показываем нативное окно Telegram,
+  // на сайте открываем бота, а дальше подтягиваем профиль, пока номер не появится.
+  function tgPhoneReady() { return !!(window.KV_CONFIG && window.KV_CONFIG.TELEGRAM_BOT); }
+  function requestPhone() {
+    const tg = window.Telegram && window.Telegram.WebApp;
+    const bot = window.KV_CONFIG && window.KV_CONFIG.TELEGRAM_BOT;
+    if (tg && tg.initData && typeof tg.requestContact === 'function') {
+      try { tg.requestContact(ok => { if (ok) pullPhone(8); }); return; } catch (e) {}
+    }
+    if (!bot) return;
+    const url = 'https://t.me/' + bot + '?start=phone';
+    if (tg && tg.openTelegramLink) tg.openTelegramLink(url); else window.open(url, '_blank');
+    toast(t('phoneAsked'));
+    pullPhone(8);
+  }
+  async function pullPhone(tries) {
+    const had = contactOf().phone;
+    for (let i = 0; i < (tries || 4); i++) {
+      await new Promise(r => setTimeout(r, 1800));
+      if (!(window.KVAuth && KVAuth.refresh)) return;
+      try { await KVAuth.refresh(); } catch (e) { continue; }
+      const ph = contactOf().phone;
+      if (ph && ph !== had) {
+        toast(t('phoneGot'));
+        const p = document.getElementById('kvp'); if (p && !p.hidden) renderProfile();
+        const c = document.getElementById('kvc'); if (c && !c.hidden) renderConfirm();
+        return;
+      }
+    }
   }
 
   // ---- карта пачкоматов InPost (виджет подключается, если в config задан токен) ----
@@ -1710,6 +1754,7 @@ window.KV = (function () {
               '<label class="kvp-ct-f"><span>' + f.lbl + (f.hint ? ' <i>' + f.hint + '</i>' : '') + '</span>' +
               '<input data-ct="' + f.k + '" type="' + (f.k === 'email' ? 'email' : f.k === 'phone' ? 'tel' : 'text') + '" value="' + esc(f.v || '') + '"' +
               (f.k === 'phone' ? ' placeholder="+48 600 000 000"' : f.k === 'paczkomat' ? ' placeholder="KAT01M"' : '') + '></label>' +
+              (f.k === 'phone' && tgPhoneReady() ? '<button class="kvp-ct-tgphone" type="button">✈ ' + t('tgPhone') + '</button>' : '') +
               (f.k === 'paczkomat' && geoReady() ? '<button class="kvp-ct-map" type="button">' + t('pickMap') + '</button>' : '')
             ).join('') +
             '<button class="kvp-ct-apply">' + t('apply') + '</button>'
@@ -1804,6 +1849,7 @@ window.KV = (function () {
       return;
     }
     if (e.target.closest('.kvp-ct-edit')) { profileEdit = true; renderProfile(); return; }
+    if (e.target.closest('.kvp-ct-tgphone')) { requestPhone(); return; }
     if (e.target.closest('.kvp-ct-map')) { openGeo(); return; }
     if (e.target.closest('.kvp-ct-apply')) { applyProfileContact(d); return; }
     const rc = e.target.closest('[data-res-cancel]');
@@ -2128,7 +2174,8 @@ body.kv-noscroll{overflow:hidden}
 .kvc-f input{background:var(--kv-field);border:1px solid var(--kv-line);color:var(--kv-text);border-radius:10px;padding:11px 13px;font-family:inherit;font-size:13.5px}
 .kvc-f input:focus{outline:none;border-color:var(--kv-accent)}
 .kvc-apply{width:100%;margin-top:6px;background:var(--kv-accent);color:var(--kv-accent-ink);border:none;border-radius:11px;padding:12px;font-weight:800;font-size:13px;cursor:pointer;font-family:inherit}
-.kvc-map,.kvp-ct-map{background:none;border:1px dashed var(--kv-line);color:var(--kv-accent-2,var(--kv-accent));border-radius:9px;padding:8px 12px;font-weight:700;font-size:12px;cursor:pointer;font-family:inherit;margin-bottom:10px}
+.kvc-map,.kvp-ct-map,.kvc-tgphone,.kvp-ct-tgphone{background:none;border:1px dashed var(--kv-line);color:var(--kv-accent-2,var(--kv-accent));border-radius:9px;padding:8px 12px;font-weight:700;font-size:12px;cursor:pointer;font-family:inherit;margin-bottom:10px}
+.kvc-tgphone,.kvp-ct-tgphone{border-color:#2aabee;color:#2aabee}
 .kvp-ct-warn{background:rgba(255,176,32,.1);border:1px solid rgba(255,176,32,.35);color:#d29a2b;border-radius:10px;padding:9px 11px;font-size:11.5px;line-height:1.5;margin-bottom:10px}
 .kvp-ct-f{display:flex;flex-direction:column;gap:4px;margin-bottom:9px;font-size:11.5px;font-weight:700;color:var(--kv-muted)}
 .kvp-ct-f i{font-style:normal;font-weight:400;opacity:.8}

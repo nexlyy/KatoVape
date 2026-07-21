@@ -49,6 +49,13 @@ textarea,input{background:#0a1017;border:1px solid var(--line);color:var(--txt);
 textarea:focus,input:focus{outline:none;border-color:var(--mint)}
 .hint{font-size:12px;color:var(--mut);margin-top:8px;line-height:1.5}
 .wrapscroll{overflow-x:auto}
+.pcard{border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:12px;background:var(--panel2)}
+.prow{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.prow input{width:auto}
+.pcard table{margin-top:8px}
+.pcard td{padding:7px 8px;border-bottom:1px solid var(--line)}
+.pcard tr:last-child td{border-bottom:none}
+.pcard .tools input{width:auto}
 </style>
 </head>
 <body>
@@ -188,58 +195,122 @@ async function renderTab() {
       const city = window._padCity || 'katowice';
       const { data } = await sb.from('products').select('*').eq('city', city).order('id').order('flavor');
       const cities = ['katowice', 'gliwice', 'warszawa'];
-      p.innerHTML = `<div class="card"><h2>Ассортимент · остатки и цены</h2>
-        <div class="tools" style="margin-bottom:12px">
-          ${cities.map(c => `<button class="btn ${c===city?'':'ghost'}" data-city="${c}">${c}</button>`).join('')}
-          <button class="btn ghost" id="prsave">Сохранить изменения</button><span class="muted" id="prres"></span>
-        </div>
-        <div class="wrapscroll">${(data||[]).length ? `<table><thead><tr><th>Товар</th><th>Вкус</th><th>Цена, zł</th><th>Остаток, шт</th><th></th></tr></thead><tbody>${
-          (data||[]).map((r,i) => `<tr data-i="${i}">
-            <td><input data-f="name" value="${esc(r.name || '')}" style="width:130px"><div class="muted" style="font-size:11px">${esc(r.id)}</div></td>
-            <td>${esc(r.flavor || '—')}</td>
-            <td><input data-f="price" value="${r.price==null?'':r.price}" style="width:76px"></td>
-            <td><input data-f="qty" value="${r.qty==null?0:r.qty}" style="width:66px"></td>
-            <td><button class="btn ghost" data-del="${i}" title="удалить">×</button></td></tr>`).join('')
-        }</tbody></table>` : '<span class="muted">Пусто. База ассортимента ещё не заполнена (кнопка ниже добавит позиции).</span>'}</div>
-        <div class="hint" style="margin:14px 0 8px">Новая позиция или вкус:</div>
-        <div class="tools">
-          <input id="np_id" placeholder="id (например hqd)" style="width:150px">
-          <input id="np_name" placeholder="Название" style="width:150px">
-          <input id="np_flavor" placeholder="Вкус" style="width:150px">
-          <input id="np_price" placeholder="Цена" style="width:80px">
-          <input id="np_qty" placeholder="Шт" style="width:70px">
-          <button class="btn" id="np_add">Добавить</button>
-        </div></div>`;
       const rows = data || [];
+      // поля товара продублированы у каждого вкуса, поэтому группируем строки по id
+      const groups = [], byId = {};
+      rows.forEach(r => {
+        if (!byId[r.id]) { byId[r.id] = { id: r.id, head: r, items: [] }; groups.push(byId[r.id]); }
+        byId[r.id].items.push(r);
+      });
+      p.innerHTML = `<div class="card">
+        <h2>Ассортимент · ${groups.length} товаров, ${rows.length} позиций</h2>
+        <div class="tools" style="margin-bottom:14px">
+          ${cities.map(c => `<button class="btn ${c===city?'':'ghost'}" data-city="${c}">${c}</button>`).join('')}
+          <input id="pq" placeholder="Поиск по названию или id" style="width:230px">
+          <button class="btn" id="prsave">Сохранить всё</button><span class="muted" id="prres"></span>
+        </div>
+        ${groups.length ? groups.map((g, gi) => `
+          <div class="pcard" data-g="${gi}" data-search="${esc(((g.head.name || '') + ' ' + g.id).toLowerCase())}">
+            <div class="prow">
+              <input data-p="name" value="${esc(g.head.name || '')}" placeholder="Название" style="flex:2;min-width:160px">
+              <input data-p="brand" value="${esc(g.head.brand || '')}" placeholder="Бренд" style="flex:1;min-width:110px">
+              <input data-p="category" value="${esc(g.head.category || '')}" placeholder="Категория" style="flex:1;min-width:120px">
+              <input data-p="nic" value="${esc(g.head.nic || '')}" placeholder="Крепость" style="width:100px">
+              <input data-p="price" value="${g.head.price==null?'':g.head.price}" placeholder="Цена zł" style="width:90px">
+              <button class="btn ghost" data-delp="${gi}">Удалить товар</button>
+            </div>
+            <div class="muted" style="font-size:11px;margin:6px 0 4px">id: ${esc(g.id)}</div>
+            <table><tbody>${g.items.map((r, ri) => `
+              <tr data-f="${gi}:${ri}">
+                <td style="width:55%">${esc(r.flavor || '(без вкуса)')}</td>
+                <td><input data-q="1" value="${r.qty==null?0:r.qty}" style="width:74px"> шт</td>
+                <td style="width:44px"><button class="btn ghost" data-delf="${gi}:${ri}" title="удалить вкус">×</button></td>
+              </tr>`).join('')}</tbody></table>
+            <div class="tools" style="margin-top:10px">
+              <input data-nf="${gi}" placeholder="Новый вкус" style="width:190px">
+              <input data-nq="${gi}" placeholder="шт" style="width:74px">
+              <button class="btn ghost" data-addf="${gi}">Добавить вкус</button>
+            </div>
+          </div>`).join('') : '<span class="muted">Для этого города ассортимент пуст. Добавьте товар ниже.</span>'}
+        <div class="hint" style="margin:18px 0 8px">Новый товар:</div>
+        <div class="tools">
+          <input id="np_id" placeholder="id (hqd)" style="width:120px">
+          <input id="np_name" placeholder="Название" style="width:160px">
+          <input id="np_cat" placeholder="Категория" style="width:130px">
+          <input id="np_flavor" placeholder="Вкус (можно пусто)" style="width:160px">
+          <input id="np_price" placeholder="Цена" style="width:80px">
+          <input id="np_qty" placeholder="шт" style="width:70px">
+          <button class="btn" id="np_add">Добавить товар</button>
+        </div></div>`;
+
       p.querySelectorAll('[data-city]').forEach(b => b.onclick = () => { window._padCity = b.dataset.city; renderTab(); });
-      p.querySelectorAll('[data-del]').forEach(b => b.onclick = async () => {
-        const r = rows[+b.dataset.del]; if (!r) return;
-        if (!confirm('Удалить ' + r.id + (r.flavor ? ' / ' + r.flavor : '') + '?')) return;
-        await sb.from('products').delete().match({ id: r.id, city: r.city, flavor: r.flavor });
-        renderTab();
+      // фильтр прячет карточки на месте, чтобы не терять введённое и фокус
+      const pq = document.getElementById('pq');
+      pq.oninput = () => {
+        const v = pq.value.trim().toLowerCase();
+        p.querySelectorAll('.pcard').forEach(card => {
+          card.style.display = !v || card.dataset.search.indexOf(v) >= 0 ? '' : 'none';
+        });
+      };
+      p.querySelectorAll('[data-delp]').forEach(b => b.onclick = async () => {
+        const g = groups[+b.dataset.delp]; if (!g) return;
+        if (!confirm('Удалить товар «' + (g.head.name || g.id) + '» целиком, со всеми вкусами?')) return;
+        const { error } = await sb.from('products').delete().match({ id: g.id, city });
+        if (error) alert('Ошибка: ' + error.message); else renderTab();
+      });
+      p.querySelectorAll('[data-delf]').forEach(b => b.onclick = async () => {
+        const [gi, ri] = b.dataset.delf.split(':').map(Number);
+        const r = groups[gi] && groups[gi].items[ri]; if (!r) return;
+        if (!confirm('Удалить вкус «' + (r.flavor || 'без вкуса') + '»?')) return;
+        const { error } = await sb.from('products').delete().match({ id: r.id, city: r.city, flavor: r.flavor });
+        if (error) alert('Ошибка: ' + error.message); else renderTab();
+      });
+      p.querySelectorAll('[data-addf]').forEach(b => b.onclick = async () => {
+        const gi = +b.dataset.addf, g = groups[gi]; if (!g) return;
+        const fl = p.querySelector('[data-nf="' + gi + '"]').value.trim();
+        const qv = p.querySelector('[data-nq="' + gi + '"]').value.trim();
+        if (!fl) return;
+        const h = g.head;
+        const { error } = await sb.from('products').upsert([{
+          id: g.id, city, flavor: fl, name: h.name, brand: h.brand, category: h.category,
+          nic: h.nic, price: h.price, qty: +qv || 0, updated_at: new Date().toISOString()
+        }], { onConflict: 'id,city,flavor' });
+        if (error) alert('Ошибка: ' + error.message); else renderTab();
       });
       document.getElementById('prsave').onclick = async () => {
         const out = [];
-        p.querySelectorAll('tr[data-i]').forEach(tr => {
-          const r = rows[+tr.dataset.i]; if (!r) return;
-          const price = tr.querySelector('[data-f="price"]').value.trim();
-          const qty = tr.querySelector('[data-f="qty"]').value.trim();
-          const name = tr.querySelector('[data-f="name"]').value.trim();
-          const np = price === '' ? null : +price, nq = qty === '' ? 0 : +qty;
-          if (np !== r.price || nq !== r.qty || name !== (r.name || ''))
-            out.push({ id: r.id, city: r.city, flavor: r.flavor, name: name || r.id, brand: r.brand,
-              category: r.category, nic: r.nic, price: np, qty: nq, updated_at: new Date().toISOString() });
+        groups.forEach((g, gi) => {
+          const card = p.querySelector('.pcard[data-g="' + gi + '"]'); if (!card) return;
+          const gv = k => card.querySelector('[data-p="' + k + '"]').value.trim();
+          const name = gv('name'), brand = gv('brand'), category = gv('category'), nic = gv('nic');
+          const priceRaw = gv('price');
+          const price = priceRaw === '' ? null : Number(priceRaw);
+          g.items.forEach((r, ri) => {
+            const tr = card.querySelector('tr[data-f="' + gi + ':' + ri + '"]'); if (!tr) return;
+            const qtyRaw = tr.querySelector('[data-q]').value.trim();
+            const qty = qtyRaw === '' ? 0 : Number(qtyRaw);
+            const same = name === (r.name || '') && brand === (r.brand || '') && category === (r.category || '')
+              && nic === (r.nic || '') && price === r.price && qty === r.qty;
+            if (!same) out.push({
+              id: r.id, city: r.city, flavor: r.flavor, name: name || r.id,
+              brand: brand || null, category: category || null, nic: nic || null,
+              price, qty, updated_at: new Date().toISOString()
+            });
+          });
         });
         if (!out.length) { document.getElementById('prres').textContent = 'Изменений нет'; return; }
         const { error } = await sb.from('products').upsert(out, { onConflict: 'id,city,flavor' });
         document.getElementById('prres').textContent = error ? 'Ошибка: ' + error.message : 'Сохранено ✓ (' + out.length + ')';
+        if (!error) setTimeout(renderTab, 600);
       };
       document.getElementById('np_add').onclick = async () => {
         const id = document.getElementById('np_id').value.trim(); if (!id) return;
+        const priceRaw = document.getElementById('np_price').value.trim();
         const { error } = await sb.from('products').upsert([{
           id, city, flavor: document.getElementById('np_flavor').value.trim(),
           name: document.getElementById('np_name').value.trim() || id,
-          price: +document.getElementById('np_price').value || null,
+          category: document.getElementById('np_cat').value.trim() || null,
+          price: priceRaw === '' ? null : Number(priceRaw),
           qty: +document.getElementById('np_qty').value || 0,
           updated_at: new Date().toISOString()
         }], { onConflict: 'id,city,flavor' });

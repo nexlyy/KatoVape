@@ -55,20 +55,60 @@ function parseCSV(text) {
 }
 
 async function handleUpdate(u) {
-  const m = u.message; if (!m || !m.text) return;
+  const m = u.message; if (!m) return;
   const f = m.from || {};
+  // человек прислал свой контакт кнопкой — подставляем телефон в профиль
+  if (m.contact) { await handleContact(m).catch(() => {}); return; }
+  if (!m.text) return;
   const text = m.text.trim();
   // команды управления ассортиментом — только для менеджеров
   if (MANAGERS.includes(f.id) && /^\/(admin|stock|set|price|help)\b/.test(text)) {
     await handleAdmin(m, text).catch(e => sendMessage(m.chat.id, 'Ошибка: ' + esc(String(e.message || e))));
     return;
   }
+  if (text === '/phone') { await askPhone(m.chat.id); return; }
   if (!text.startsWith('/start')) return;
   await sbUpsert('bot_users', { telegram_id: f.id, username: f.username || null, first_name: f.first_name || null, lang: f.language_code || null, opted_in: true }, 'telegram_id').catch(() => {});
   const param = (m.text.split(' ')[1] || '').trim();
   if (param.startsWith('res_')) { await handleReserveLink(m, param.slice(4)); return; }
+  if (param === 'phone') { await askPhone(m.chat.id); return; }
   const kb = MINIAPP_URL ? { reply_markup: { inline_keyboard: [[{ text: '🛍 Открыть магазин', web_app: { url: MINIAPP_URL } }]] } } : {};
   await sendMessage(m.chat.id, 'Привет! Это <b>KatoVape</b>. Открывай магазин кнопкой ниже, выбирай вкус, оформляй заказ или бронь. О брони напомним в день выдачи.', kb);
+  // если аккаунт уже заведён, но телефона нет — сразу предлагаем поделиться
+  const p = await sbSelect('profiles', 'telegram_id=eq.' + f.id + '&select=phone&limit=1').catch(() => null);
+  if (p && p[0] && !p[0].phone) await askPhone(m.chat.id);
+}
+
+// ---- телефон из Telegram: только сам человек может прислать свой контакт ----
+function phoneKeyboard() {
+  return { reply_markup: { keyboard: [[{ text: '📱 Поделиться номером', request_contact: true }]], resize_keyboard: true, one_time_keyboard: true } };
+}
+async function askPhone(chat) {
+  await sendMessage(chat, 'Чтобы не вводить телефон руками, поделитесь номером кнопкой ниже. Он попадёт только в ваш профиль магазина и нужен курьеру для доставки.', phoneKeyboard());
+}
+async function handleContact(m) {
+  const f = m.from || {};
+  const c = m.contact || {};
+  const hide = { reply_markup: { remove_keyboard: true } };
+  // контакт чужого человека не принимаем
+  if (c.user_id && Number(c.user_id) !== Number(f.id)) {
+    await sendMessage(m.chat.id, 'Нужен ваш собственный номер. Нажмите кнопку «Поделиться номером».', hide);
+    return;
+  }
+  let phone = String(c.phone_number || '').replace(/[^\d+]/g, '');
+  if (phone && phone[0] !== '+') phone = '+' + phone;
+  if (!phone) { await sendMessage(m.chat.id, 'Не получилось прочитать номер, попробуйте ещё раз.', hide); return; }
+  try {
+    const rows = await sb('PATCH', 'profiles?telegram_id=eq.' + f.id,
+      { phone, updated_at: new Date().toISOString() }, { Prefer: 'return=representation' });
+    if (rows && rows.length) {
+      await sendMessage(m.chat.id, 'Номер сохранён: <b>' + esc(phone) + '</b>. Он подставится при оформлении заказа.', hide);
+    } else {
+      await sendMessage(m.chat.id, 'Сначала откройте магазин кнопкой меню (там вход происходит сам), потом пришлите номер снова.', hide);
+    }
+  } catch (e) {
+    await sendMessage(m.chat.id, 'Этот номер уже привязан к другому аккаунту. Напишите менеджеру, если это ошибка.', hide);
+  }
 }
 
 async function handleReserveLink(m, rest) {

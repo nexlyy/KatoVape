@@ -728,7 +728,7 @@ window.KVAuth = (function () {
     apiReserve, apiOrder, loggedIn, contact, saveContact,
     apiMyReservations, apiCancelReservation, apiMyOrders,
     apiAllReviews, apiMyReviews, apiReviewables, apiReview, cloudOn,
-    isAdmin,
+    isAdmin, refresh: afterAuth,
     _tgWidget: tgWidget,
     get user() { return user; }, get profile() { return profile; },
     get configured() { return configured(); }
