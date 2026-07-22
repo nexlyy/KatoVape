@@ -52,11 +52,18 @@ async function verifyWidget(payload: Record<string, unknown>, token: string) {
 async function verifyInitData(initData: string, token: string) {
   const params = new URLSearchParams(initData);
   const hash = params.get("hash") || "";
-  const pairs = [...params.entries()].filter(([k]) => k !== "hash").sort(([a], [b]) => a < b ? -1 : 1)
-    .map(([k, v]) => `${k}=${v}`).join("\n");
   const secret = await hmac(enc.encode("WebAppData"), token);
-  const check = toHex(await hmac(secret, pairs));
-  if (!safeEqual(check, hash)) return null;
+  const checkString = (skip: string[]) =>
+    [...params.entries()].filter(([k]) => !skip.includes(k)).sort(([a], [b]) => a < b ? -1 : 1)
+      .map(([k, v]) => `${k}=${v}`).join("\n");
+  // Новые клиенты Telegram добавляют в initData поле signature (подпись для сторонней
+  // проверки). Часть версий не включает его в строку для хеша, часть включает, поэтому
+  // пробуем оба варианта: иначе на свежих телефонах вход падал бы на проверке подписи.
+  let ok = safeEqual(toHex(await hmac(secret, checkString(["hash"]))), hash);
+  if (!ok && params.has("signature")) {
+    ok = safeEqual(toHex(await hmac(secret, checkString(["hash", "signature"]))), hash);
+  }
+  if (!ok) return null;
   if (Number(params.get("auth_date") || 0) < Math.floor(Date.now() / 1000) - DAY) return null;
   const u = JSON.parse(params.get("user") || "{}");
   return {

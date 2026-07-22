@@ -790,8 +790,42 @@ window.KV = (function () {
   // Файл города подтягиваем только когда человек открыл выбор.
   let lockers = null, lockersCity = null, lockersBusy = false;
   function geoReady() { return true; }
+  // Открытый справочник InPost отвечает браузеру напрямую (Access-Control-Allow-Origin: *)
+  // и ключа не требует. Поэтому точки берём живьём: это покрывает ЛЮБОЙ город, включая
+  // новые, и список всегда свежий. Выгрузка в data/inpost остаётся запасным вариантом
+  // на случай, если справочник недоступен.
+  const INPOST_API = 'https://api-shipx-pl.easypack24.net/v1/points';
+  function cityQuery(cid) {
+    const c = cities.find(x => x.id === cid);
+    const name = (c && c.name && (c.name.pl || c.name.ru)) || cid;
+    return name.charAt(0).toUpperCase() + name.slice(1);
+  }
+  async function fetchLive(cid) {
+    const out = [];
+    for (let page = 1; page <= 6; page++) {
+      const url = INPOST_API + '?city=' + encodeURIComponent(cityQuery(cid)) +
+        '&type=parcel_locker&status=Operating&per_page=500&page=' + page;
+      const r = await fetch(url, { headers: { Accept: 'application/json' } });
+      if (!r.ok) throw new Error('inpost ' + r.status);
+      const d = await r.json();
+      for (const it of d.items || []) {
+        const a = it.address || {};
+        const street = (a.line1 || '').trim();
+        if (!it.name || !street) continue;
+        const post = ((a.line2 || '').match(/\d{2}-\d{3}/) || [''])[0];
+        out.push({ c: it.name, a: street, p: post, d: (it.location_description || '').trim().slice(0, 80) });
+      }
+      if (page >= (d.total_pages || 1)) break;
+    }
+    out.sort((x, y) => x.a.localeCompare(y.a, 'pl'));
+    return out;
+  }
   async function loadLockers(cid) {
     if (lockers && lockersCity === cid) return lockers;
+    try {
+      const live = await fetchLive(cid);
+      if (live.length) { lockers = live; lockersCity = cid; return lockers; }
+    } catch (e) { /* справочник недоступен, идём к выгрузке */ }
     try {
       const r = await fetch(ROOT + 'data/inpost/' + cid + '.json');
       if (!r.ok) throw new Error(r.status);

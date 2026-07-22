@@ -214,11 +214,18 @@ window.KVAuth = (function () {
   function tgWidget(u) {  // колбэк Telegram Login Widget на сайте
     telegramExchange({ mode: 'widget', payload: u }).then(closeModal).catch(showErr);
   }
+  let lastTgError = null;   // чтобы не гадать, почему человек остался гостем
   async function tgInitData() {  // тихий авто-вход в мини-аппе
     const tg = window.Telegram && window.Telegram.WebApp;
     if (!tg || !tg.initData) return false;
-    try { await telegramExchange({ mode: 'initdata', initData: tg.initData }); return true; }
-    catch (e) { return false; }
+    try {
+      await telegramExchange({ mode: 'initdata', initData: tg.initData });
+      lastTgError = null;
+      return true;
+    } catch (e) {
+      lastTgError = (e && e.message) || tr('tgFail');
+      return false;
+    }
   }
 
   async function signOut() {
@@ -339,7 +346,9 @@ window.KVAuth = (function () {
     } else {
       el.innerHTML = '<div class="kva-guest"><p>' + tr('guestNote') + '</p>' +
         '<button class="kva-login-btn">' + tr('loginBtn') + '</button>' +
-        (configured() ? '' : '<div class="kva-note">' + tr('notConfigured') + '</div>') + '</div>';
+        (configured() ? '' : '<div class="kva-note">' + tr('notConfigured') + '</div>') +
+        // если авто-вход в мини-аппе сорвался, показываем причину, а не молчим
+        (inTg && lastTgError ? '<div class="kva-note">' + esc(lastTgError) + '</div>' : '') + '</div>';
       el.querySelector('.kva-login-btn').onclick = openModal;
     }
   }
@@ -575,8 +584,18 @@ window.KVAuth = (function () {
     try {
       const c = await client();
       const s = await c.auth.getSession();
-      if (s && s.data && s.data.session) { await afterAuth(); }
-      else { await tgInitData(); }               // в мини-аппе войдёт сам
+      if (s && s.data && s.data.session) {
+        await afterAuth();
+        // В мини-аппе сессия лежит в хранилище вебвью, а оно общее для всех аккаунтов
+        // Telegram на устройстве. Из-за этого второй аккаунт открывал магазин под
+        // первым. Если открывший не совпадает с сохранённой сессией, выходим и входим
+        // заново под тем, кто реально открыл приложение.
+        const tgId = tgUserObj() && tgUserObj().id;
+        if (tgId && Number((profile && profile.telegram_id) || 0) !== Number(tgId)) {
+          await signOut();
+          await tgInitData();
+        }
+      } else { await tgInitData(); }             // в мини-аппе войдёт сам
       c.auth.onAuthStateChange((_e, sess) => {
         if (!sess) { user = null; profile = null; updateAll(); }
       });
