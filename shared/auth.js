@@ -32,7 +32,7 @@ window.KVAuth = (function () {
       notConfigured: 'Демо-режим: вход подключится после настройки Supabase (см. AUTH_SETUP.md).',
       pending: 'Проверьте почту и подтвердите регистрацию.', welcome: 'Готово, вы вошли',
       errUser: 'Логин от 3 символов', errUserChars: 'Логин: латиница, цифры, _ и .',
-      errPass: 'Пароль от 6 символов', errEmail: 'Проверьте почту', errPhone: 'Проверьте телефон',
+      errPass: 'Пароль от 8 символов', errEmail: 'Проверьте почту', errPhone: 'Проверьте телефон',
       errEmpty: 'Заполните поля', takenUser: 'Такой логин уже занят',
       takenEmail: 'Эта почта уже зарегистрирована', takenPhone: 'Этот телефон уже зарегистрирован',
       noAccount: 'Аккаунт не найден', badCreds: 'Неверный логин или пароль',
@@ -52,7 +52,7 @@ window.KVAuth = (function () {
       notConfigured: 'Демо-режим: вхід підключиться після налаштування Supabase (див. AUTH_SETUP.md).',
       pending: 'Перевірте пошту й підтвердьте реєстрацію.', welcome: 'Готово, ви увійшли',
       errUser: 'Логін від 3 символів', errUserChars: 'Логін: латиниця, цифри, _ та .',
-      errPass: 'Пароль від 6 символів', errEmail: 'Перевірте пошту', errPhone: 'Перевірте телефон',
+      errPass: 'Пароль від 8 символів', errEmail: 'Перевірте пошту', errPhone: 'Перевірте телефон',
       errEmpty: 'Заповніть поля', takenUser: 'Такий логін вже зайнятий',
       takenEmail: 'Ця пошта вже зареєстрована', takenPhone: 'Цей телефон вже зареєстрований',
       noAccount: 'Акаунт не знайдено', badCreds: 'Невірний логін або пароль',
@@ -72,7 +72,7 @@ window.KVAuth = (function () {
       notConfigured: 'Tryb demo: logowanie ruszy po konfiguracji Supabase (zob. AUTH_SETUP.md).',
       pending: 'Sprawdź e-mail i potwierdź rejestrację.', welcome: 'Gotowe, zalogowano',
       errUser: 'Login od 3 znaków', errUserChars: 'Login: litery, cyfry, _ i .',
-      errPass: 'Hasło od 6 znaków', errEmail: 'Sprawdź e-mail', errPhone: 'Sprawdź telefon',
+      errPass: 'Hasło od 8 znaków', errEmail: 'Sprawdź e-mail', errPhone: 'Sprawdź telefon',
       errEmpty: 'Wypełnij pola', takenUser: 'Ten login jest już zajęty',
       takenEmail: 'Ten e-mail jest już zarejestrowany', takenPhone: 'Ten telefon jest już zarejestrowany',
       noAccount: 'Nie znaleziono konta', badCreds: 'Błędny login lub hasło',
@@ -139,7 +139,7 @@ window.KVAuth = (function () {
     const phone = normPhone(form.phone);
     if (username.length < 3) throw msg('errUser');
     if (!/^[a-zA-Z0-9_.]+$/.test(username)) throw msg('errUserChars');
-    if (password.length < 6) throw msg('errPass');
+    if (password.length < 8) throw msg('errPass');
     if (email && !looksEmail(email)) throw msg('errEmail');
     if (phone && !looksPhone(phone)) throw msg('errPhone');
     if (LOCAL()) {
@@ -173,13 +173,18 @@ window.KVAuth = (function () {
       const out = await lapi('/auth/login', { method: 'POST', body: JSON.stringify({ identifier: id, password }) });
       setLtoken(out.token); await afterAuth(); return { ok: true };
     }
+    // связку «логин -> адрес» и проверку пароля делает edge-функция: наружу почта
+    // клиента не отдаётся, а на неверный логин и неверный пароль ответ одинаковый
+    if (!CFG.FUNCTIONS_URL) throw msg('generic');
+    const res = await fetch(CFG.FUNCTIONS_URL.replace(/\/$/, '') + '/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', apikey: CFG.SUPABASE_ANON_KEY },
+      body: JSON.stringify({ identifier: id, password })
+    });
+    const out = await res.json().catch(() => ({}));
+    if (!res.ok || !out.access_token) throw msg(out.error === 'errEmpty' ? 'errEmpty' : 'badCreds');
     const c = await client();
-    // сервер сам находит, какой auth-email стоит за этим логином/телефоном/почтой
-    const r = await c.rpc('resolve_login', { p_identifier: looksPhone(id) ? normPhone(id) : id });
-    let email = (r && r.data) || null;
-    if (!email && looksEmail(id)) email = id.toLowerCase();
-    if (!email) throw msg('noAccount');
-    const { error } = await c.auth.signInWithPassword({ email, password });
+    const { error } = await c.auth.setSession({ access_token: out.access_token, refresh_token: out.refresh_token });
     if (error) throw mapErr(error);
     await afterAuth();
     return { ok: true };

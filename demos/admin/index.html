@@ -246,13 +246,15 @@ function authView(errText) {
     if (!ident || !pw) return showErr('Заполните оба поля');
     btn.disabled = true; btn.textContent = 'Проверяем…';
     try {
-      let email = null;
-      const { data } = await sb.rpc('resolve_login', { p_identifier: ident });
-      email = data || null;
-      if (!email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(ident)) email = ident.toLowerCase();
-      if (!email) throw new Error('Аккаунт не найден');
-      const { error } = await sb.auth.signInWithPassword({ email, password: pw });
-      if (error) throw new Error('Неверный логин или пароль');
+      // логин разрешает и пароль проверяет сервер, наружу почта менеджера не уходит
+      const res = await fetch(CFG.FUNCTIONS_URL.replace(/\/$/, '') + '/login', {
+        method: 'POST', headers: { 'Content-Type': 'application/json', apikey: CFG.SUPABASE_ANON_KEY },
+        body: JSON.stringify({ identifier: ident, password: pw })
+      });
+      const out = await res.json().catch(() => ({}));
+      if (!res.ok || !out.access_token) throw new Error('Неверный логин или пароль');
+      const { error } = await sb.auth.setSession({ access_token: out.access_token, refresh_token: out.refresh_token });
+      if (error) throw error;
       await afterLogin();
     } catch (e2) {
       btn.disabled = false; btn.textContent = 'Войти';

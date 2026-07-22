@@ -30,7 +30,7 @@ Deno.serve(async (req) => {
   const phone = normPhone(b.phone || "");
 
   if (username.length < 3 || !/^[a-zA-Z0-9_.]+$/.test(username)) return json({ error: "errUser" }, 400);
-  if (password.length < 6) return json({ error: "errPass" }, 400);
+  if (password.length < 8) return json({ error: "errPass" }, 400);
   if (email && !looksEmail(email)) return json({ error: "errEmail" }, 400);
 
   const admin = createClient(
