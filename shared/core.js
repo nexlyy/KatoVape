@@ -1171,12 +1171,16 @@ window.KV = (function () {
     [/энерг|energy|energetyk|мохито|mojito|тропик|tropic|микс|mix|барбарис/, ['#67dcf5', '#2b9cc4']],
     [/мят|mint|м’ят|м'ят|mięt|ментол|menthol|лёд|лед|лід|ice|холод|cool|fresh/, ['#5ff3d0', '#25b195']]
   ];
-  function flavorGrad(name) {
+  function flavorColors(name) {
     const n = String(name || '').toLowerCase();
-    for (const [re, c] of FLAVOR_HUES) if (re.test(n)) return 'linear-gradient(180deg,' + c[0] + ',' + c[1] + ')';
+    for (const [re, c] of FLAVOR_HUES) if (re.test(n)) return c;
     // вкус не узнали — берём стабильный оттенок из названия, чтобы цвет не прыгал
     const h = hashId(n) % 360;
-    return 'linear-gradient(180deg,hsl(' + h + ' 78% 68%),hsl(' + h + ' 66% 45%))';
+    return ['hsl(' + h + ' 78% 68%)', 'hsl(' + h + ' 66% 45%)'];
+  }
+  function flavorGrad(name) {
+    const c = flavorColors(name);
+    return 'linear-gradient(165deg,' + c[0] + ',' + c[1] + ')';
   }
 
   // ==== "с этим берут" (9) ====
@@ -1597,12 +1601,14 @@ window.KV = (function () {
       '<div class="kvm-fpick' + (modal.flOpen ? ' open' : '') + '">' +
         '<button class="kvm-fsel" type="button" data-fl-toggle="1">' +
           '<span class="kvm-fsel-bar"' + (fl ? ' style="background:' + flavorGrad(fl.name) + '"' : '') + '></span>' +
-          '<span class="kvm-fsel-n">' + (fl ? flavorName(fl) : t('pickFlavor')) + '</span>' +
+          '<span class="kvm-fsel-n">' + t('pickFlavor') + '</span>' +
           '<span class="kvm-fsel-ch" aria-hidden="true">▼</span>' +
         '</button>' +
         '<div class="kvm-flavs">' + item.flavors.map((f, i) => {
           const have = f.qty > 0;
-          return '<button class="kvm-flav' + (i === modal.fl ? ' sel' : '') + (have ? '' : ' off') + '" data-fl-sel="' + i + '"' + (have ? '' : ' disabled') + '>' +
+          const c = flavorColors(f.name);
+          return '<button class="kvm-flav' + (i === modal.fl ? ' sel' : '') + (have ? '' : ' off') + '" data-fl-sel="' + i + '"' +
+            ' style="--fl:' + c[0] + ';--fl2:' + c[1] + '"' + (have ? '' : ' disabled') + '>' +
             '<span class="kvm-flav-bar" style="background:' + flavorGrad(f.name) + '"></span>' +
             '<span class="kvm-flav-n">' + flavorName(f) + '</span>' +
             '<span class="kvm-flav-q">' + (have ? f.qty + ' ' + t('pcs') : t('qtyNone')) + '</span>' +
@@ -2188,12 +2194,18 @@ body.kv-noscroll{overflow:hidden}
 .kvm-flavs{display:none;margin-top:8px;max-height:270px;overflow-y:auto;flex-direction:column;gap:6px;
   background:var(--kv-surface2);border:1px solid var(--kv-line);border-radius:14px;padding:8px;overscroll-behavior:contain}
 .kvm-fpick.open .kvm-flavs{display:flex}
-.kvm-flav{display:flex;align-items:center;gap:11px;width:100%;text-align:left;background:var(--kv-surface);border:1px solid var(--kv-line);border-radius:11px;padding:10px 12px;cursor:pointer;font-family:inherit;color:var(--kv-text)}
-.kvm-flav:hover{border-color:var(--kv-line-2,var(--kv-line))}
+.kvm-flav{position:relative;overflow:hidden;display:flex;align-items:center;gap:11px;width:100%;text-align:left;background:var(--kv-surface);border:1px solid var(--kv-line);border-radius:11px;padding:10px 12px;cursor:pointer;font-family:inherit;color:var(--kv-text)}
+/* цвет вкуса мягко растекается от обоих краёв, поэтому строка читается как «вкусовая» */
+.kvm-flav::before{content:"";position:absolute;inset:0;pointer-events:none;opacity:.17;
+  background:linear-gradient(90deg,var(--fl,transparent),transparent 34%,transparent 66%,var(--fl2,transparent))}
+.kvm-flav > *{position:relative}
+.kvm-flav:hover::before{opacity:.26}
 .kvm-flav.sel{border-color:var(--kv-accent);box-shadow:inset 0 0 0 1px var(--kv-accent)}
+.kvm-flav.sel::before{opacity:.3}
 .kvm-flav.off{opacity:.45;cursor:default}
+.kvm-flav.off::before{opacity:.06}
 .kvm-flav.off .kvm-flav-bar{filter:grayscale(1)}
-.kvm-flav-bar{width:5px;height:22px;border-radius:99px;flex-shrink:0}
+.kvm-flav-bar{width:5px;height:22px;border-radius:99px;flex-shrink:0;box-shadow:0 0 10px -2px var(--fl,transparent)}
 .kvm-flav-n{flex:1;font-weight:700;font-size:13.5px}
 .kvm-flav-q{font-size:10.5px;color:var(--kv-muted);font-weight:700;background:var(--kv-field);border-radius:99px;padding:4px 10px;white-space:nowrap;flex-shrink:0}
 .kvm-actions{display:flex;flex-direction:column;gap:9px;margin-top:16px}
