@@ -771,8 +771,14 @@ window.KV = (function () {
       const ph = contactOf().phone;
       if (ph && ph !== had) {
         toast(t('phoneGot'));
-        const p = document.getElementById('kvp'); if (p && !p.hidden) renderProfile();
-        const c = document.getElementById('kvc'); if (c && !c.hidden) renderConfirm();
+        // подставляем только номер: полная перерисовка стёрла бы то,
+        // что человек уже набрал в соседних полях и ещё не применил
+        const inputs = document.querySelectorAll('[data-ct="phone"]');
+        if (inputs.length) inputs.forEach(i => { i.value = ph; });
+        else {
+          const p = document.getElementById('kvp'); if (p && !p.hidden) renderProfile();
+          const c = document.getElementById('kvc'); if (c && !c.hidden) renderConfirm();
+        }
         return;
       }
     }
@@ -788,9 +794,13 @@ window.KV = (function () {
     if (lockers && lockersCity === cid) return lockers;
     try {
       const r = await fetch(ROOT + 'data/inpost/' + cid + '.json');
+      if (!r.ok) throw new Error(r.status);
       lockers = await r.json();
-    } catch (e) { lockers = []; }
-    lockersCity = cid;
+      lockersCity = cid;   // город запоминаем только при удачной загрузке,
+    } catch (e) {          // иначе обрыв связи навсегда оставил бы пустой список
+      lockers = [];
+      lockersCity = null;
+    }
     return lockers;
   }
   function ensureLockerBox() {
@@ -810,9 +820,10 @@ window.KV = (function () {
       if (pick) {
         const code = pick.dataset.locker;
         const addr = pick.dataset.addr || '';
+        // только подставляем в поле: в профиль это уйдёт по кнопке «Применить»
+        // вместе с остальным, что человек сейчас правит
         document.querySelectorAll('[data-ct="paczkomat"]').forEach(i => { i.value = code; });
         setDelivery(undefined, code);
-        savePaczkomat(code);
         d.hidden = true;
         document.body.classList.remove('kv-noscroll');
         toast(t('lockerPicked') + ' ' + code + (addr ? ', ' + addr : ''));
@@ -820,13 +831,6 @@ window.KV = (function () {
     });
     d.querySelector('.kvg-q').addEventListener('input', e => drawLockers(e.target.value));
     return d;
-  }
-  // сохраняем выбранный пачкомат в профиль, чтобы он подставлялся в следующий раз
-  function savePaczkomat(code) {
-    if (!(window.KVAuth && KVAuth.saveContact)) return;
-    const cur = contactOf();
-    if (cur.paczkomat === code) return;
-    KVAuth.saveContact(Object.assign({}, cur, { paczkomat: code })).catch(() => {});
   }
   function drawLockers(q) {
     const box = document.querySelector('#kvg .kvg-list'); if (!box) return;
@@ -1844,6 +1848,14 @@ window.KV = (function () {
     const d = document.getElementById('kvp');
     if (d && !d.hidden) renderProfile();
   }
+  // при выходе забываем всё, что относилось к прошлому человеку, иначе следующий
+  // видит чужие подсказки (сколько броней держит, заказы, отзывы)
+  function forgetUserState() {
+    resLoad = null;
+    cloudProf = { orders: null, res: null };
+    myRevs = [];
+    reviewables = null;
+  }
   function stLabel(s) {
     const k = { new: 'stNew', confirmed: 'stConfirmed', done: 'stDone', cancelled: 'stCancelled',
       active: 'stActive', expired: 'stExpired', notified: 'stNotified' }[s];
@@ -2460,7 +2472,7 @@ body.kv-noscroll{overflow:hidden}
     cartCount, cartTotal, toast, autoHideHeader, sortItems,
     starsHTML, badgesHTML, filterPass, searchSuggest, track,
     openProduct, openProfile, isFav, toggleFav, tasteOf, flavorDesc,
-    setProfileName, refreshProfile,
+    setProfileName, refreshProfile, forgetUserState,
     get db() { return db; }, get lang() { return lang; }, get city() { return city; },
     manager: MANAGER
   };

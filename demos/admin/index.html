@@ -48,6 +48,10 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
 input:hover,textarea:hover{border-color:var(--line-2)}
 input:focus,textarea:focus{outline:none;border-color:var(--accent);background:#101821}
 label.f{display:flex;flex-direction:column;gap:6px;font-size:12px;font-weight:600;color:var(--ink-2)}
+select{background:var(--field);border:1px solid var(--line);border-radius:var(--r);padding:9px 12px;
+  transition:border-color var(--t)}
+select:hover{border-color:var(--line-2)}
+select:focus{outline:none;border-color:var(--accent)}
 
 /* ---- вход ---- */
 .auth{min-height:100dvh;display:grid;place-items:center;padding:24px}
@@ -314,6 +318,7 @@ async function afterLogin() {
 }
 
 /* ================= каркас ================= */
+const ROLE_RU = { owner: 'владелец', dev: 'разработчик', manager: 'менеджер' };
 const TABS = [
   ['orders', 'Заказы', ov => ov.orders_new],
   ['reservations', 'Бронь', ov => ov.res_active],
@@ -333,7 +338,7 @@ function shell() {
         <div class="brand"><img src="../../data/photos/cat.png" alt=""><div>
           <b>KatoVape</b><span>управление</span></div></div>
         <nav class="nav" id="nav">
-          ${TABS.map(([k, label, badge]) => {
+          ${TABS.filter(([k]) => k !== 'access' || (overview && overview.can_grant)).map(([k, label, badge]) => {
             const n = badge && overview ? badge(overview) : 0;
             return `<button data-t="${k}" class="${k === tab ? 'on' : ''}">${label}
               ${n ? `<i class="count">${n}</i>` : ''}</button>`;
@@ -341,7 +346,7 @@ function shell() {
         </nav>
         <div class="who">
           <div class="who-ava">${av ? `<img src="${esc(av)}" alt="">` : esc(name[0].toUpperCase())}</div>
-          <div class="who-name"><b>${esc(name)}</b><span>вы вошли</span></div>
+          <div class="who-name"><b>${esc(name)}</b><span>${esc(ROLE_RU[overview && overview.role] || 'доступ выдан')}</span></div>
           <button class="btn quiet sm" id="logout">Выйти</button>
         </div>
       </aside>
@@ -357,7 +362,7 @@ function shell() {
   document.getElementById('nav').onclick = e => {
     const b = e.target.closest('[data-t]');
     if (!b || b.dataset.t === tab) return;
-    if (dirty.size && !confirm('Есть несохранённые изменения в ассортименте. Уйти и потерять их?')) return;
+    if (hasChanges() && !confirm('Есть несохранённые изменения в ассортименте. Уйти и потерять их?')) return;
     clearDirty(); tab = b.dataset.t; shell();
   };
   document.getElementById('logout').onclick = async () => { await sb.auth.signOut(); me = null; authView(); };
@@ -557,58 +562,122 @@ async function watchBroadcast(id) {
   if (res) res.textContent = 'Бот пока не забрал очередь. Проверьте, что он запущен на сервере.';
 }
 
+const ROLE_OPTS = ['manager', 'dev', 'owner'];
+const roleSelect = (id, val) => `<select id="${id}" style="width:auto">` +
+  ROLE_OPTS.map(r => `<option value="${r}" ${r === val ? 'selected' : ''}>${ROLE_RU[r]}</option>`).join('') + '</select>';
+
 async function renderAccess(m) {
   const { data } = await sb.rpc('admin_access_list');
   const rows = (data || []).map(a => [
     a.kind === 'telegram' ? '<span class="pill live">Telegram</span>' : '<span class="pill">Пароль</span>',
-    esc(a.who), `<span class="num">${esc(a.ident)}</span>`, `<span class="num">${fdate(a.added_at)}</span>`,
-    a.kind === 'password' ? `<button class="btn sm danger" data-revoke="${esc(a.ident)}">Забрать</button>` : '']);
-  swap(m, panel('Кто имеет доступ', table(['Способ', 'Кто', 'Идентификатор', 'Выдан', ''], rows)) +
-    panel('Выдать доступ аккаунту', `<div class="panel-body">
+    esc(a.who), `<span class="num">${esc(a.ident)}</span>`,
+    `<span class="pill ${a.role === 'manager' ? '' : 'ok'}">${esc(ROLE_RU[a.role] || a.role)}</span>`,
+    `<span class="num">${fdate(a.added_at)}</span>`,
+    `<button class="btn sm danger" data-revoke="${esc(a.ident)}">Забрать</button>`]);
+  swap(m, panel('Кто имеет доступ', table(['Способ', 'Кто', 'Идентификатор', 'Роль', 'Выдан', ''], rows)) +
+    panel('Выдать доступ', `<div class="panel-body">
       <div class="tools">
-        <input id="grant" placeholder="логин или почта аккаунта" style="width:260px">
-        <button class="btn primary" id="grantgo">Выдать</button>
+        <input id="grant" placeholder="логин или почта аккаунта" style="width:230px">
+        ${roleSelect('grantrole', 'manager')}
+        <button class="btn primary" id="grantgo">Выдать по логину</button>
       </div>
-      <p class="hint">Человек сперва заводит обычный аккаунт в магазине, потом вы выдаёте ему доступ здесь.
-      Вход по Telegram выдаётся отдельно, через список админов в базе.</p>
+      <div class="tools" style="margin-top:10px">
+        <input id="granttg" placeholder="Telegram ID, например 5301671230" style="width:230px" inputmode="numeric">
+        ${roleSelect('granttgrole', 'manager')}
+        <button class="btn" id="granttggo">Выдать по Telegram ID</button>
+      </div>
+      <p class="hint">По логину доступ выдаётся тем, кто уже завёл аккаунт с паролем. По Telegram ID можно выдать
+      заранее: человек получит доступ сам, как только первый раз откроет магазин через бота.
+      Повторная выдача тому же человеку просто меняет роль.</p>
+      <p class="hint"><b>Владелец</b> и <b>разработчик</b> могут всё, включая выдачу доступа.
+      <b>Менеджер</b> видит все разделы, кроме этого.</p>
     </div>`));
 
-  const g = document.getElementById('grantgo');
-  if (g) g.onclick = async () => {
+  const byLogin = document.getElementById('grantgo');
+  if (byLogin) byLogin.onclick = async () => {
     const login = document.getElementById('grant').value.trim();
-    if (!login) return;
-    g.disabled = true;
-    const { data: name, error } = await sb.rpc('admin_grant', { p_login: login });
-    g.disabled = false;
-    if (error) return toast(String(error.message).includes('NO_USER') ? 'Такого аккаунта нет' : error.message, true);
+    if (!login) return toast('Впишите логин или почту', true);
+    byLogin.disabled = true;
+    const { data: name, error } = await sb.rpc('admin_grant', {
+      p_login: login, p_role: document.getElementById('grantrole').value
+    });
+    byLogin.disabled = false;
+    if (error) return toast(grantErr(error), true);
     toast('Доступ выдан: ' + name);
+    render();
+  };
+  const byTg = document.getElementById('granttggo');
+  if (byTg) byTg.onclick = async () => {
+    const tid = document.getElementById('granttg').value.trim();
+    if (!/^\d+$/.test(tid)) return toast('Telegram ID это только цифры', true);
+    byTg.disabled = true;
+    const { error } = await sb.rpc('admin_grant_telegram', {
+      p_tid: Number(tid), p_role: document.getElementById('granttgrole').value
+    });
+    byTg.disabled = false;
+    if (error) return toast(grantErr(error), true);
+    toast('Доступ выдан по Telegram ID');
     render();
   };
   m.querySelectorAll('[data-revoke]').forEach(b => b.onclick = async () => {
     if (!confirm('Забрать доступ у ' + b.dataset.revoke + '?')) return;
-    const { error } = await sb.rpc('admin_revoke', { p_login: b.dataset.revoke });
-    if (error) return toast(String(error.message).includes('SELF_REVOKE') ? 'Себя разжаловать нельзя' : error.message, true);
+    const { error } = await sb.rpc('admin_revoke', { p_ident: b.dataset.revoke });
+    if (error) return toast(grantErr(error), true);
     toast('Доступ забран');
     render();
   });
 }
+function grantErr(error) {
+  const s = String(error.message || '');
+  if (s.includes('NO_USER')) return 'Такого аккаунта нет. По Telegram ID можно выдать заранее.';
+  if (s.includes('SELF_REVOKE')) return 'Себя разжаловать нельзя';
+  if (s.includes('NOT_ALLOWED')) return 'Выдавать доступ могут только владелец и разработчик';
+  if (s.includes('BAD_ROLE')) return 'Неизвестная роль';
+  return s;
+}
 
 /* ================= ассортимент ================= */
-const dirty = new Map();   // ключ строки -> изменённые поля
 let groups = [], cityNow = 'katowice';
 
-function dirtyKey(r) { return r.id + '|' + r.city + '|' + (r.flavor || ''); }
-function clearDirty() { dirty.clear(); updateSaveBar(); }
+// Изменения считаем сравнением полей с тем, что пришло из базы. Прежний список
+// «грязных» строк врал: правка одного товара помечала все его вкусы, а возврат
+// значения обратно флаг не снимал, и сохранение всё равно считало заново.
+function changedItems() {
+  const m = document.getElementById('main'); if (!m) return [];
+  const out = [];
+  groups.forEach((g, gi) => {
+    const card = m.querySelector('.item[data-g="' + gi + '"]'); if (!card) return;
+    const gv = k => card.querySelector('[data-p="' + k + '"]').value.trim();
+    const name = gv('name'), brand = gv('brand'), category = gv('category'), nic = gv('nic');
+    const priceRaw = gv('price');
+    const price = priceRaw === '' ? null : Number(priceRaw);
+    const headChanged = name !== (g.head.name || '') || brand !== (g.head.brand || '')
+      || category !== (g.head.category || '') || nic !== (g.head.nic || '') || price !== g.head.price;
+    const rows = [];
+    g.items.forEach((r, ri) => {
+      const row = card.querySelector('.flav[data-f="' + gi + ':' + ri + '"]'); if (!row) return;
+      const qtyRaw = row.querySelector('[data-q]').value.trim();
+      const qty = qtyRaw === '' ? 0 : Number(qtyRaw);
+      row.classList.toggle('dirty', qty !== r.qty);
+      if (headChanged || qty !== r.qty) rows.push({ r, qty });
+    });
+    card.classList.toggle('dirty', headChanged);
+    if (rows.length) out.push({ g, name, brand, category, nic, price, rows, bad: priceRaw !== '' && !Number.isFinite(price) });
+  });
+  return out;
+}
+function clearDirty() { updateSaveBar(); }
 function updateSaveBar() {
   const bar = document.getElementById('savebar'); if (!bar) return;
-  const n = dirty.size;
+  const n = changedItems().length;
   bar.classList.toggle('show', n > 0);
   const c = document.getElementById('sb-count');
   const note = document.getElementById('sb-note');
-  if (c) c.textContent = n === 1 ? 'Одна позиция изменена' : n + ' позиций изменено';
+  if (c) c.textContent = n === 1 ? 'Изменён один товар' : 'Изменено товаров: ' + n;
   if (note) note.textContent = 'изменения ещё не сохранены';
 }
-window.addEventListener('beforeunload', e => { if (dirty.size) { e.preventDefault(); e.returnValue = ''; } });
+function hasChanges() { return changedItems().length > 0; }
+window.addEventListener('beforeunload', e => { if (hasChanges()) { e.preventDefault(); e.returnValue = ''; } });
 
 async function renderProducts(m) {
   const { data } = await sb.from('products').select('*').eq('city', cityNow).order('id').order('flavor');
@@ -666,7 +735,7 @@ async function renderProducts(m) {
 
 function bindProducts(m) {
   m.querySelectorAll('[data-city]').forEach(b => b.onclick = () => {
-    if (dirty.size && !confirm('Есть несохранённые изменения. Сменить город и потерять их?')) return;
+    if (hasChanges() && !confirm('Есть несохранённые изменения. Сменить город и потерять их?')) return;
     clearDirty(); cityNow = b.dataset.city; render();
   });
   const pq = document.getElementById('pq');
@@ -676,18 +745,10 @@ function bindProducts(m) {
       it.style.display = !v || it.dataset.search.indexOf(v) >= 0 ? '' : 'none';
     });
   };
-  // любое изменение поля помечает позицию и поднимает панель сохранения
+  // пересчитываем при каждом вводе: вернул значение обратно — панель сама уходит
   m.querySelectorAll('.item').forEach(card => {
-    const gi = +card.dataset.g, g = groups[gi];
     card.addEventListener('input', e => {
-      const t = e.target;
-      if (t.dataset.p !== undefined) { g.items.forEach(r => dirty.set(dirtyKey(r), gi)); card.classList.add('dirty'); }
-      else if (t.dataset.q !== undefined) {
-        const row = t.closest('.flav');
-        const ri = +row.dataset.f.split(':')[1];
-        dirty.set(dirtyKey(g.items[ri]), gi);
-        row.classList.add('dirty');
-      } else return;
+      if (e.target.dataset.p === undefined && e.target.dataset.q === undefined) return;
       updateSaveBar();
     });
   });
@@ -738,29 +799,18 @@ function bindProducts(m) {
 }
 
 async function saveProducts() {
-  const m = document.getElementById('main');
   const btn = document.getElementById('sb-apply');
+  // сохраняем ровно то, что панель посчитала изменённым, чтобы счётчик и запись
+  // не расходились между собой
+  const changed = changedItems();
+  const broken = changed.find(x => x.bad);
+  if (broken) return toast('Цена у «' + (broken.name || broken.g.id) + '» не число', true);
   const out = [];
-  let bad = '';
-  groups.forEach((g, gi) => {
-    const card = m.querySelector('.item[data-g="' + gi + '"]'); if (!card) return;
-    const gv = k => card.querySelector('[data-p="' + k + '"]').value.trim();
-    const name = gv('name'), brand = gv('brand'), category = gv('category'), nic = gv('nic');
-    const priceRaw = gv('price');
-    const price = priceRaw === '' ? null : Number(priceRaw);
-    if (priceRaw !== '' && !Number.isFinite(price)) { bad = 'Цена у «' + (name || g.id) + '» не число'; return; }
-    g.items.forEach((r, ri) => {
-      const row = card.querySelector('.flav[data-f="' + gi + ':' + ri + '"]'); if (!row) return;
-      const qtyRaw = row.querySelector('[data-q]').value.trim();
-      const qty = qtyRaw === '' ? 0 : Number(qtyRaw);
-      const same = name === (r.name || '') && brand === (r.brand || '') && category === (r.category || '')
-        && nic === (r.nic || '') && price === r.price && qty === r.qty;
-      if (!same) out.push({ id: r.id, city: r.city, flavor: r.flavor, name: name || r.id,
-        brand: brand || null, category: category || null, nic: nic || null,
-        price, qty: Number.isFinite(qty) ? qty : 0, updated_at: new Date().toISOString() });
-    });
-  });
-  if (bad) return toast(bad, true);
+  changed.forEach(x => x.rows.forEach(({ r, qty }) => out.push({
+    id: r.id, city: r.city, flavor: r.flavor, name: x.name || r.id,
+    brand: x.brand || null, category: x.category || null, nic: x.nic || null,
+    price: x.price, qty: Number.isFinite(qty) ? qty : 0, updated_at: new Date().toISOString()
+  })));
   if (!out.length) { clearDirty(); return toast('Изменений нет'); }
   btn.disabled = true; btn.textContent = 'Сохраняем…';
   const { error } = await sb.from('products').upsert(out, { onConflict: 'id,city,flavor' });

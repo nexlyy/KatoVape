@@ -224,8 +224,8 @@ window.KVAuth = (function () {
   async function signOut() {
     if (LOCAL()) { try { await lapi('/auth/logout', { method: 'POST' }); } catch (e) {} setLtoken(''); }
     else if (sb) { try { await sb.auth.signOut(); } catch (e) {} }
-    user = null; profile = null; admin = false;
-    if (window.KV) { KV.setProfileName('', true); }
+    user = null; profile = null; admin = false; adminRole = null;
+    if (window.KV) { KV.setProfileName('', true); KV.forgetUserState(); }
     updateAll();
   }
 
@@ -249,8 +249,8 @@ window.KVAuth = (function () {
       const nm = (profile && (profile.display_name || profile.username)) ||
         (user.user_metadata && user.user_metadata.username) || '';
       if (window.KV && nm) KV.setProfileName(nm, true);
-      // спрашиваем сервер, админ ли — чтобы показать кнопку перехода в админку
-      try { const a = await c.rpc('is_admin'); admin = !!(a && a.data); } catch (e) { admin = false; }
+      // роль спрашиваем у сервера: она же отвечает, показывать ли кнопку панели
+      await loadAdminFlag();
     }
     updateAll();
   }
@@ -272,14 +272,21 @@ window.KVAuth = (function () {
     return (tg && tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.photo_url) || null;
   }
   function avatarOf() { return (profile && profile.avatar) || (user && user.avatar) || tgPhoto() || null; }
-  // текущий пользователь — админ? (его telegram_id в списке ADMIN_IDS). Кнопку показываем
-  // по этому флагу, реальный доступ всё равно проверяет is_admin() в базе.
-  function isAdmin() {
-    const ids = CFG.ADMIN_IDS || [];
-    const tid = (profile && profile.telegram_id) || (user && user.telegram_id) ||
-      (tgUserObj() && tgUserObj().id) || null;
-    return !!tid && ids.map(Number).includes(Number(tid));
+  // Права спрашиваем у базы. Раньше кнопку показывал список ADMIN_IDS из config.js,
+  // и он устаревал: человека добавили в админов в базе, а кнопку он не видел.
+  let adminRole = null;
+  async function loadAdminFlag() {
+    admin = false; adminRole = null;
+    if (!user || !cloudOn()) return;
+    try {
+      const c = await client();
+      const { data } = await c.rpc('admin_role');
+      adminRole = data || null;
+      admin = !!data;
+    } catch (e) { /* нет связи — считаем, что прав нет */ }
   }
+  function isAdmin() { return admin; }
+  function role() { return adminRole; }
   function tgUserObj() {
     const tg = window.Telegram && window.Telegram.WebApp;
     return (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) || null;
@@ -749,7 +756,7 @@ window.KVAuth = (function () {
     apiReserve, apiOrder, loggedIn, contact, saveContact,
     apiMyReservations, apiCancelReservation, apiMyOrders,
     apiAllReviews, apiMyReviews, apiReviewables, apiReview, cloudOn,
-    isAdmin, refresh: afterAuth, reservationLoad,
+    isAdmin, role, refresh: afterAuth, reservationLoad,
     _tgWidget: tgWidget,
     get user() { return user; }, get profile() { return profile; },
     get configured() { return configured(); }
