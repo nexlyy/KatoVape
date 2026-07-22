@@ -98,6 +98,7 @@ window.KV = (function () {
       edit: 'Изменить', apply: 'Применить',
       dataWarn: 'Проверьте данные внимательно: по ним оформляется отправка. Ошибка задержит посылку.',
       confirmTitle: 'Проверьте данные получателя', confirmOk: 'Всё верно, оформить',
+      checkData: 'Проверьте данные:', fioPh: 'Фамилия и имя',
       errFio: 'Укажите фамилию и имя', errPhone2: 'Телефон в формате +48 600 000 000',
       errEmail2: 'Проверьте адрес почты', errPaczko2: 'Номер пачкомата выглядит как KAT01M',
       savedOk: 'Сохранено', needLogin: 'Войдите, чтобы оформить заказ',
@@ -147,6 +148,7 @@ window.KV = (function () {
       edit: 'Змінити', apply: 'Застосувати',
       dataWarn: 'Перевірте дані уважно: за ними оформлюється відправка. Помилка затримає посилку.',
       confirmTitle: 'Перевірте дані отримувача', confirmOk: 'Все вірно, оформити',
+      checkData: 'Перевірте дані:', fioPh: 'Прізвище та ім’я',
       errFio: 'Вкажіть прізвище та ім’я', errPhone2: 'Телефон у форматі +48 600 000 000',
       errEmail2: 'Перевірте адресу пошти', errPaczko2: 'Номер поштомата виглядає як KAT01M',
       savedOk: 'Збережено', needLogin: 'Увійдіть, щоб оформити замовлення',
@@ -196,6 +198,7 @@ window.KV = (function () {
       edit: 'Zmień', apply: 'Zastosuj',
       dataWarn: 'Sprawdź dane uważnie: na ich podstawie wysyłamy paczkę. Błąd opóźni dostawę.',
       confirmTitle: 'Sprawdź dane odbiorcy', confirmOk: 'Zgadza się, zamawiam',
+      checkData: 'Sprawdź dane:', fioPh: 'Imię i nazwisko',
       errFio: 'Podaj imię i nazwisko', errPhone2: 'Telefon w formacie +48 600 000 000',
       errEmail2: 'Sprawdź adres e-mail', errPaczko2: 'Numer paczkomatu wygląda jak KAT01M',
       savedOk: 'Zapisano', needLogin: 'Zaloguj się, aby złożyć zamówienie',
@@ -378,16 +381,11 @@ window.KV = (function () {
   }
 
   // перевод одного вкуса пословно
+  // Название вкуса показываем как его завёл менеджер и НЕ переводим по языку интерфейса:
+  // это марочное имя (Sour Apple, Blue Razz…), одинаковое во всех языках, чтобы человек
+  // узнал ровно тот вкус, что на банке. Переводится всё вокруг, но не сам вкус.
   function flavorName(f) {
-    const name = typeof f === 'string' ? f : f.name;
-    if (lang === 'ru') return name;
-    const dict = GLOS[lang]; if (!dict) return name;
-    return name.replace(/[А-Яа-яЁёІіЇїЄєҐґ’']+/g, w => {
-      const tr = dict[w.toLowerCase()];
-      if (!tr) return w;
-      const cap = w[0] === w[0].toUpperCase() && w[0] !== w[0].toLowerCase();
-      return cap ? tr[0].toUpperCase() + tr.slice(1) : tr;
-    });
+    return typeof f === 'string' ? f : f.name;
   }
 
   // единицы крепости: для польского приводим кириллические мг/г к mg/g
@@ -630,6 +628,17 @@ window.KV = (function () {
   // ---- подтверждение данных перед заказом ----
   // показываем ФИО, телефон, почту (и пачкомат при InPost), можно тут же поправить
   let confirmEdit = false;
+  let confirmErrors = [];   // что именно не так с данными получателя
+  let confirmDraft = null;  // набранное в форме, чтобы не терялось при показе ошибок
+  // собираем все проблемы разом: человек должен видеть весь список, а не по одной
+  function contactProblems(ct, inpost) {
+    const bad = [];
+    if (!validFio(ct.name)) bad.push({ k: 'name', m: t('errFio') });
+    if (!validPhone(ct.phone)) bad.push({ k: 'phone', m: t('errPhone2') });
+    if (!validEmail(ct.email)) bad.push({ k: 'email', m: t('errEmail2') });
+    if (inpost && !validPaczko(ct.paczkomat)) bad.push({ k: 'paczkomat', m: t('errPaczko2') });
+    return bad;
+  }
   function ensureConfirm() {
     if (document.getElementById('kvc')) return;
     const d = document.createElement('div');
@@ -648,7 +657,16 @@ window.KV = (function () {
   function contactOf() {
     return (window.KVAuth && KVAuth.contact) ? KVAuth.contact() : { name: '', phone: '', email: '', paczkomat: '' };
   }
-  function openConfirm() { confirmEdit = false; ensureConfirm(); renderConfirm(); document.getElementById('kvc').hidden = false; document.body.classList.add('kv-noscroll'); }
+  function openConfirm() {
+    confirmErrors = []; confirmDraft = null;
+    // если данных получателя нет или они неполные, сразу открываем форму с ошибками,
+    // а не экран «всё верно» с пустыми полями
+    const ct = contactOf();
+    const inpost = currentDelivery().method === 'inpost';
+    confirmEdit = contactProblems(ct, inpost).length > 0;
+    ensureConfirm(); renderConfirm();
+    document.getElementById('kvc').hidden = false; document.body.classList.add('kv-noscroll');
+  }
   function closeConfirm() {
     const d = document.getElementById('kvc'); if (d) d.hidden = true;
     const kvd = document.getElementById('kvd');
@@ -665,12 +683,18 @@ window.KV = (function () {
       { k: 'email', lbl: t('emailF'), v: ct.email }
     ];
     if (inpost) need.push({ k: 'paczkomat', lbl: t('paczkoF'), v: ct.paczkomat });
+    // черновик держит то, что человек уже набрал, чтобы ошибка не стирала введённое
+    if (confirmDraft) need.forEach(f => { if (confirmDraft[f.k] != null) f.v = confirmDraft[f.k]; });
+    const errFor = k => confirmErrors.find(e => e.k === k);
     let inner;
     if (confirmEdit) {
-      inner = need.map(f =>
-        '<label class="kvc-f"><span>' + f.lbl + '</span>' +
+      const errBox = confirmErrors.length
+        ? '<div class="kvc-errbox"><b>' + t('checkData') + '</b><ul>' +
+          confirmErrors.map(e => '<li>' + esc(e.m) + '</li>').join('') + '</ul></div>' : '';
+      inner = errBox + need.map(f =>
+        '<label class="kvc-f' + (errFor(f.k) ? ' bad' : '') + '"><span>' + f.lbl + '</span>' +
         '<input data-ct="' + f.k + '" type="' + (f.k === 'email' ? 'email' : f.k === 'phone' ? 'tel' : 'text') + '" value="' + esc(f.v || '') + '"' +
-        (f.k === 'phone' ? ' placeholder="+48 600 000 000"' : f.k === 'paczkomat' ? ' placeholder="KAT01M"' : '') + '></label>' +
+        (f.k === 'phone' ? ' placeholder="+48 600 000 000"' : f.k === 'paczkomat' ? ' placeholder="KAT01M"' : f.k === 'name' ? ' placeholder="' + esc(t('fioPh')) + '"' : '') + '></label>' +
         (f.k === 'phone' && tgPhoneReady() ? '<button class="kvc-tgphone" type="button">✈ ' + t('tgPhone') + '</button>' : '') +
         (f.k === 'paczkomat' && geoReady() ? '<button class="kvc-map" type="button">' + t('pickMap') + '</button>' : '')
       ).join('') +
@@ -691,18 +715,18 @@ window.KV = (function () {
     const d = document.getElementById('kvc'); if (!d) return;
     const f = {};
     d.querySelectorAll('[data-ct]').forEach(i => { f[i.dataset.ct] = i.value; });
+    confirmDraft = Object.assign({}, f);   // запоминаем набранное
     const ct = Object.assign(contactOf(), f);
     const inpost = currentDelivery().method === 'inpost';
-    if (!validFio(ct.name)) { toast(t('errFio')); return; }
-    if (!validPhone(ct.phone)) { toast(t('errPhone2')); return; }
-    if (!validEmail(ct.email)) { toast(t('errEmail2')); return; }
-    if (inpost && !validPaczko(ct.paczkomat)) { toast(t('errPaczko2')); return; }
+    // все ошибки разом показываем в самом окне, а не тостом под ним
+    confirmErrors = contactProblems(ct, inpost);
+    if (confirmErrors.length) { renderConfirm(); return; }
     ct.phone = normPhonePl(ct.phone);
     ct.paczkomat = normPaczko(ct.paczkomat);
     try {
       if (window.KVAuth && KVAuth.saveContact) await KVAuth.saveContact(ct);
-    } catch (e) { toast((e && e.message) || t('orderFail')); return; }
-    confirmEdit = false;
+    } catch (e) { confirmErrors = [{ k: '', m: (e && e.message) || t('orderFail') }]; renderConfirm(); return; }
+    confirmEdit = false; confirmDraft = null; confirmErrors = [];
     toast(t('savedOk'));
     renderConfirm();
   }
@@ -710,10 +734,10 @@ window.KV = (function () {
     const ct = contactOf();
     const cur = currentDelivery();
     const inpost = cur.method === 'inpost';
-    if (!validFio(ct.name) || !validPhone(ct.phone) || !validEmail(ct.email) || (inpost && !validPaczko(ct.paczkomat))) {
-      confirmEdit = true; renderConfirm();
-      toast(!validFio(ct.name) ? t('errFio') : !validPhone(ct.phone) ? t('errPhone2')
-        : !validEmail(ct.email) ? t('errEmail2') : t('errPaczko2'));
+    const probs = contactProblems(ct, inpost);
+    if (probs.length) {
+      // «оформить» с пустыми данными открывает форму со списком ошибок
+      confirmEdit = true; confirmErrors = probs; renderConfirm();
       return;
     }
     const items = cartLines().map(l => ({
@@ -2365,6 +2389,12 @@ body.kv-noscroll{overflow:hidden}
 .kvc-sum b{color:var(--kv-accent-2,var(--kv-accent))}
 .kvc-none{color:var(--kv-muted);font-style:normal}
 .kvc-warn{margin-top:14px;background:rgba(255,176,32,.1);border:1px solid rgba(255,176,32,.35);color:#d29a2b;border-radius:10px;padding:10px 12px;font-size:12px;line-height:1.5}
+.kvc-errbox{background:rgba(255,92,122,.12);border:1px solid rgba(255,92,122,.45);border-radius:11px;padding:11px 13px;margin-bottom:14px}
+.kvc-errbox b{display:block;color:#ff6a86;font-size:13px;margin-bottom:5px}
+.kvc-errbox ul{margin:0;padding-left:17px}
+.kvc-errbox li{color:#ffa7b5;font-size:12.5px;line-height:1.5}
+.kvc-f.bad input{border-color:#ff5c7a;background:rgba(255,92,122,.06)}
+.kvc-f.bad>span{color:#ff8fa3}
 .kvc-btns{display:flex;gap:9px;margin-top:14px}
 .kvc-edit{flex:1;background:none;border:1px solid var(--kv-line);color:var(--kv-text);border-radius:11px;padding:12px;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit}
 .kvc-go{flex:2;background:var(--kv-accent);color:var(--kv-accent-ink);border:none;border-radius:11px;padding:12px;font-weight:800;font-size:13px;cursor:pointer;font-family:inherit}

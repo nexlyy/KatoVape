@@ -36,6 +36,10 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--mint);outline-o
 .top h1 em{font-style:normal;color:var(--mint)}
 .top .upd{font-size:11px;color:var(--mut)}
 #lang{position:relative;margin-left:auto}#lang .kv-city{padding:8px 12px;font-size:12px}
+.topcart{position:relative;display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;border:1px solid var(--line);background:var(--panel);color:var(--mint);border-radius:11px;cursor:pointer}
+.topcart[hidden]{display:none}
+.topcart svg{width:18px;height:18px}
+.topcart b{position:absolute;top:-6px;right:-6px;min-width:17px;height:17px;padding:0 4px;background:var(--mint);color:#04120e;border-radius:99px;font-size:10.5px;font-weight:800;display:grid;place-items:center;font-variant-numeric:tabular-nums}
 #lang .kv-city-menu{left:auto;right:0;min-width:150px}
 .sticky{position:sticky;top:0;z-index:10;background:rgba(8,11,16,.82);backdrop-filter:blur(12px);padding:8px 16px 10px}
 #city{position:relative;margin-bottom:8px}
@@ -114,7 +118,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--mint);outline-o
 .kvd-total s{color:var(--mut);font-weight:400;margin-right:6px}
 .kvd-go{background:linear-gradient(100deg,var(--mint),var(--cyan));color:#04120e;border:none;border-radius:12px;padding:13px;font-weight:800;font-size:13px;cursor:pointer}
 .kvd-clear{background:none;border:none;color:var(--mut);font-size:12px;cursor:pointer}
-.kv-toast{position:fixed;left:50%;bottom:90px;transform:translate(-50%,20px);background:linear-gradient(100deg,var(--mint),var(--cyan));color:#04120e;font-weight:800;font-size:12.5px;padding:11px 20px;border-radius:99px;opacity:0;pointer-events:none;transition:.25s;z-index:120;max-width:90vw;text-align:center}
+.kv-toast{position:fixed;left:50%;bottom:90px;transform:translate(-50%,20px);background:linear-gradient(100deg,var(--mint),var(--cyan));color:#04120e;font-weight:800;font-size:12.5px;padding:11px 20px;border-radius:99px;opacity:0;pointer-events:none;transition:.25s;z-index:200;max-width:90vw;text-align:center}
 .kv-toast.show{opacity:1;transform:translate(-50%,0)}
 /* фирменные детали: зерно плёнки и листовые кнопки, как на сайте */
 .grain{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.05;mix-blend-mode:overlay;
@@ -135,6 +139,10 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--mint);outline-o
   <div class="cat-ico"><img id="logoImg" src="../../../data/photos/cat.png" alt="" onerror="this.style.display='none'"></div>
   <div><h1>KATO<em>VAPE</em></h1><div class="upd" id="upd"></div></div>
   <div id="lang"></div>
+  <button class="topcart" id="topCart" hidden aria-label="Корзина" onclick="KV.openCart()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="20" r="1.6"/><circle cx="17" cy="20" r="1.6"/><path d="M3 4h2l2.6 11.2a1.5 1.5 0 0 0 1.5 1.1h7.9a1.5 1.5 0 0 0 1.5-1.2L20 8H6"/></svg>
+    <b id="topCartN"></b>
+  </button>
   <div id="profile"></div>
 </div>
 <div class="sticky">
@@ -149,7 +157,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--mint);outline-o
 <button class="cta" id="cta"></button>
 
 <script src="../../../shared/config.js?v=7"></script>
-<script src="../../../shared/core.js?v=27"></script>
+<script src="../../../shared/core.js?v=28"></script>
 <script src="../../../shared/auth.js?v=16"></script>
 <script>
 // живой дым: дрейфующее fBm-поле шума (тайлящаяся текстура печётся один раз).
@@ -267,6 +275,8 @@ function App(){
       (c.name?KV.catName(c):({ru:'Все',uk:'Всі',pl:'Wszystko'}[KV.lang]))+'</button>').join('');
   }
   function cartHook(){ const n=KV.cartCount(); document.getElementById('cartFab').innerHTML=KV.t('cart')+(n?' <b>'+n+'</b>':'');
+    // иконка корзины в шапке появляется, только когда в корзине что-то есть
+    const tc=document.getElementById('topCart'); if(tc){ tc.hidden=!n; document.getElementById('topCartN').textContent=n||''; }
     const cta=document.getElementById('cta');
     if(inTg){ tg.MainButton.setParams({text:n?KV.t('cart')+' ('+n+') · '+KV.cartTotal()+' zł':KV.t('write'),color:'#5ff3d0',text_color:'#04120e'}); tg.MainButton.show();
       tg.MainButton.onClick(()=>{ if(KV.cartCount()) KV.openCart(); else tg.openTelegramLink(KV.manager); }); cta.style.display='none'; document.body.style.paddingBottom='20px'; }
