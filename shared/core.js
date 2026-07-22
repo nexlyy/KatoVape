@@ -1157,6 +1157,28 @@ window.KV = (function () {
     return '';
   }
 
+  // Цветная метка вкуса вместо эмодзи: полоска с градиентом по «настроению» вкуса.
+  // Фрукты идут раньше мяты, чтобы «Кавун Ментол» был арбузным, а не мятным,
+  // а чистая «М’ята» всё равно попадала в мятный цвет.
+  const FLAVOR_HUES = [
+    [/черник|голубик|чорниц|лохин|blueberr|jagoda|borówk|ежевик|ожин|blackberr/, ['#7f8cff', '#4550cf']],
+    [/виноград|grape|winogron/, ['#b46bff', '#7a3ecc']],
+    [/арбуз|кавун|watermelon|вишн|cherry|wiśni|малин|raspberr|malin|клубник|полуниц|strawberr|truskaw|гранат|granat/, ['#ff5f7d', '#d22a4b']],
+    [/персик|peach|brzoskwin|манго|mango|апельсин|orange|pomarań/, ['#ffa15c', '#e0662b']],
+    [/ананас|pineapple|ananas|банан|banana|лимон|lemon|cytryn|лайм|lime|limonk|дын|melon|дин/, ['#ffd95e', '#dfa322']],
+    [/яблок|apple|jabłk|груш|pear|gruszk|киви|kiwi/, ['#8fe264', '#4ea52c']],
+    [/кола|cola|кофе|coffee|шоколад|chocolate|табак|tobacco|tytoń|карамел|caramel/, ['#c68d5c', '#8c5a2c']],
+    [/энерг|energy|energetyk|мохито|mojito|тропик|tropic|микс|mix|барбарис/, ['#67dcf5', '#2b9cc4']],
+    [/мят|mint|м’ят|м'ят|mięt|ментол|menthol|лёд|лед|лід|ice|холод|cool|fresh/, ['#5ff3d0', '#25b195']]
+  ];
+  function flavorGrad(name) {
+    const n = String(name || '').toLowerCase();
+    for (const [re, c] of FLAVOR_HUES) if (re.test(n)) return 'linear-gradient(180deg,' + c[0] + ',' + c[1] + ')';
+    // вкус не узнали — берём стабильный оттенок из названия, чтобы цвет не прыгал
+    const h = hashId(n) % 360;
+    return 'linear-gradient(180deg,hsl(' + h + ' 78% 68%),hsl(' + h + ' 66% 45%))';
+  }
+
   // ==== "с этим берут" (9) ====
   function relatedHTML(item) {
     const cat = db.categories.find(c => c.id === item._cat);
@@ -1570,17 +1592,23 @@ window.KV = (function () {
     // фото товара (в эскизе "фото с жижей")
     const bigPhoto = '<div class="kvm-photo-big">' + photo(item) + '</div>';
 
-    // выбор вкуса вертикальным списком со скроллом (как в боте ElfDuck)
+    // выбор вкуса: закрытая строка, по клику раскрывается список со скроллом
     const flavStrip = hasFl ?
-      '<div class="kvm-sec-t">' + t('flavors') + ' · ' + item.flavors.length + '</div>' +
-      '<div class="kvm-flavs">' + item.flavors.map((f, i) => {
-        const have = f.qty > 0;
-        return '<button class="kvm-flav' + (i === modal.fl ? ' sel' : '') + (have ? '' : ' off') + '" data-fl-sel="' + i + '"' + (have ? '' : ' disabled') + '>' +
-          '<span class="kvm-flav-ic">' + (flavorIcon(f.name) || '•') + '</span>' +
-          '<span class="kvm-flav-n">' + flavorName(f) + '</span>' +
-          '<span class="kvm-flav-q">' + (have ? f.qty + ' ' + t('pcs') : t('qtyNone')) + '</span>' +
-        '</button>';
-      }).join('') + '</div>' : '';
+      '<div class="kvm-fpick' + (modal.flOpen ? ' open' : '') + '">' +
+        '<button class="kvm-fsel" type="button" data-fl-toggle="1">' +
+          '<span class="kvm-fsel-bar"' + (fl ? ' style="background:' + flavorGrad(fl.name) + '"' : '') + '></span>' +
+          '<span class="kvm-fsel-n">' + (fl ? flavorName(fl) : t('pickFlavor')) + '</span>' +
+          '<span class="kvm-fsel-ch" aria-hidden="true">▼</span>' +
+        '</button>' +
+        '<div class="kvm-flavs">' + item.flavors.map((f, i) => {
+          const have = f.qty > 0;
+          return '<button class="kvm-flav' + (i === modal.fl ? ' sel' : '') + (have ? '' : ' off') + '" data-fl-sel="' + i + '"' + (have ? '' : ' disabled') + '>' +
+            '<span class="kvm-flav-bar" style="background:' + flavorGrad(f.name) + '"></span>' +
+            '<span class="kvm-flav-n">' + flavorName(f) + '</span>' +
+            '<span class="kvm-flav-q">' + (have ? f.qty + ' ' + t('pcs') : t('qtyNone')) + '</span>' +
+          '</button>';
+        }).join('') + '</div>' +
+      '</div>' : '';
 
     // профиль вкуса по шкале 1..10
     const tp = fl ? tasteOf(item, fl) : null;
@@ -1600,7 +1628,7 @@ window.KV = (function () {
     const preview = hasFl ?
       '<div class="kvm-pick"><span class="kvm-pick-lbl">' + t('selected') + '</span>' +
         '<div class="kvm-pick-card' + (fl && fl.qty > 0 ? '' : ' off') + '">' +
-          '<span class="kvm-pick-ic">' + (flavorIcon(fl ? fl.name : '') || '🫙 ') + '</span>' +
+          '<span class="kvm-pick-bar"' + (fl ? ' style="background:' + flavorGrad(fl.name) + '"' : '') + '></span>' +
           '<span class="kvm-pick-name">' + (fl ? flavorName(fl) : t('pickFlavor')) + '</span>' +
           (fl ? '<span class="kvm-pick-q">' + (fl.qty > 0 ? t('left', fl.qty) : t('qtyNone')) + '</span>' : '') +
         '</div></div>' : '';
@@ -1675,8 +1703,10 @@ window.KV = (function () {
   function onModalClick(e) {
     const d = e.currentTarget;
     if (e.target === d || e.target.closest('.kvm-x')) { closeProduct(); return; }
+    const ftog = e.target.closest('[data-fl-toggle]');
+    if (ftog) { e.stopPropagation(); modal.flOpen = !modal.flOpen; renderModal(); return; }
     const sel = e.target.closest('[data-fl-sel]');
-    if (sel) { modal.fl = +sel.dataset.flSel; renderModal(); return; }
+    if (sel) { modal.fl = +sel.dataset.flSel; modal.flOpen = false; renderModal(); return; }
     const fav = e.target.closest('[data-fav]');
     if (fav) { e.stopPropagation(); toggleFav(fav.dataset.fav); renderModal(); if (hooks.render) hooks.render(); return; }
     const add = e.target.closest('[data-add]');
@@ -2133,7 +2163,7 @@ body.kv-noscroll{overflow:hidden}
 .kvm-pick-lbl{font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--kv-muted);font-weight:800}
 .kvm-pick-card{display:flex;align-items:center;gap:10px;margin-top:6px;background:var(--kv-surface);border:1px solid var(--kv-accent);border-radius:12px;padding:11px 13px}
 .kvm-pick-card.off{border-color:var(--kv-line);opacity:.65}
-.kvm-pick-ic{font-size:20px}
+.kvm-pick-bar{width:5px;height:22px;border-radius:99px;background:var(--kv-line);flex-shrink:0}
 .kvm-pick-name{flex:1;font-weight:800;font-size:14.5px}
 .kvm-pick-q{font-size:11.5px;color:var(--kv-muted);font-weight:700}
 .kvm-taste{margin-top:16px;background:var(--kv-surface);border:1px solid var(--kv-line);border-radius:12px;padding:13px 15px}
@@ -2147,13 +2177,25 @@ body.kv-noscroll{overflow:hidden}
 .kvm-desc p{font-size:13.5px;line-height:1.6;color:var(--kv-text)}
 .kvm-spec{margin-top:12px;font-size:12.5px;color:var(--kv-muted);line-height:1.5}
 .kvm-sec-t{margin-top:18px;font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:var(--kv-muted);font-weight:800}
-.kvm-flavs{max-height:212px;overflow-y:auto;margin-top:10px;display:flex;flex-direction:column;gap:7px;padding-right:4px}
-.kvm-flav{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:var(--kv-surface);border:1px solid var(--kv-line);border-radius:11px;padding:10px 12px;cursor:pointer;font-family:inherit;color:var(--kv-text)}
+.kvm-fpick{position:relative}
+.kvm-fsel{display:flex;align-items:center;gap:11px;width:100%;background:var(--kv-surface);border:1px solid var(--kv-line);border-radius:12px;padding:12px 14px;cursor:pointer;font-family:inherit;color:var(--kv-text)}
+.kvm-fsel:hover{border-color:var(--kv-line)}
+.kvm-fpick.open .kvm-fsel{border-color:var(--kv-accent)}
+.kvm-fsel-bar{width:5px;height:20px;border-radius:99px;background:var(--kv-line);flex-shrink:0}
+.kvm-fsel-n{flex:1;text-align:left;font-weight:800;font-size:14px}
+.kvm-fsel-ch{color:var(--kv-muted);font-size:11px;transition:transform .2s}
+.kvm-fpick.open .kvm-fsel-ch{transform:rotate(180deg)}
+.kvm-flavs{display:none;margin-top:8px;max-height:270px;overflow-y:auto;flex-direction:column;gap:6px;
+  background:var(--kv-surface2);border:1px solid var(--kv-line);border-radius:14px;padding:8px;overscroll-behavior:contain}
+.kvm-fpick.open .kvm-flavs{display:flex}
+.kvm-flav{display:flex;align-items:center;gap:11px;width:100%;text-align:left;background:var(--kv-surface);border:1px solid var(--kv-line);border-radius:11px;padding:10px 12px;cursor:pointer;font-family:inherit;color:var(--kv-text)}
+.kvm-flav:hover{border-color:var(--kv-line-2,var(--kv-line))}
 .kvm-flav.sel{border-color:var(--kv-accent);box-shadow:inset 0 0 0 1px var(--kv-accent)}
-.kvm-flav.off{opacity:.5;cursor:default}
-.kvm-flav-ic{font-size:16px;flex-shrink:0}
+.kvm-flav.off{opacity:.45;cursor:default}
+.kvm-flav.off .kvm-flav-bar{filter:grayscale(1)}
+.kvm-flav-bar{width:5px;height:22px;border-radius:99px;flex-shrink:0}
 .kvm-flav-n{flex:1;font-weight:700;font-size:13.5px}
-.kvm-flav-q{font-size:11px;color:var(--kv-muted);font-weight:700}
+.kvm-flav-q{font-size:10.5px;color:var(--kv-muted);font-weight:700;background:var(--kv-field);border-radius:99px;padding:4px 10px;white-space:nowrap;flex-shrink:0}
 .kvm-actions{display:flex;flex-direction:column;gap:9px;margin-top:16px}
 .kvm-add-cta{width:100%;background:var(--kv-accent);color:var(--kv-accent-ink);border:none;border-radius:12px;padding:14px;font-weight:800;font-size:14px;cursor:pointer;font-family:inherit}
 .kvm-add-cta[disabled]{opacity:.5;cursor:default}
