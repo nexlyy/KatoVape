@@ -149,7 +149,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--mint);outline-o
 <button class="cta" id="cta"></button>
 
 <script src="../../../shared/config.js?v=7"></script>
-<script src="../../../shared/core.js?v=24"></script>
+<script src="../../../shared/core.js?v=25"></script>
 <script src="../../../shared/auth.js?v=14"></script>
 <script>
 // живой дым: дрейфующее fBm-поле шума (тайлящаяся текстура печётся один раз).
@@ -207,7 +207,25 @@ const tg = window.Telegram && window.Telegram.WebApp;
 const inTg = !!(tg && tg.initData);
 if (inTg) {
   tg.ready(); tg.expand(); tg.setHeaderColor('#080b10'); tg.setBackgroundColor('#080b10');
-  tg.BackButton.onClick(()=>history.back()); tg.BackButton.show();
+}
+// Кнопка «назад» в шапке Telegram. Раньше она звала history.back(), но бот открывает
+// витрину напрямую, истории для возврата нет, и кнопка просто ничего не делала.
+// Теперь она закрывает то, что открыто поверх, затем возвращает к категориям,
+// а на самом верхнем экране сворачивает приложение.
+function tgBack(view, setView, setCat) {
+  const layers = ['kvg', 'kvm', 'kvc', 'kva', 'kvp', 'kvd'];
+  for (const id of layers) {
+    const el = document.getElementById(id);
+    if (el && !el.hidden) {
+      const x = el.querySelector('.' + id + '-x');
+      if (x) { x.click(); return; }
+      el.hidden = true;
+      document.body.classList.remove('kv-noscroll');
+      return;
+    }
+  }
+  if (view === 'list') { setCat('all'); setView('cats'); return; }
+  tg.close();
 }
 // подписи и эмодзи для каталога кубами
 const CATD={
@@ -226,6 +244,14 @@ function App(){
     KV.init({ app:true, render(){ chrome(); setTick(t=>t+1); }, cart:cartHook, fail(){ setReady(true); } });
     setReady(true);
   },[]);
+  // кнопка «назад» Telegram должна знать текущий экран, поэтому вешаем её здесь
+  useEffect(()=>{
+    if(!inTg) return;
+    const onBack = () => tgBack(view, setView, setCat);
+    tg.BackButton.onClick(onBack);
+    tg.BackButton.show();
+    return () => { try { tg.BackButton.offClick(onBack); } catch(e){} };
+  },[view]);
   const cd = k => (CATD[KV.lang]||CATD.ru)[k];
   const showCats = view==='cats' && !q.trim();
   // на экране категорий верхняя лента чипов не нужна — прячем её

@@ -1601,7 +1601,7 @@ window.KV = (function () {
       '<div class="kvm-fpick' + (modal.flOpen ? ' open' : '') + '">' +
         '<button class="kvm-fsel" type="button" data-fl-toggle="1">' +
           '<span class="kvm-fsel-bar"' + (fl ? ' style="background:' + flavorGrad(fl.name) + '"' : '') + '></span>' +
-          '<span class="kvm-fsel-n">' + t('pickFlavor') + '</span>' +
+          '<span class="kvm-fsel-n">' + (modal.flPicked && fl ? flavorName(fl) : t('pickFlavor')) + '</span>' +
           '<span class="kvm-fsel-ch" aria-hidden="true">▼</span>' +
         '</button>' +
         '<div class="kvm-flavs">' + item.flavors.map((f, i) => {
@@ -1712,7 +1712,8 @@ window.KV = (function () {
     const ftog = e.target.closest('[data-fl-toggle]');
     if (ftog) { e.stopPropagation(); modal.flOpen = !modal.flOpen; renderModal(); return; }
     const sel = e.target.closest('[data-fl-sel]');
-    if (sel) { modal.fl = +sel.dataset.flSel; modal.flOpen = false; renderModal(); return; }
+    // до первого выбора в закрытой строке стоит «Выберите вкус», после — сам вкус
+    if (sel) { modal.fl = +sel.dataset.flSel; modal.flPicked = true; modal.flOpen = false; renderModal(); return; }
     const fav = e.target.closest('[data-fav]');
     if (fav) { e.stopPropagation(); toggleFav(fav.dataset.fav); renderModal(); if (hooks.render) hooks.render(); return; }
     const add = e.target.closest('[data-add]');

@@ -30,13 +30,19 @@ Deno.serve(async (req) => {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
-  // адрес ищем сами: по логину, по почте или по телефону
-  let email: string | null = null;
-  const { data: byLogin } = await admin.from("profiles")
-    .select("auth_email")
-    .or(`username.eq.${identifier},email.eq.${identifier},phone.eq.${normPhone(identifier)}`)
-    .limit(1).maybeSingle();
-  email = byLogin?.auth_email || null;
+  // Адрес ищем тремя отдельными точными запросами. Склеивать идентификатор в строку
+  // фильтра (.or) нельзя: запятая внутри закрывает условие и дописывает своё, из-за
+  // чего можно было войти в чужой аккаунт, не зная его логина. В .eq значение
+  // экранируется клиентом и остаётся значением, а не частью выражения.
+  async function findEmail(column: string, value: string): Promise<string | null> {
+    if (!value) return null;
+    const { data } = await admin.from("profiles")
+      .select("auth_email").eq(column, value).limit(1).maybeSingle();
+    return (data?.auth_email as string) || null;
+  }
+  let email = await findEmail("username", identifier);
+  if (!email) email = await findEmail("email", identifier);
+  if (!email) email = await findEmail("phone", normPhone(identifier));
   if (!email && looksEmail(identifier)) email = identifier.toLowerCase();
   // отвечаем одинаково и на «нет такого», и на «пароль неверный»,
   // чтобы нельзя было перебором узнать, какие логины существуют

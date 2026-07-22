@@ -129,7 +129,7 @@ button{font-family:inherit}
 <button class="cta" id="cta"></button>
 
 <script src="../../../shared/config.js?v=7"></script>
-<script src="../../../shared/core.js?v=24"></script>
+<script src="../../../shared/core.js?v=25"></script>
 <script src="../../../shared/auth.js?v=14"></script>
 <script>
 let cat = 'all', q = '';
@@ -139,7 +139,7 @@ const inTg = !!(tg && tg.initData);
 if (inTg) {
   tg.ready(); tg.expand();
   tg.setHeaderColor('#0a0a10'); tg.setBackgroundColor('#0a0a10');
-  tg.BackButton.onClick(() => history.back()); tg.BackButton.show();  // назад к выбору стиля
+  tg.BackButton.onClick(() => { if (history.length > 1) history.back(); else tg.close(); }); tg.BackButton.show();
   // внутри телеги нижнюю кнопку рисует сам клиент
   document.getElementById('cta').style.display = 'none';
   document.body.style.paddingBottom = '20px';
