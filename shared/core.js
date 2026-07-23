@@ -98,6 +98,7 @@ window.KV = (function () {
       edit: 'Изменить', apply: 'Применить',
       dataWarn: 'Проверьте данные внимательно: по ним оформляется отправка. Ошибка задержит посылку.',
       confirmTitle: 'Проверьте данные получателя', confirmOk: 'Всё верно, оформить',
+      payLater: 'Оплатить при выдаче', payTitle: 'Оплата', payFail: 'Оплата не прошла, попробуйте ещё раз',
       checkData: 'Проверьте данные:', fioPh: 'Фамилия и имя',
       errFio: 'Укажите фамилию и имя', errPhone2: 'Телефон в формате +48 600 000 000',
       errEmail2: 'Проверьте адрес почты', errPaczko2: 'Номер пачкомата выглядит как KAT01M',
@@ -148,6 +149,7 @@ window.KV = (function () {
       edit: 'Змінити', apply: 'Застосувати',
       dataWarn: 'Перевірте дані уважно: за ними оформлюється відправка. Помилка затримає посилку.',
       confirmTitle: 'Перевірте дані отримувача', confirmOk: 'Все вірно, оформити',
+      payLater: 'Оплата при отриманні', payTitle: 'Оплата', payFail: 'Оплата не пройшла, спробуйте ще раз',
       checkData: 'Перевірте дані:', fioPh: 'Прізвище та ім’я',
       errFio: 'Вкажіть прізвище та ім’я', errPhone2: 'Телефон у форматі +48 600 000 000',
       errEmail2: 'Перевірте адресу пошти', errPaczko2: 'Номер поштомата виглядає як KAT01M',
@@ -198,6 +200,7 @@ window.KV = (function () {
       edit: 'Zmień', apply: 'Zastosuj',
       dataWarn: 'Sprawdź dane uważnie: na ich podstawie wysyłamy paczkę. Błąd opóźni dostawę.',
       confirmTitle: 'Sprawdź dane odbiorcy', confirmOk: 'Zgadza się, zamawiam',
+      payLater: 'Płatność przy odbiorze', payTitle: 'Płatność', payFail: 'Płatność nie przeszła, spróbuj ponownie',
       checkData: 'Sprawdź dane:', fioPh: 'Imię i nazwisko',
       errFio: 'Podaj imię i nazwisko', errPhone2: 'Telefon w formacie +48 600 000 000',
       errEmail2: 'Sprawdź adres e-mail', errPaczko2: 'Numer paczkomatu wygląda jak KAT01M',
@@ -651,6 +654,7 @@ window.KV = (function () {
       if (e.target.closest('.kvc-apply')) { applyConfirm(); return; }
       if (e.target.closest('.kvc-tgphone')) { requestPhone(); return; }
       if (e.target.closest('.kvc-map')) { openGeo(); return; }
+      if (e.target.closest('.kvc-later')) { placeOrder(); return; }   // оплата при выдаче
       if (e.target.closest('.kvc-go')) { placeOrder(); return; }
     });
   }
@@ -701,15 +705,23 @@ window.KV = (function () {
         '<div class="kvc-warn">' + t('dataWarn') + '</div>' +
         '<button class="kvc-apply">' + t('apply') + '</button>';
     } else {
+      // если оплата подключена — показываем кнопки Apple Pay / Google Pay / карта (сайт)
+      // или кнопку нативного инвойса (мини-апп); плюс запасной путь «оплата при выдаче»
+      const pay = window.KVPay && KVPay.enabled();
+      const actions = pay
+        ? '<div id="kvc-pay" class="kvc-pay"></div>' +
+          '<button class="kvc-later">' + t('payLater') + '</button>' +
+          '<div class="kvc-btns kvc-btns-edit"><button class="kvc-edit">' + t('edit') + '</button></div>'
+        : '<div class="kvc-btns"><button class="kvc-edit">' + t('edit') + '</button>' +
+          '<button class="kvc-go">' + t('confirmOk') + '</button></div>';
       inner = need.map(f =>
         '<div class="kvc-row"><span>' + f.lbl + '</span><b>' + (esc(f.v || '') || '<i class="kvc-none">—</i>') + '</b></div>').join('') +
         '<div class="kvc-sum"><span>' + t('total') + '</span><b>' + grandTotal() + ' zł</b></div>' +
         '<div class="kvc-row"><span>' + t('delivery') + '</span><b>' + deliveryLabel(cur.method) + '</b></div>' +
-        '<div class="kvc-warn">' + t('dataWarn') + '</div>' +
-        '<div class="kvc-btns"><button class="kvc-edit">' + t('edit') + '</button>' +
-        '<button class="kvc-go">' + t('confirmOk') + '</button></div>';
+        '<div class="kvc-warn">' + t('dataWarn') + '</div>' + actions;
     }
     d.querySelector('.kvc-body').innerHTML = '<h3 class="kvc-title">' + t('confirmTitle') + '</h3>' + inner;
+    if (!confirmEdit) startPay();
   }
   async function applyConfirm() {
     const d = document.getElementById('kvc'); if (!d) return;
@@ -730,35 +742,29 @@ window.KV = (function () {
     toast(t('savedOk'));
     renderConfirm();
   }
-  async function placeOrder() {
+  // состав заказа + данные получателя, одинаково для оплаты онлайн и оплаты при выдаче
+  function orderData() {
     const ct = contactOf();
     const cur = currentDelivery();
     const inpost = cur.method === 'inpost';
-    const probs = contactProblems(ct, inpost);
-    if (probs.length) {
-      // «оформить» с пустыми данными открывает форму со списком ошибок
-      confirmEdit = true; confirmErrors = probs; renderConfirm();
-      return;
-    }
     const items = cartLines().map(l => ({
       id: l.item.id, name: l.item.name,
       flavor: l.flavor ? l.flavor.name : '', n: l.n, sum: l.sum
     }));
-    const data = {
-      city, sum: grandTotal(), delivery: cur.method,
+    return {
+      city, sum: grandTotal(), amount: Math.round(grandTotal() * 100),
+      delivery: cur.method, promo: appliedPromo ? appliedPromo.code : '',
       address: inpost ? normPaczko(ct.paczkomat) : (cur.addr || ''),
       contact: { name: ct.name.trim(), phone: normPhonePl(ct.phone), email: ct.email.trim(),
         paczkomat: inpost ? normPaczko(ct.paczkomat) : '' },
       items
     };
-    const btn = document.querySelector('#kvc .kvc-go');
-    if (btn) { btn.disabled = true; btn.textContent = '…'; }
-    const ok = await KVAuth.apiOrder(data);
-    if (btn) { btn.disabled = false; btn.textContent = t('confirmOk'); }
-    if (!ok) { toast(t('orderFail')); return; }
+  }
+  // общий финал: чистим корзину, закрываем окна, показываем «оформлено»
+  function finishOrder() {
     saveLastOrder();
     logOrder();
-    track('checkout', { total: grandTotal(), delivery: cur.method });
+    track('checkout', { total: grandTotal(), delivery: currentDelivery().method });
     cart = {};
     saveCart();
     closeConfirm();
@@ -767,6 +773,35 @@ window.KV = (function () {
     toast(t('orderDone'));
     if (hooks.cart) hooks.cart();
     loadMyReviewState();
+  }
+  // оплата при выдаче: заказ пишется как раньше (status new, payment unpaid), деньги на месте
+  async function placeOrder() {
+    const ct = contactOf();
+    const probs = contactProblems(ct, currentDelivery().method === 'inpost');
+    if (probs.length) {
+      // «оформить» с пустыми данными открывает форму со списком ошибок
+      confirmEdit = true; confirmErrors = probs; renderConfirm();
+      return;
+    }
+    const btn = document.querySelector('#kvc .kvc-go, #kvc .kvc-later');
+    if (btn) { btn.disabled = true; btn.dataset.txt = btn.textContent; btn.textContent = '…'; }
+    const ok = await KVAuth.apiOrder(orderData());
+    if (btn) { btn.disabled = false; if (btn.dataset.txt) btn.textContent = btn.dataset.txt; }
+    if (!ok) { toast(t('orderFail')); return; }
+    finishOrder();
+  }
+  // онлайн-оплата: монтируем кнопки Stripe (сайт) или инвойс Telegram (мини-апп) в окно
+  function startPay() {
+    if (!(window.KVPay && KVPay.enabled())) return;
+    const box = document.getElementById('kvc-pay');
+    if (!box || box.dataset.on) return;
+    box.dataset.on = '1';   // один монтаж на показ окна, повтор при перерисовке не нужен
+    KVPay.mount(box, orderData(), {
+      onSuccess: finishOrder,
+      onError: code => toast(code === 'out_of_stock' ? t('orderFail')
+        : (typeof code === 'string' && code && code.length < 80 ? code : t('payFail'))),
+      onCancel: () => {}
+    });
   }
 
   // ---- телефон из Telegram ----
@@ -2399,6 +2434,9 @@ body.kv-noscroll{overflow:hidden}
 .kvc-edit{flex:1;background:none;border:1px solid var(--kv-line);color:var(--kv-text);border-radius:11px;padding:12px;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit}
 .kvc-go{flex:2;background:var(--kv-accent);color:var(--kv-accent-ink);border:none;border-radius:11px;padding:12px;font-weight:800;font-size:13px;cursor:pointer;font-family:inherit}
 .kvc-go[disabled]{opacity:.6;cursor:default}
+.kvc-pay{margin-top:14px;min-height:44px}
+.kvc-later{width:100%;margin-top:10px;background:none;border:1px solid var(--kv-line);color:var(--kv-muted);border-radius:11px;padding:11px;font-weight:700;font-size:12.5px;cursor:pointer;font-family:inherit}
+.kvc-btns-edit{margin-top:8px}.kvc-btns-edit .kvc-edit{flex:1}
 .kvc-f{display:flex;flex-direction:column;gap:5px;margin-bottom:10px;font-size:12px;font-weight:700;color:var(--kv-muted)}
 .kvc-f input{background:var(--kv-field);border:1px solid var(--kv-line);color:var(--kv-text);border-radius:10px;padding:11px 13px;font-family:inherit;font-size:13.5px}
 .kvc-f input:focus{outline:none;border-color:var(--kv-accent)}

@@ -765,6 +765,15 @@ window.KVAuth = (function () {
     } catch (e) { return { error: String(e && e.message || e) }; }
   }
   function loggedIn() { return !!user; }
+  // access-токен текущей сессии: по нему edge-функция оплаты узнаёт, чей это заказ
+  async function accessToken() {
+    if (!cloudOn()) return null;
+    try {
+      const c = await client();
+      const s = await c.auth.getSession();
+      return (s && s.data && s.data.session && s.data.session.access_token) || null;
+    } catch (e) { return null; }
+  }
 
   if (document.readyState === 'loading')
     document.addEventListener('DOMContentLoaded', init);
@@ -775,7 +784,7 @@ window.KVAuth = (function () {
     apiReserve, apiOrder, loggedIn, contact, saveContact,
     apiMyReservations, apiCancelReservation, apiMyOrders,
     apiAllReviews, apiMyReviews, apiReviewables, apiReview, cloudOn,
-    isAdmin, role, refresh: afterAuth, reservationLoad,
+    isAdmin, role, refresh: afterAuth, reservationLoad, accessToken,
     _tgWidget: tgWidget,
     get user() { return user; }, get profile() { return profile; },
     get configured() { return configured(); }
