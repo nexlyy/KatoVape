@@ -137,7 +137,10 @@ Deno.serve(async (req) => {
   // имя и логин дозаполняем, если профиль остался пустым после прежних сбоев.
   if (userId) {
     const { data: cur } = await admin.from("profiles")
-      .select("avatar, display_name, username").eq("id", userId).maybeSingle();
+      .select("avatar, display_name, username, full_name, phone, email, paczkomat").eq("id", userId).maybeSingle();
+    // данные, собранные ботом при онбординге (хранятся у того же telegram_id)
+    const { data: bu } = await admin.from("bot_users")
+      .select("full_name, phone, email, paczkomat").eq("telegram_id", tgUser.id).maybeSingle();
     const patch: Record<string, unknown> = {
       telegram_id: tgUser.id,
       telegram_username: tgUser.username,
@@ -146,7 +149,18 @@ Deno.serve(async (req) => {
     if (tgUser.photo_url && !cur?.avatar) patch.avatar = tgUser.photo_url;
     if (!cur?.display_name) patch.display_name = tgUser.first_name || tgUser.username || `tg_${tgUser.id}`;
     if (!cur?.username) patch.username = `tg_${tgUser.id}`;
+    // из онбординга дозаполняем пустые поля профиля; full_name/paczkomat без unique — сразу сюда
+    if (!cur?.full_name && bu?.full_name) patch.full_name = bu.full_name;
+    if (!cur?.paczkomat && bu?.paczkomat) patch.paczkomat = bu.paczkomat;
     await admin.from("profiles").update(patch).eq("id", userId);
+    // телефон и почта уникальны: отдельным запросом, чтобы конфликт «занято» не сорвал привязку выше
+    const contact: Record<string, unknown> = {};
+    if (!cur?.phone && bu?.phone) contact.phone = bu.phone;
+    if (!cur?.email && bu?.email) contact.email = bu.email;
+    if (Object.keys(contact).length) {
+      contact.updated_at = new Date().toISOString();
+      await admin.from("profiles").update(contact).eq("id", userId);
+    }
   }
 
   // вход через Telegram означает, что человек дошёл до бота: держим его в списке

@@ -137,6 +137,8 @@ async function handleUpdate(u) {
     await sendMessage(m.chat.id, tr(lang, 'adminPanel'), { reply_markup: { inline_keyboard: [[{ text: tr(lang, 'adminPanel'), web_app: { url: ADMIN_URL } }]] } });
     return;
   }
+  // менеджеру — текущие заказы, только просмотр (действия в веб-админке)
+  if (text === '/orders') { if (await isManager(f.id)) await handleOrders(m.chat.id); return; }
   // не подтвердил 18+ — гейт; не заполнил профиль — принимаем ответ шага
   if (!st || !st.age_ok) { await sendAgeGate(m.chat.id, lang); return; }
   if (!st.onboarding_done) { await onboardingAnswer(m, st, lang, text); return; }
@@ -254,6 +256,29 @@ async function handleReserveLink(m, rest, lang) {
   }
 }
 
+// менеджер — из env KV_MANAGER_IDS (владелец) или из таблицы admins (выдаёт владелец/разработчик в панели)
+async function isManager(tgId) {
+  if (MANAGERS.includes(Number(tgId))) return true;
+  const r = await sbSelect('admins', 'telegram_id=eq.' + tgId + '&select=telegram_id&limit=1').catch(() => null);
+  return !!(r && r[0]);
+}
+// текущие заказы для менеджера: только чтение, статусы меняются в веб-админке
+async function handleOrders(chat) {
+  const rows = await sbSelect('orders',
+    'status=in.(new,confirmed)&order=created_at.desc&limit=20&select=id,city,sum,status,payment_status,contact').catch(() => []);
+  if (!rows || !rows.length) { await sendMessage(chat, 'Текущих заказов нет.'); return; }
+  let buf = '<b>Текущие заказы</b> (' + rows.length + '):\n\n';
+  for (const o of rows) {
+    const c = o.contact || {};
+    const pay = o.payment_status === 'paid' ? 'оплачен' : (o.payment_status === 'pending' ? 'ждёт оплаты' : 'при выдаче');
+    const line = '<b>№' + o.id + '</b> · ' + esc(o.city) + ' · ' + (o.sum || 0) + ' zł · ' + pay + ' · ' + esc(o.status) +
+      (c.name ? '\n' + esc(c.name) + (c.phone ? ', ' + esc(c.phone) : '') : '') + '\n\n';
+    if (buf.length + line.length > 3800) { await sendMessage(chat, buf); buf = ''; }
+    buf += line;
+  }
+  if (buf.trim()) await sendMessage(chat, buf);
+}
+
 async function tgLoop() {
   await deleteWebhook().catch(() => {});
   let offset = 0;
@@ -342,6 +367,27 @@ async function notifyOrderStatus() {
   }
 }
 
+// «принят» клиенту — для заказов с оплатой при выдаче (unpaid); карточные примут после оплаты
+async function notifyAccepted() {
+  const list = await sbSelect('orders',
+    'payment_status=eq.unpaid&client_notified_accepted=is.false&select=id,telegram_id,profiles(telegram_id)').catch(() => []);
+  for (const o of list || []) {
+    const tg = o.telegram_id || (o.profiles && o.profiles.telegram_id);
+    if (tg) { const lang = await langOf(tg); await sendMessage(tg, tr(lang, 'orderAccepted', { id: o.id })).catch(() => {}); }
+    await sbUpdate('orders', 'id=eq.' + o.id, { client_notified_accepted: true }).catch(() => {});
+  }
+}
+// «оплачено» клиенту — для оплаченных онлайн заказов (paid проставляет webhook)
+async function notifyPaid() {
+  const list = await sbSelect('orders',
+    'payment_status=eq.paid&client_notified_paid=is.false&select=id,telegram_id,profiles(telegram_id)').catch(() => []);
+  for (const o of list || []) {
+    const tg = o.telegram_id || (o.profiles && o.profiles.telegram_id);
+    if (tg) { const lang = await langOf(tg); await sendMessage(tg, tr(lang, 'orderPaid', { id: o.id })).catch(() => {}); }
+    await sbUpdate('orders', 'id=eq.' + o.id, { client_notified_paid: true }).catch(() => {});
+  }
+}
+
 async function doBroadcasts() {
   const list = await sbSelect('broadcasts', 'status=eq.pending&select=id,text&order=id.asc').catch(() => []);
   for (const b of list || []) {
@@ -393,6 +439,8 @@ async function jobsLoop() {
       await expireReservations();
       await notifyOrders();
       await notifyOrderStatus();
+      await notifyAccepted();
+      await notifyPaid();
       await doBroadcasts();
       await doSyncJobs();
       await notifyRestocks();
