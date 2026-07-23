@@ -105,12 +105,13 @@ window.KV = (function () {
       savedOk: 'Сохранено', needLogin: 'Войдите, чтобы оформить заказ',
       orderDone: 'Заказ оформлен! Менеджер получил уведомление и свяжется с вами.',
       orderFail: 'Не получилось отправить заказ, попробуйте ещё раз',
-      resTitle: 'Дата брони', resNote: 'Бронь держим до конца выбранного дня. Утром в день выдачи напомним в Telegram.',
+      resTitle: 'Дата и время брони', resNote: 'Бронь держим до конца выбранного дня. Утром в день выдачи напомним в Telegram.',
       resOk: 'Забронировать', resDone: 'Бронь принята', resFail: 'Не получилось оформить бронь',
+      resTimeLabel: 'Время самовывоза',
       resLimitCount: 'Больше трёх броней сразу держать нельзя. Выкупите или отмените одну.',
-      resLimitQty: 'Одновременно можно держать до 5 единиц товара.',
+      resLimitQty: 'Одновременно можно держать до 10 единиц товара.',
       resNoshow: 'Три брони подряд остались невыкупленными, бронь временно закрыта. Напишите менеджеру.',
-      resHeld: 'У вас в брони: {n} из 5',
+      resHeld: 'У вас в брони: {n} из 10',
       today: 'Сегодня', tomorrow: 'Завтра',
       myRes: 'Мои брони', resCancel: 'Отменить', resCancelled: 'Бронь отменена, позиция вернулась в наличие',
       revNeedBuy: 'Отзыв можно оставить на купленный вкус после выдачи заказа',
@@ -156,12 +157,13 @@ window.KV = (function () {
       savedOk: 'Збережено', needLogin: 'Увійдіть, щоб оформити замовлення',
       orderDone: 'Замовлення оформлено! Менеджер отримав сповіщення і зв’яжеться з вами.',
       orderFail: 'Не вдалося надіслати замовлення, спробуйте ще раз',
-      resTitle: 'Дата броні', resNote: 'Бронь тримаємо до кінця обраного дня. Вранці в день видачі нагадаємо в Telegram.',
+      resTitle: 'Дата і час броні', resNote: 'Бронь тримаємо до кінця обраного дня. Вранці в день видачі нагадаємо в Telegram.',
       resOk: 'Забронювати', resDone: 'Бронь прийнято', resFail: 'Не вдалося оформити бронь',
+      resTimeLabel: 'Час самовивозу',
       resLimitCount: 'Більше трьох броней одразу тримати не можна. Викупіть або скасуйте одну.',
-      resLimitQty: 'Одночасно можна тримати до 5 одиниць товару.',
+      resLimitQty: 'Одночасно можна тримати до 10 одиниць товару.',
       resNoshow: 'Три броні поспіль лишились невикупленими, бронь тимчасово закрита. Напишіть менеджеру.',
-      resHeld: 'У вас у броні: {n} з 5',
+      resHeld: 'У вас у броні: {n} з 10',
       today: 'Сьогодні', tomorrow: 'Завтра',
       myRes: 'Мої броні', resCancel: 'Скасувати', resCancelled: 'Бронь скасовано, позиція повернулась у наявність',
       revNeedBuy: 'Відгук можна залишити на куплений смак після видачі замовлення',
@@ -207,12 +209,13 @@ window.KV = (function () {
       savedOk: 'Zapisano', needLogin: 'Zaloguj się, aby złożyć zamówienie',
       orderDone: 'Zamówienie złożone! Manager dostał powiadomienie i odezwie się.',
       orderFail: 'Nie udało się wysłać zamówienia, spróbuj ponownie',
-      resTitle: 'Data rezerwacji', resNote: 'Rezerwację trzymamy do końca wybranego dnia. Rano w dniu odbioru przypomnimy w Telegramie.',
+      resTitle: 'Data i godzina rezerwacji', resNote: 'Rezerwację trzymamy do końca wybranego dnia. Rano w dniu odbioru przypomnimy w Telegramie.',
       resOk: 'Zarezerwuj', resDone: 'Rezerwacja przyjęta', resFail: 'Nie udało się zarezerwować',
+      resTimeLabel: 'Godzina odbioru',
       resLimitCount: 'Nie można trzymać więcej niż trzech rezerwacji naraz. Odbierz lub anuluj jedną.',
-      resLimitQty: 'Jednocześnie można trzymać do 5 sztuk towaru.',
+      resLimitQty: 'Jednocześnie można trzymać do 10 sztuk towaru.',
       resNoshow: 'Trzy rezerwacje z rzędu nie zostały odebrane, rezerwacja jest chwilowo zamknięta. Napisz do managera.',
-      resHeld: 'W rezerwacji masz: {n} z 5',
+      resHeld: 'W rezerwacji masz: {n} z 10',
       today: 'Dziś', tomorrow: 'Jutro',
       myRes: 'Moje rezerwacje', resCancel: 'Anuluj', resCancelled: 'Rezerwacja anulowana, pozycja wróciła do asortymentu',
       revNeedBuy: 'Opinię można dodać o kupionym smaku po wydaniu zamówienia',
@@ -297,6 +300,8 @@ window.KV = (function () {
     { id: 'inpost', fee: 12 },
     { id: 'courier', fee: 18 }
   ];
+  // слоты времени самовывоза для брони (дефолт; реальные часы подставим из content.json позже)
+  const RES_SLOTS = (window.KV_CONFIG && window.KV_CONFIG.RES_SLOTS) || ['10:00', '12:00', '14:00', '16:00', '18:00', '20:00'];
 
   // локализованное значение: объект {ru,uk,pl} -> строка текущего языка
   function loc(o) { return o ? (o[lang] || o.ru || '') : ''; }
@@ -979,7 +984,7 @@ window.KV = (function () {
       const ok = await KVAuth.apiReserve({
         city, product_id: item.id,
         product_name: item.name + (fl ? ' ' + fl.name : ''),
-        flavor: fl ? fl.name : '', qty: 1, reserve_date: date
+        flavor: fl ? fl.name : '', qty: 1, reserve_date: date, reserve_time: modal.resTime
       });
       if (ok !== true) {
         toast(t(ok === 'limitCount' ? 'resLimitCount' : ok === 'limitQty' ? 'resLimitQty'
@@ -1763,11 +1768,15 @@ window.KV = (function () {
         days.push({ iso, label });
       }
       if (!modal.resDate) modal.resDate = days[0].iso;
+      if (!modal.resTime) modal.resTime = RES_SLOTS[0];
       const heldNote = resLoad
         ? '<p class="kvm-rheld">' + t('resHeld').replace('{n}', resLoad.held_qty || 0) + '</p>' : '';
       resPanel = '<div class="kvm-resbox"><b>' + t('resTitle') + '</b>' +
         '<div class="kvm-rdays">' + days.map(x =>
           '<button class="kvm-rday' + (x.iso === modal.resDate ? ' sel' : '') + '" data-res-date="' + x.iso + '" type="button">' + x.label + '</button>').join('') + '</div>' +
+        '<p class="kvm-rnote kvm-rtlabel">' + t('resTimeLabel') + '</p>' +
+        '<div class="kvm-rdays">' + RES_SLOTS.map(s =>
+          '<button class="kvm-rday' + (s === modal.resTime ? ' sel' : '') + '" data-res-time="' + s + '" type="button">' + s + '</button>').join('') + '</div>' +
         heldNote +
         '<p class="kvm-rnote">' + t('resNote') + '</p>' +
         '<button class="kvm-res-go" data-res-go="1" type="button">' + t('resOk') + '</button></div>';
@@ -1837,6 +1846,8 @@ window.KV = (function () {
     }
     const rdate = e.target.closest('[data-res-date]');
     if (rdate) { modal.resDate = rdate.dataset.resDate; renderModal(); return; }
+    const rtime = e.target.closest('[data-res-time]');
+    if (rtime) { modal.resTime = rtime.dataset.resTime; renderModal(); return; }
     const rgo = e.target.closest('[data-res-go]');
     if (rgo) { e.stopPropagation(); confirmReserve(); return; }
     const res = e.target.closest('[data-res]');

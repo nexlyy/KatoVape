@@ -88,6 +88,12 @@ async function langOf(tg) {
   const r = await sbSelect('bot_users', 'telegram_id=eq.' + tg + '&select=lang&limit=1').catch(() => null);
   return pickLang(r && r[0] && r[0].lang);
 }
+// профиль уже заполнен (человек оформлялся через мини-апп) — тогда онбординг в боте не нужен
+async function profileComplete(tgId) {
+  const r = await sbSelect('profiles', 'telegram_id=eq.' + tgId + '&select=full_name,phone,email,paczkomat&limit=1').catch(() => null);
+  const p = r && r[0];
+  return !!(p && p.full_name && p.phone && p.email && p.paczkomat);
+}
 
 // ---- клавиатуры/шаги ----
 function shopKb(lang) {
@@ -125,6 +131,10 @@ async function handleUpdate(u) {
   const text = m.text.trim();
 
   if (text.startsWith('/start')) {
+    // возвращающийся клиент с уже заполненным профилем: не гоняем через онбординг заново
+    if (!st || !st.age_ok || !st.onboarding_done) {
+      if (await profileComplete(f.id)) { await setBotUser(f.id, { age_ok: true, onboarding_done: true, step: null }); st = Object.assign({}, st, { age_ok: true, onboarding_done: true }); }
+    }
     if (!st || !st.age_ok) { await sendAgeGate(m.chat.id, lang); return; }
     if (!st.onboarding_done) { await sendMessage(m.chat.id, tr(lang, 'resume')); await askStep(m.chat.id, st.step || 'name', lang); return; }
     const param = (m.text.split(' ')[1] || '').trim();
@@ -294,10 +304,11 @@ async function tgLoop() {
 
 async function confirmReservations() {
   const list = await sbSelect('reservations',
-    'kind=eq.reserve&confirmed_at=is.null&select=id,product_name,reserve_date,telegram_id,profiles(telegram_id)').catch(() => []);
+    'kind=eq.reserve&confirmed_at=is.null&select=id,product_name,reserve_date,reserve_time,telegram_id,profiles(telegram_id)').catch(() => []);
   for (const r of list || []) {
     const tg = r.telegram_id || (r.profiles && r.profiles.telegram_id);
-    if (tg) { const lang = await langOf(tg); await sendMessage(tg, tr(lang, 'resConfirmed', { name: esc(r.product_name), date: r.reserve_date || '' })).catch(() => {}); }
+    const when = (r.reserve_date || '') + (r.reserve_time ? ' ' + r.reserve_time : '');
+    if (tg) { const lang = await langOf(tg); await sendMessage(tg, tr(lang, 'resConfirmed', { name: esc(r.product_name), date: when })).catch(() => {}); }
     await sbUpdate('reservations', 'id=eq.' + r.id, { confirmed_at: new Date().toISOString() }).catch(() => {});
   }
 }

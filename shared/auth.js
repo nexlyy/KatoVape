@@ -658,7 +658,7 @@ window.KVAuth = (function () {
         city: data.city, product_id: data.product_id,
         product_name: data.product_name || data.product_id,
         flavor: data.flavor || '', qty: data.qty || 1,
-        reserve_date: data.reserve_date
+        reserve_date: data.reserve_date, reserve_time: data.reserve_time || null
       });
       if (!error) return true;
       // ограничения из базы приходят текстом исключения, переводим в понятный код
