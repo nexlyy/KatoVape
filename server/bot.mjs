@@ -1,4 +1,5 @@
-import { BOT_TOKEN, sendMessage, getUpdates, deleteWebhook, setMenuButton } from './tg.mjs';
+import { BOT_TOKEN, sendMessage, tgCall, getUpdates, deleteWebhook, setMenuButton } from './tg.mjs';
+import { tr, pickLang } from './i18n.mjs';
 
 const SUPA = (process.env.SUPABASE_URL || '').replace(/\/$/, '');
 const KEY = process.env.SUPABASE_SERVICE_KEY || '';
@@ -7,9 +8,10 @@ const SHEETS = process.env.KV_SHEETS_CSV || '';
 const JOBS_MS = Number(process.env.KV_JOBS_MS || 10000);
 const MANAGERS = (process.env.KV_MANAGER_IDS || '5301671230').split(',').map(s => +s.trim()).filter(Boolean);
 const ADMIN_URL = process.env.KV_ADMIN_URL || '';
+const CITIES = ['katowice', 'gliwice', 'warszawa'];
+const CITY_LABEL = { katowice: 'Katowice', gliwice: 'Gliwice', warszawa: 'Warszawa' };
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const esc = s => String(s == null ? '' : s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
-const enc = encodeURIComponent;
 
 async function sb(method, path, body, extra) {
   const res = await fetch(SUPA + '/rest/v1/' + path, {
@@ -54,9 +56,22 @@ function parseCSV(text) {
   return rows.filter(r => r.some(x => x.trim() !== ''));
 }
 
+// ---- проверки данных онбординга (те же правила, что во фронте) ----
+function validName(s) { return (s || '').trim().split(/\s+/).filter(Boolean).length >= 2; }
+function normPhone(s) {
+  let d = (s || '').replace(/[^\d+]/g, '');
+  if (/^\d{9}$/.test(d)) d = '+48' + d;      // 9 цифр без кода — польский номер
+  if (/^48\d{9}$/.test(d)) d = '+' + d;
+  return d;
+}
+const validPhone = s => /^\+\d{10,14}$/.test(s);
+const validEmail = s => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((s || '').trim());
+const normPaczko = s => (s || '').trim().toUpperCase().replace(/\s+/g, '');
+const validPaczko = s => /^[A-Z]{3}\d{2,4}[A-Z]{0,2}$/.test(s);
+
+// ---- состояние клиента в bot_users ----
 // Любое сообщение боту значит, что человек его запустил и может получать рассылку.
-// opted_in в payload не кладём: при вставке сработает значение по умолчанию, а у тех,
-// кто отписался, флаг не перезапишется.
+// opted_in в payload не кладём: при вставке сработает значение по умолчанию.
 async function rememberUser(f) {
   if (!f || !f.id) return;
   await sbUpsert('bot_users', {
@@ -64,73 +79,145 @@ async function rememberUser(f) {
     first_name: f.first_name || null, lang: f.language_code || null
   }, 'telegram_id');
 }
+async function botUser(id) {
+  const r = await sbSelect('bot_users', 'telegram_id=eq.' + id + '&select=*&limit=1').catch(() => null);
+  return (r && r[0]) || null;
+}
+async function setBotUser(id, patch) { await sbUpdate('bot_users', 'telegram_id=eq.' + id, patch).catch(() => {}); }
+async function langOf(tg) {
+  const r = await sbSelect('bot_users', 'telegram_id=eq.' + tg + '&select=lang&limit=1').catch(() => null);
+  return pickLang(r && r[0] && r[0].lang);
+}
 
+// ---- клавиатуры/шаги ----
+function shopKb(lang) {
+  return MINIAPP_URL ? { reply_markup: { inline_keyboard: [[{ text: tr(lang, 'shopBtn'), web_app: { url: MINIAPP_URL } }]] } } : {};
+}
+function sendWelcome(chat, lang) { return sendMessage(chat, tr(lang, 'welcome'), shopKb(lang)); }
+function sendAgeGate(chat, lang) {
+  return sendMessage(chat, tr(lang, 'ageGate'), { reply_markup: { inline_keyboard: [
+    [{ text: tr(lang, 'ageYes'), callback_data: 'age:yes' }],
+    [{ text: tr(lang, 'ageNo'), callback_data: 'age:no' }]
+  ] } });
+}
+function askStep(chat, step, lang) {
+  if (step === 'phone')
+    return sendMessage(chat, tr(lang, 'askPhone'), { reply_markup: { keyboard: [[{ text: tr(lang, 'phoneBtn'), request_contact: true }]], resize_keyboard: true, one_time_keyboard: true } });
+  if (step === 'email') return sendMessage(chat, tr(lang, 'askEmail'), { reply_markup: { remove_keyboard: true } });
+  if (step === 'city')
+    return sendMessage(chat, tr(lang, 'askCity'), { reply_markup: { inline_keyboard: [CITIES.map(c => ({ text: CITY_LABEL[c], callback_data: 'city:' + c }))] } });
+  if (step === 'paczkomat') return sendMessage(chat, tr(lang, 'askPaczko'), { reply_markup: { remove_keyboard: true } });
+  return sendMessage(chat, tr(lang, 'askName'), { reply_markup: { remove_keyboard: true } });   // name
+}
+
+// ---- маршрутизация апдейтов ----
 async function handleUpdate(u) {
+  if (u.callback_query) { await handleCallback(u.callback_query).catch(() => {}); return; }
   const m = u.message; if (!m) return;
+  if (!(m.chat && m.chat.type === 'private')) return;   // только личные чаты
   const f = m.from || {};
-  // Регистрируем до разбора команд: раньше админ-команды и /phone выходили раньше,
-  // и такие люди не попадали в список рассылки. Только личные чаты: из группы бот
-  // всё равно не может написать в личку, а список засорялся бы её участниками.
-  if (m.chat && m.chat.type === 'private') await rememberUser(f).catch(() => {});
-  // человек прислал свой контакт кнопкой — подставляем телефон в профиль
-  if (m.contact) { await handleContact(m).catch(() => {}); return; }
+  await rememberUser(f).catch(() => {});
+  const st = await botUser(f.id);
+  const lang = pickLang((st && st.lang) || f.language_code);
+
+  if (m.contact) { await onContact(m, st, lang).catch(() => {}); return; }
   if (!m.text) return;
   const text = m.text.trim();
-  // команды управления ассортиментом — только для менеджеров
-  if (MANAGERS.includes(f.id) && /^\/(admin|stock|set|price|help)\b/.test(text)) {
-    await handleAdmin(m, text).catch(e => sendMessage(m.chat.id, 'Ошибка: ' + esc(String(e.message || e))));
+
+  if (text.startsWith('/start')) {
+    if (!st || !st.age_ok) { await sendAgeGate(m.chat.id, lang); return; }
+    if (!st.onboarding_done) { await sendMessage(m.chat.id, tr(lang, 'resume')); await askStep(m.chat.id, st.step || 'name', lang); return; }
+    const param = (m.text.split(' ')[1] || '').trim();
+    if (param.startsWith('res_')) { await handleReserveLink(m, param.slice(4), lang); return; }
+    if (param === 'phone') { await askStep(m.chat.id, 'phone', lang); return; }
+    await sendWelcome(m.chat.id, lang); return;
+  }
+  // менеджеру — ссылка на веб-панель (все действия там, из бота ассортиментом не правим)
+  if (text === '/admin' && MANAGERS.includes(f.id) && ADMIN_URL) {
+    await sendMessage(m.chat.id, tr(lang, 'adminPanel'), { reply_markup: { inline_keyboard: [[{ text: tr(lang, 'adminPanel'), web_app: { url: ADMIN_URL } }]] } });
     return;
   }
-  if (text === '/phone') { await askPhone(m.chat.id); return; }
-  if (!text.startsWith('/start')) return;
-  const param = (m.text.split(' ')[1] || '').trim();
-  if (param.startsWith('res_')) { await handleReserveLink(m, param.slice(4)); return; }
-  if (param === 'phone') { await askPhone(m.chat.id); return; }
-  const kb = MINIAPP_URL ? { reply_markup: { inline_keyboard: [[{ text: '🛍 Открыть магазин', web_app: { url: MINIAPP_URL } }]] } } : {};
-  await sendMessage(m.chat.id, 'Привет! Это <b>KatoVape</b>. Открывай магазин кнопкой ниже, выбирай вкус, оформляй заказ или бронь. О брони напомним в день выдачи.', kb);
-  // если аккаунт уже заведён, но телефона нет — сразу предлагаем поделиться
-  const p = await sbSelect('profiles', 'telegram_id=eq.' + f.id + '&select=phone&limit=1').catch(() => null);
-  if (p && p[0] && !p[0].phone) await askPhone(m.chat.id);
+  // не подтвердил 18+ — гейт; не заполнил профиль — принимаем ответ шага
+  if (!st || !st.age_ok) { await sendAgeGate(m.chat.id, lang); return; }
+  if (!st.onboarding_done) { await onboardingAnswer(m, st, lang, text); return; }
+  // онбординг пройден: обычный текст игнорируем, вход в магазин — кнопкой
 }
 
-// ---- телефон из Telegram: только сам человек может прислать свой контакт ----
-function phoneKeyboard() {
-  return { reply_markup: { keyboard: [[{ text: '📱 Поделиться номером', request_contact: true }]], resize_keyboard: true, one_time_keyboard: true } };
-}
-async function askPhone(chat) {
-  await sendMessage(chat, 'Чтобы не вводить телефон руками, поделитесь номером кнопкой ниже. Он попадёт только в ваш профиль магазина и нужен курьеру для доставки.', phoneKeyboard());
-}
-async function handleContact(m) {
-  const f = m.from || {};
-  const c = m.contact || {};
-  const hide = { reply_markup: { remove_keyboard: true } };
-  // контакт чужого человека не принимаем
-  if (c.user_id && Number(c.user_id) !== Number(f.id)) {
-    await sendMessage(m.chat.id, 'Нужен ваш собственный номер. Нажмите кнопку «Поделиться номером».', hide);
+async function handleCallback(q) {
+  const f = q.from || {};
+  await tgCall('answerCallbackQuery', { callback_query_id: q.id }).catch(() => {});
+  const chat = q.message && q.message.chat && q.message.chat.id; if (!chat) return;
+  await rememberUser(f).catch(() => {});   // строка bot_users должна существовать до PATCH
+  const st = await botUser(f.id);
+  const lang = pickLang((st && st.lang) || f.language_code);
+  const data = q.data || '';
+  if (data === 'age:no') { await sendMessage(chat, tr(lang, 'ageDenied')); return; }
+  if (data === 'age:yes') {
+    if (st && st.onboarding_done) { await sendWelcome(chat, lang); return; }
+    await setBotUser(f.id, { age_ok: true, step: 'name' });
+    await sendMessage(chat, tr(lang, 'onbIntro'));
+    await askStep(chat, 'name', lang);
     return;
   }
+  if (data.startsWith('city:')) {
+    if (!st || st.step !== 'city') return;
+    const city = data.slice(5);
+    if (!CITIES.includes(city)) return;
+    await setBotUser(f.id, { city, step: 'paczkomat' });
+    await askStep(chat, 'paczkomat', lang);
+    return;
+  }
+}
+
+// шаги онбординга по порядку: имя -> телефон -> почта -> город -> почтомат
+async function onboardingAnswer(m, st, lang, text) {
+  const chat = m.chat.id, id = m.from.id, step = st.step || 'name';
+  if (step === 'name') {
+    if (!validName(text)) { await sendMessage(chat, tr(lang, 'badName')); return; }
+    await setBotUser(id, { full_name: text.trim(), step: 'phone' });
+    await askStep(chat, 'phone', lang); return;
+  }
+  if (step === 'phone') {
+    const phone = normPhone(text);
+    if (!validPhone(phone)) { await sendMessage(chat, tr(lang, 'badPhone')); return; }
+    await setBotUser(id, { phone, step: 'email' });
+    await askStep(chat, 'email', lang); return;
+  }
+  if (step === 'email') {
+    if (!validEmail(text)) { await sendMessage(chat, tr(lang, 'badEmail')); return; }
+    await setBotUser(id, { email: text.trim(), step: 'city' });
+    await askStep(chat, 'city', lang); return;
+  }
+  if (step === 'city') { await askStep(chat, 'city', lang); return; }   // ждём кнопку города
+  if (step === 'paczkomat') {
+    const p = normPaczko(text);
+    if (!validPaczko(p)) { await sendMessage(chat, tr(lang, 'badPaczko')); return; }
+    await setBotUser(id, { paczkomat: p, step: null, onboarding_done: true });
+    await sendMessage(chat, tr(lang, 'onbDone'), { reply_markup: { remove_keyboard: true } });
+    await sendWelcome(chat, lang); return;
+  }
+}
+
+// контакт кнопкой — только сам человек может прислать свой номер
+async function onContact(m, st, lang) {
+  const f = m.from || {}, c = m.contact || {}, chat = m.chat.id;
+  if (c.user_id && Number(c.user_id) !== Number(f.id)) { await sendMessage(chat, tr(lang, 'phoneForeign')); return; }
   let phone = String(c.phone_number || '').replace(/[^\d+]/g, '');
   if (phone && phone[0] !== '+') phone = '+' + phone;
-  if (!phone) { await sendMessage(m.chat.id, 'Не получилось прочитать номер, попробуйте ещё раз.', hide); return; }
-  try {
-    const rows = await sb('PATCH', 'profiles?telegram_id=eq.' + f.id,
-      { phone, updated_at: new Date().toISOString() }, { Prefer: 'return=representation' });
-    if (rows && rows.length) {
-      await sendMessage(m.chat.id, 'Номер сохранён: <b>' + esc(phone) + '</b>. Он подставится при оформлении заказа.', hide);
-    } else {
-      await sendMessage(m.chat.id, 'Сначала откройте магазин кнопкой меню (там вход происходит сам), потом пришлите номер снова.', hide);
-    }
-  } catch (e) {
-    // 23505 это нарушение уникальности, то есть номер правда занят. Любую другую
-    // ошибку (сеть, 500) нельзя выдавать за занятый номер, человек уйдёт жаловаться.
-    const dup = String(e.message || '').indexOf('23505') >= 0;
-    await sendMessage(m.chat.id, dup
-      ? 'Этот номер уже привязан к другому аккаунту. Напишите менеджеру, если это ошибка.'
-      : 'Не получилось сохранить номер, попробуйте ещё раз через минуту.', hide);
+  if (!phone) { await sendMessage(chat, tr(lang, 'badPhone')); return; }
+  // в онбординге контакт закрывает шаг телефона
+  if (st && st.age_ok && !st.onboarding_done && st.step === 'phone') {
+    await setBotUser(f.id, { phone, step: 'email' });
+    await askStep(chat, 'email', lang); return;
   }
+  // после онбординга — обновляем телефон и в bot_users, и в профиле
+  await setBotUser(f.id, { phone });
+  try { await sb('PATCH', 'profiles?telegram_id=eq.' + f.id, { phone, updated_at: new Date().toISOString() }, { Prefer: 'return=minimal' }); } catch (e) {}
+  await sendMessage(chat, tr(lang, 'phoneSaved', { phone: esc(phone) }), { reply_markup: { remove_keyboard: true } });
 }
 
-async function handleReserveLink(m, rest) {
+// бронь диплинком t.me/<bot>?start=res_<id>_<yyyymmdd>_<city> (переработка сценария — Ф4)
+async function handleReserveLink(m, rest, lang) {
   const f = m.from || {};
   const parts = rest.split('_');
   let city = 'katowice', dateRaw = null;
@@ -156,76 +243,15 @@ async function handleReserveLink(m, rest) {
         confirmed_at: new Date().toISOString()
       });
       await sbRpc('bump_demand', { p_product: pid, p_event: 'reserve' }).catch(() => {});
-      await sendMessage(m.chat.id, 'Вы сделали бронь: <b>' + esc(name) + '</b>.\nНапомним в 10:00 в день выдачи (' + date + ').');
+      await sendMessage(m.chat.id, tr(lang, 'resConfirmed', { name: esc(name), date }));
     } catch (e) {
-      await sendMessage(m.chat.id, 'Не получилось оформить бронь, напишите менеджеру.');
+      await sendMessage(m.chat.id, tr(lang, 'resFail'));
     }
   } else {
     await sbInsert('reservations', { telegram_id: f.id, city, product_id: pid, product_name: name, kind: 'notify', status: 'waiting' }).catch(() => {});
     await sbRpc('bump_demand', { p_product: pid, p_event: 'reserve' }).catch(() => {});
-    await sendMessage(m.chat.id, 'Заявка принята: <b>' + esc(name) + '</b>. Сообщим, как только появится в наличии.');
+    await sendMessage(m.chat.id, tr(lang, 'resWaiting', { name: esc(name) }));
   }
-}
-
-// ---- управление ассортиментом из бота (только менеджеры) ----
-function adminHelp() {
-  return 'Управление ассортиментом (для менеджеров):\n\n' +
-    '<b>/stock</b> [город] — показать остатки\n' +
-    '<b>/set</b> id|вкус|штук[|город] — задать количество\n' +
-    '<b>/price</b> id|вкус|цена[|город] — задать цену\n\n' +
-    'Вкус можно оставить пустым: <code>/set vaporesso-04||8</code>\n' +
-    'Города: katowice (по умолчанию), gliwice, warszawa.\n' +
-    'Полное редактирование — в панели по кнопке ниже.';
-}
-async function handleAdmin(m, text) {
-  const chat = m.chat.id;
-  const sp = text.indexOf(' ');
-  const cmd = (sp < 0 ? text : text.slice(0, sp)).toLowerCase();
-  const arg = sp < 0 ? '' : text.slice(sp + 1).trim();
-  if (cmd === '/admin' || cmd === '/help') {
-    const kb = ADMIN_URL ? { reply_markup: { inline_keyboard: [[{ text: '🛠 Открыть панель управления', web_app: { url: ADMIN_URL } }]] } } : {};
-    await sendMessage(chat, adminHelp(), kb); return;
-  }
-  if (cmd === '/stock') { await adminStock(chat, (arg || 'katowice').toLowerCase()); return; }
-  if (cmd === '/set') { await adminSet(chat, arg, 'qty'); return; }
-  if (cmd === '/price') { await adminSet(chat, arg, 'price'); return; }
-}
-async function adminStock(chat, city) {
-  const rows = await sbSelect('products', 'city=eq.' + enc(city) + '&select=id,name,flavor,qty,price&order=name.asc,flavor.asc').catch(() => []);
-  if (!rows || !rows.length) { await sendMessage(chat, 'Пусто для города «' + esc(city) + '». Города: katowice, gliwice, warszawa.'); return; }
-  let buf = 'Ассортимент «' + esc(city) + '» (' + rows.length + '):\n';
-  for (const r of rows) {
-    const line = '<code>' + esc(r.id) + '</code>' + (r.flavor ? ' | ' + esc(r.flavor) : '') +
-      ' — <b>' + r.qty + '</b> шт' + (r.price != null ? ', ' + r.price + ' zł' : '') + '\n';
-    if (buf.length + line.length > 3800) { await sendMessage(chat, buf); buf = ''; }
-    buf += line;
-  }
-  if (buf.trim()) await sendMessage(chat, buf);
-}
-async function adminSet(chat, arg, field) {
-  const parts = arg.split('|').map(s => s.trim());
-  const label = field === 'qty' ? 'штук' : 'цена';
-  const cmd = field === 'qty' ? 'set' : 'price';
-  if (parts.length < 3) {
-    await sendMessage(chat, 'Формат: <code>/' + cmd + ' id|вкус|' + label + '[|город]</code>\n' +
-      'Вкус можно оставить пустым: <code>/' + cmd + ' vaporesso-04||8</code>');
-    return;
-  }
-  const id = parts[0], flavor = parts[1], city = (parts[3] || 'katowice').toLowerCase();
-  const val = Number(parts[2]);
-  if (!Number.isFinite(val) || val < 0) { await sendMessage(chat, 'Число указано неверно: ' + esc(parts[2])); return; }
-  const q = 'id=eq.' + enc(id) + '&city=eq.' + enc(city) + '&flavor=eq.' + enc(flavor);
-  const patch = { updated_at: new Date().toISOString() };
-  patch[field] = Math.round(val);
-  const upd = await sb('PATCH', 'products?' + q, patch, { Prefer: 'return=representation' });
-  if (!upd || !upd.length) {
-    await sendMessage(chat, 'Не нашёл позицию <code>' + esc(id) + '</code>' + (flavor ? ' | ' + esc(flavor) : '') +
-      ' в городе «' + esc(city) + '». Сверься с /stock.');
-    return;
-  }
-  const r = upd[0];
-  await sendMessage(chat, '✅ <b>' + esc(r.name || r.id) + '</b>' + (r.flavor ? ' | ' + esc(r.flavor) : '') +
-    ' → ' + (field === 'qty' ? r.qty + ' шт' : r.price + ' zł'));
 }
 
 async function tgLoop() {
@@ -246,7 +272,7 @@ async function confirmReservations() {
     'kind=eq.reserve&confirmed_at=is.null&select=id,product_name,reserve_date,telegram_id,profiles(telegram_id)').catch(() => []);
   for (const r of list || []) {
     const tg = r.telegram_id || (r.profiles && r.profiles.telegram_id);
-    if (tg) await sendMessage(tg, 'Вы сделали бронь: <b>' + esc(r.product_name) + '</b>.\nНапомним в 10:00 в день выдачи (' + (r.reserve_date || '') + ').').catch(() => {});
+    if (tg) { const lang = await langOf(tg); await sendMessage(tg, tr(lang, 'resConfirmed', { name: esc(r.product_name), date: r.reserve_date || '' })).catch(() => {}); }
     await sbUpdate('reservations', 'id=eq.' + r.id, { confirmed_at: new Date().toISOString() }).catch(() => {});
   }
 }
@@ -259,7 +285,7 @@ async function dayReminders() {
     '&select=id,product_name,city,telegram_id,profiles(telegram_id)').catch(() => []);
   for (const r of list || []) {
     const tg = r.telegram_id || (r.profiles && r.profiles.telegram_id);
-    if (tg) await sendMessage(tg, '🔔 Сегодня день вашей брони: <b>' + esc(r.product_name) + '</b>. Ждём вас за покупкой!').catch(() => {});
+    if (tg) { const lang = await langOf(tg); await sendMessage(tg, tr(lang, 'resReminder', { name: esc(r.product_name) })).catch(() => {}); }
     await sbUpdate('reservations', 'id=eq.' + r.id, { day_notified_at: new Date().toISOString(), status: 'notified' }).catch(() => {});
   }
 }
@@ -272,8 +298,10 @@ async function expireReservations() {
 }
 
 async function notifyOrders() {
+  // pending (карта/checkout начаты, но не оплачены) менеджеру не показываем — только
+  // оплату при выдаче (unpaid) и уже оплаченные онлайн (paid)
   const list = await sbSelect('orders',
-    'manager_notified_at=is.null&select=id,city,items,sum,delivery,address,contact,profiles(username,telegram_username,telegram_id)').catch(() => []);
+    'manager_notified_at=is.null&payment_status=in.(unpaid,paid)&select=id,city,items,sum,delivery,address,contact,payment_status,payment_provider,profiles(username,telegram_username,telegram_id)').catch(() => []);
   for (const o of list || []) {
     const items = (o.items || []).map((x, i) =>
       (i + 1) + ') ' + (typeof x === 'string' ? x : (x.name || x.id) + (x.flavor ? ', ' + x.flavor : '') + ' x' + (x.n || 1) + (x.sum ? ' = ' + x.sum + ' zl' : ''))).join('\n');
@@ -282,8 +310,11 @@ async function notifyOrders() {
     const who = [c.name, c.phone, c.email].filter(Boolean).join('\n');
     const tgLine = p.telegram_username ? '@' + p.telegram_username : (p.telegram_id ? 'tg id ' + p.telegram_id : (p.username || ''));
     const deliv = (o.delivery || '') + (o.address ? ', ' + o.address : '');
-    const text = '🛒 <b>Новый заказ #' + o.id + '</b> (' + esc(o.city) + ')\n' + esc(items) +
-      '\nИтого: <b>' + (o.sum || 0) + ' zł</b>\nПолучение: ' + esc(deliv) +
+    const payLine = o.payment_status === 'paid'
+      ? '\nОплачено онлайн (' + esc(o.payment_provider || 'stripe') + ')'
+      : '\nОплата при выдаче';
+    const text = '<b>Новый заказ №' + o.id + '</b> (' + esc(o.city) + ')\n' + esc(items) +
+      '\nИтого: ' + (o.sum || 0) + ' zł' + payLine + '\nПолучение: ' + esc(deliv) +
       (who ? '\n\nКлиент:\n' + esc(who) : '') + (tgLine ? '\nTelegram: ' + esc(tgLine) : '');
     for (const mid of MANAGERS) await sendMessage(mid, text).catch(() => {});
     await sbUpdate('orders', 'id=eq.' + o.id, { manager_notified_at: new Date().toISOString() }).catch(() => {});
@@ -297,10 +328,15 @@ async function notifyOrderStatus() {
     if (o.client_notified_status === o.status) continue;
     const tg = o.profiles && o.profiles.telegram_id;
     if (tg) {
-      const text = o.status === 'confirmed' ? '✅ Заказ #' + o.id + ' подтверждён менеджером.'
-        : o.status === 'done' ? '📦 Заказ #' + o.id + ' выдан. Спасибо за покупку! Теперь на купленные вкусы можно оставить отзыв в приложении.'
-        : '❌ Заказ #' + o.id + ' отменён. Если это ошибка, напишите менеджеру.';
-      await sendMessage(tg, text).catch(() => {});
+      const lang = await langOf(tg);
+      let text, extra = {};
+      if (o.status === 'confirmed') text = tr(lang, 'statusConfirmed', { id: o.id });
+      else if (o.status === 'done') {
+        text = tr(lang, 'statusDone', { id: o.id });
+        // после выдачи — кнопка «Оставить отзыв», ведёт на форму в мини-аппе
+        if (MINIAPP_URL) extra = { reply_markup: { inline_keyboard: [[{ text: tr(lang, 'reviewBtn'), web_app: { url: MINIAPP_URL + (MINIAPP_URL.includes('?') ? '&' : '?') + 'review=' + o.id } }]] } };
+      } else text = tr(lang, 'statusCancelled', { id: o.id });
+      await sendMessage(tg, text, extra).catch(() => {});
     }
     await sbUpdate('orders', 'id=eq.' + o.id, { client_notified_status: o.status }).catch(() => {});
   }
@@ -310,18 +346,12 @@ async function doBroadcasts() {
   const list = await sbSelect('broadcasts', 'status=eq.pending&select=id,text&order=id.asc').catch(() => []);
   for (const b of list || []) {
     await sbUpdate('broadcasts', 'id=eq.' + b.id, { status: 'sending' }).catch(() => {});
-    const users = await sbSelect('bot_users', 'opted_in=eq.true&select=telegram_id').catch(() => []);
+    // шлём всем, кто запускал бота: отписки нет, флаг opted_in не учитываем
+    const users = await sbSelect('bot_users', 'select=telegram_id').catch(() => []);
     let sent = 0, failed = 0;
     for (const u of users || []) {
       const r = await sendMessage(u.telegram_id, b.text);
-      if (r && r.ok) sent++;
-      else {
-        failed++;
-        // 403 значит человек не запускал бота или заблокировал его: чистим список,
-        // чтобы следующая рассылка не тратила время на мёртвые адреса
-        if (r && (r.error_code === 403 || r.error_code === 400))
-          await sbUpdate('bot_users', 'telegram_id=eq.' + u.telegram_id, { opted_in: false }).catch(() => {});
-      }
+      if (r && r.ok) sent++; else failed++;   // 403 (заблокировал бота) просто считаем в failed
       await sleep(60);
     }
     await sbUpdate('broadcasts', 'id=eq.' + b.id, { status: 'done', sent, failed, sent_at: new Date().toISOString() }).catch(() => {});
@@ -351,7 +381,7 @@ async function syncSheets() {
 async function notifyRestocks() {
   const list = await sbRpc('restock_list').catch(() => []);
   for (const r of list || []) {
-    if (r.telegram_id) await sendMessage(r.telegram_id, '🔔 <b>' + esc(r.product_name) + '</b> снова в наличии! Заходи в магазин.');
+    if (r.telegram_id) { const lang = await langOf(r.telegram_id); await sendMessage(r.telegram_id, tr(lang, 'restock', { name: esc(r.product_name) })).catch(() => {}); }
     await sbUpdate('reservations', 'id=eq.' + r.id, { status: 'notified', notified_at: new Date().toISOString() }).catch(() => {});
   }
 }
