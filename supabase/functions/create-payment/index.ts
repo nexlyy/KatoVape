@@ -95,8 +95,9 @@ Deno.serve(async (req) => {
   }).then((r) => r.json()).catch(() => null);
 
   if (!pi || !pi.client_secret) {
+    console.error("stripe pi:", JSON.stringify(pi));
     await rest("PATCH", "orders?id=eq." + order.id, { payment_status: "failed" }, "return=minimal").catch(() => {});
-    return json({ error: "stripe failed" }, 502);
+    return json({ error: "stripe failed", detail: (pi && pi.error && pi.error.message) || null }, 502);
   }
 
   await rest("PATCH", "orders?id=eq." + order.id, { payment_ref: pi.id }, "return=minimal").catch(() => {});

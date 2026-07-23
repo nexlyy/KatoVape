@@ -100,6 +100,9 @@ Deno.serve(async (req) => {
   // в webhook. Apple Pay / Google Pay Stripe включит сам на своей странице.
   const form = new URLSearchParams();
   form.set("mode", "payment");
+  // явно указываем карту (Apple Pay / Google Pay идут на ней) — иначе для PLN Stripe требует
+  // включённые «автоматические» способы оплаты в дашборде, а у нового аккаунта их нет
+  form.set("payment_method_types[0]", "card");
   form.set("success_url", RETURN_URL + (RETURN_URL.includes("?") ? "&" : "?") + "paid=1");
   form.set("cancel_url", RETURN_URL + (RETURN_URL.includes("?") ? "&" : "?") + "paid=0");
   form.set("line_items[0][quantity]", "1");
@@ -116,8 +119,9 @@ Deno.serve(async (req) => {
   }).then((r) => r.json()).catch(() => null);
 
   if (!sess || !sess.url) {
+    console.error("stripe checkout:", JSON.stringify(sess));
     await rest("PATCH", "orders?id=eq." + order.id, { payment_status: "failed" }, "return=minimal").catch(() => {});
-    return json({ error: "checkout failed" }, 502);
+    return json({ error: "checkout failed", detail: (sess && sess.error && sess.error.message) || null }, 502);
   }
 
   return json({ url: sess.url, orderId: order.id });
