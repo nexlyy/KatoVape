@@ -31,11 +31,13 @@ const sbRpc = (fn, args) => sb('POST', 'rpc/' + fn, args || {});
 function warsaw() {
   const parts = new Intl.DateTimeFormat('en-GB', {
     timeZone: 'Europe/Warsaw', hour12: false,
-    year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit'
+    year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
   }).formatToParts(new Date());
   const g = t => (parts.find(x => x.type === t) || {}).value || '';
-  return { date: g('year') + '-' + g('month') + '-' + g('day'), hour: +g('hour') };
+  return { date: g('year') + '-' + g('month') + '-' + g('day'), hour: +g('hour'), minute: +g('minute') };
 }
+// дата в формате DD-MM-YYYY (из ISO YYYY-MM-DD)
+const fmtDMY = iso => iso ? String(iso).slice(0, 10).split('-').reverse().join('-') : '';
 function plusDays(iso, n) {
   const d = new Date(iso + 'T12:00:00Z');
   d.setUTCDate(d.getUTCDate() + n);
@@ -307,7 +309,7 @@ async function confirmReservations() {
     'kind=eq.reserve&confirmed_at=is.null&select=id,product_name,reserve_date,reserve_time,telegram_id,profiles(telegram_id)').catch(() => []);
   for (const r of list || []) {
     const tg = r.telegram_id || (r.profiles && r.profiles.telegram_id);
-    const when = (r.reserve_date || '') + (r.reserve_time ? ' ' + r.reserve_time : '');
+    const when = fmtDMY(r.reserve_date) + (r.reserve_time ? ' ' + r.reserve_time : '');
     if (tg) { const lang = await langOf(tg); await sendMessage(tg, tr(lang, 'resConfirmed', { name: esc(r.product_name), date: when })).catch(() => {}); }
     await sbUpdate('reservations', 'id=eq.' + r.id, { confirmed_at: new Date().toISOString() }).catch(() => {});
   }
@@ -331,6 +333,26 @@ async function expireReservations() {
   await sbUpdate('reservations',
     'kind=eq.reserve&status=in.(active,notified)&reserve_date=lt.' + w.date,
     { status: 'expired' }).catch(() => {});
+}
+
+// менеджеру — за час до времени брони (шлём один раз, флаг manager_reminded_at)
+async function remindManagers() {
+  const w = warsaw();
+  const nowMin = w.hour * 60 + w.minute;
+  const list = await sbSelect('reservations',
+    'kind=eq.reserve&status=in.(active,notified)&manager_reminded_at=is.null&reserve_time=not.is.null&reserve_date=eq.' + w.date +
+    '&select=id,product_name,reserve_time,city,telegram_id,profiles(telegram_username,username)').catch(() => []);
+  for (const r of list || []) {
+    const [rh, rm] = String(r.reserve_time).split(':').map(Number);
+    const resMin = (rh || 0) * 60 + (rm || 0);
+    if (nowMin < resMin - 60) continue;   // ещё больше часа до времени брони
+    const p = r.profiles || {};
+    const who = p.telegram_username ? '@' + p.telegram_username : (p.username || '');
+    const text = 'Через час бронь: <b>' + esc(r.product_name) + '</b> на ' + esc(r.reserve_time) +
+      ' (' + esc(r.city) + ')' + (who ? ', ' + esc(who) : '') + '.';
+    for (const mid of MANAGERS) await sendMessage(mid, text).catch(() => {});
+    await sbUpdate('reservations', 'id=eq.' + r.id, { manager_reminded_at: new Date().toISOString() }).catch(() => {});
+  }
 }
 
 async function notifyOrders() {
@@ -447,6 +469,7 @@ async function jobsLoop() {
     try {
       await confirmReservations();
       await dayReminders();
+      await remindManagers();
       await expireReservations();
       await notifyOrders();
       await notifyOrderStatus();

@@ -683,8 +683,10 @@ window.KVAuth = (function () {
     if (!user || !cloudOn()) return null;
     try {
       const c = await client();
+      // фильтр по user_id обязателен: RLS пускает админов ко всем броням (is_admin),
+      // а в личном профиле человек должен видеть только свои
       const { data, error } = await c.from('reservations').select('*')
-        .eq('kind', 'reserve').order('created_at', { ascending: false }).limit(20);
+        .eq('user_id', user.id).eq('kind', 'reserve').order('created_at', { ascending: false }).limit(20);
       return error ? null : data;
     } catch (e) { return null; }
   }
@@ -718,8 +720,10 @@ window.KVAuth = (function () {
     if (!user || !cloudOn()) return null;
     try {
       const c = await client();
+      // фильтр по user_id обязателен: RLS пускает админов ко всем заказам (is_admin),
+      // а в личном профиле человек должен видеть только свои — иначе чужие заказы утекают
       const { data, error } = await c.from('orders').select('*')
-        .order('created_at', { ascending: false }).limit(30);
+        .eq('user_id', user.id).order('created_at', { ascending: false }).limit(30);
       return error ? null : data;
     } catch (e) { return null; }
   }

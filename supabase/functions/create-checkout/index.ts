@@ -74,6 +74,9 @@ Deno.serve(async (req) => {
   let priced;
   try { priced = await priceCart(env, b); }
   catch (e) { return json({ error: (e && (e as any).code) || "price" }, 400); }
+  // оплата картой дороже на 10% (наличными при выдаче — цена та же)
+  priced.amount = Math.round(priced.amount * 1.1);
+  priced.total_zl = Math.round(priced.total_zl * 1.1);
 
   // заказ к тому же аккаунту, что и на сайте (по telegram_id), чтобы отзывы потом привязались
   let userId: string | null = null;

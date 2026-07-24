@@ -57,6 +57,9 @@ Deno.serve(async (req) => {
   } catch (e) {
     return json({ error: (e && (e as any).code) || "price" }, 400);
   }
+  // оплата картой дороже на 10% (наличными при выдаче — цена та же)
+  priced.amount = Math.round(priced.amount * 1.1);
+  priced.total_zl = Math.round(priced.total_zl * 1.1);
 
   // заказ заводим сразу, чтобы webhook нашёл его по metadata.order_id
   const ct = b.contact || {};

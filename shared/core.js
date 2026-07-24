@@ -14,6 +14,7 @@ window.KV = (function () {
       add: 'В корзину', added: 'добавлено', reserve: 'Бронь',
       cart: 'Корзина', cartEmpty: 'Корзина пустая', total: 'Итого',
       checkout: 'Оформить заказ', clear: 'Очистить',
+      bulkContact: 'Связь с менеджером', cardPlus: 'Картой +10%: {sum} zł',
       copied: 'Заказ уже в сообщении, выбери чат менеджера',
       reserved: 'Бронь уже в сообщении, выбери чат менеджера',
       write: 'Написать менеджеру', order: 'Заказ',
@@ -34,6 +35,7 @@ window.KV = (function () {
       add: 'До кошика', added: 'додано', reserve: 'Бронь',
       cart: 'Кошик', cartEmpty: 'Кошик порожній', total: 'Разом',
       checkout: 'Оформити замовлення', clear: 'Очистити',
+      bulkContact: 'Звʼязок з менеджером', cardPlus: 'Карткою +10%: {sum} zł',
       copied: 'Замовлення вже в повідомленні, обери чат менеджера',
       reserved: 'Бронь вже в повідомленні, обери чат менеджера',
       write: 'Написати менеджеру', order: 'Замовлення',
@@ -54,6 +56,7 @@ window.KV = (function () {
       add: 'Do koszyka', added: 'dodano', reserve: 'Rezerwacja',
       cart: 'Koszyk', cartEmpty: 'Koszyk jest pusty', total: 'Razem',
       checkout: 'Złóż zamówienie', clear: 'Wyczyść',
+      bulkContact: 'Kontakt z menedżerem', cardPlus: 'Kartą +10%: {sum} zł',
       copied: 'Zamówienie już w wiadomości, wybierz czat managera',
       reserved: 'Rezerwacja już w wiadomości, wybierz czat managera',
       write: 'Napisz do managera', order: 'Zamówienie',
@@ -302,6 +305,10 @@ window.KV = (function () {
   ];
   // слоты времени самовывоза для брони (дефолт; реальные часы подставим из content.json позже)
   const RES_SLOTS = (window.KV_CONFIG && window.KV_CONFIG.RES_SLOTS) || ['10:00', '12:00', '14:00', '16:00', '18:00', '20:00'];
+  // оплата картой дороже на 10% (наличными при выдаче — цена та же). Наценку так же
+  // считает сервер в create-payment/create-checkout, чтобы списанная сумма совпадала.
+  const CARD_SURCHARGE = 0.10;
+  const cardTotal = () => Math.round(grandTotal() * (1 + CARD_SURCHARGE));
 
   // локализованное значение: объект {ru,uk,pl} -> строка текущего языка
   function loc(o) { return o ? (o[lang] || o.ru || '') : ''; }
@@ -388,12 +395,30 @@ window.KV = (function () {
     }));
   }
 
-  // перевод одного вкуса пословно
-  // Название вкуса показываем как его завёл менеджер и НЕ переводим по языку интерфейса:
-  // это марочное имя (Sour Apple, Blue Razz…), одинаковое во всех языках, чтобы человек
-  // узнал ровно тот вкус, что на банке. Переводится всё вокруг, но не сам вкус.
+  // вкусы показываем на английском (решение заказчика): кириллические слова переводим
+  // пословно, английские/марочные (Sour Apple, Blue Razz) не трогаем. В ЗАКАЗ и для
+  // сопоставления отзывов уходит .name как есть — тут только отображение.
+  const GLOS_EN = {
+    'арбуз': 'watermelon', 'манго': 'mango', 'лёд': 'ice', 'лед': 'ice', 'виноград': 'grape',
+    'мята': 'mint', 'клубника': 'strawberry', 'банан': 'banana', 'черника': 'blueberry',
+    'кола': 'cola', 'персик': 'peach', 'ягодный': 'berry', 'ягодная': 'berry', 'ягоды': 'berries',
+    'микс': 'mix', 'малина': 'raspberry', 'энергетик': 'energy', 'личи': 'lychee', 'вишня': 'cherry',
+    'смородина': 'currant', 'табак': 'tobacco', 'барбарис': 'barberry', 'дыня': 'melon',
+    'груша': 'pear', 'классик': 'classic', 'жвачка': 'gum', 'кислая': 'sour', 'кислое': 'sour',
+    'яблоко': 'apple', 'лимон': 'lemon', 'лайм': 'lime', 'двойное': 'double', 'двойной': 'double',
+    'голубика': 'blueberry', 'киви': 'kiwi', 'тропик': 'tropic', 'тропический': 'tropical',
+    'юбилейный': 'jubilee', 'сахарные': 'sugar', 'сахарный': 'sugar', 'соты': 'honeycomb',
+    'зимний': 'winter', 'ночной': 'night', 'ананас': 'pineapple', 'питайя': 'pitaya',
+    'грейпфрут': 'grapefruit', 'ежевика': 'blackberry', 'клюква': 'cranberry', 'холодок': 'cool',
+    'мороженое': 'ice cream', 'клубничный': 'strawberry', 'апельсин': 'orange', 'клюквенный': 'cranberry'
+  };
   function flavorName(f) {
-    return typeof f === 'string' ? f : f.name;
+    const raw = typeof f === 'string' ? f : (f && f.name) || '';
+    return raw.replace(/[А-Яа-яЁёІіЇїЄєҐґ]+/g, w => {
+      const en = GLOS_EN[w.toLowerCase()];
+      if (!en) return w;                                  // нет в словаре — оставляем как есть
+      return w[0] === w[0].toUpperCase() ? en[0].toUpperCase() + en.slice(1) : en;
+    });
   }
 
   // единицы крепости: для польского приводим кириллические мг/г к mg/g
@@ -483,9 +508,15 @@ window.KV = (function () {
     return many;
   }
 
+  // единый формат даты DD-MM-YYYY. Принимает и ISO-строку (2026-07-25 — без сдвига по TZ),
+  // и таймстамп в мс (created_at/ts заказов)
   function fmtDate(s) {
-    const loc = { ru: 'ru-RU', uk: 'uk-UA', pl: 'pl-PL' }[lang];
-    return new Date(s).toLocaleDateString(loc, { day: 'numeric', month: 'long' });
+    if (typeof s === 'string' && /^\d{4}-\d{2}-\d{2}/.test(s)) {
+      const [y, m, d] = s.slice(0, 10).split('-');
+      return d + '-' + m + '-' + y;
+    }
+    const dt = new Date(s), p = n => String(n).padStart(2, '0');
+    return p(dt.getDate()) + '-' + p(dt.getMonth() + 1) + '-' + dt.getFullYear();
   }
 
   // фото кладутся в data/photos/<id>.jpg руками или скриптом.
@@ -617,8 +648,11 @@ window.KV = (function () {
   function normPaczko(s) { return (s || '').trim().toUpperCase().replace(/\s+/g, ''); }
   function validPaczko(s) { return /^[A-Z]{3}\d{2,4}[A-Z]{0,2}$/.test(normPaczko(s)); }
 
+  // крупный опт (позиция от 20 шт) обычным заказом не оформляем — уводим к менеджеру
+  function bulkOrder() { return cartLines().some(l => l.n >= 20); }
   function checkout() {
     if (!cartCount()) return;
+    if (bulkOrder()) { tgSend(orderText(), t('copied')); return; }
     const cur = currentDelivery();
     if (cur.method === 'courier' && !(cur.addr || '').trim()) { toast(t('needAddr')); openCart(); return; }
     const logged = window.KVAuth && KVAuth.loggedIn && KVAuth.loggedIn();
@@ -714,7 +748,8 @@ window.KV = (function () {
       // или кнопку нативного инвойса (мини-апп); плюс запасной путь «оплата при выдаче»
       const pay = window.KVPay && KVPay.enabled();
       const actions = pay
-        ? '<div id="kvc-pay" class="kvc-pay"></div>' +
+        ? '<div class="kvc-cardnote">' + t('cardPlus').replace('{sum}', cardTotal()) + '</div>' +
+          '<div id="kvc-pay" class="kvc-pay"></div>' +
           '<button class="kvc-later">' + t('payLater') + '</button>' +
           '<div class="kvc-btns kvc-btns-edit"><button class="kvc-edit">' + t('edit') + '</button></div>'
         : '<div class="kvc-btns"><button class="kvc-edit">' + t('edit') + '</button>' +
@@ -757,7 +792,7 @@ window.KV = (function () {
       flavor: l.flavor ? l.flavor.name : '', n: l.n, sum: l.sum
     }));
     return {
-      city, sum: grandTotal(), amount: Math.round(grandTotal() * 100),
+      city, sum: grandTotal(), amount: cardTotal() * 100,   // amount — для оплаты картой (+10%)
       delivery: cur.method, promo: appliedPromo ? appliedPromo.code : '',
       address: inpost ? normPaczko(ct.paczkomat) : (cur.addr || ''),
       contact: { name: ct.name.trim(), phone: normPhonePl(ct.phone), email: ct.email.trim(),
@@ -1065,7 +1100,7 @@ window.KV = (function () {
   function drawDrawer() {
     const d = document.getElementById('kvd'); if (!d) return;
     d.querySelector('.kvd-title').textContent = t('cart');
-    d.querySelector('.kvd-go').textContent = t('checkout');
+    d.querySelector('.kvd-go').textContent = bulkOrder() ? t('bulkContact') : t('checkout');
     d.querySelector('.kvd-clear').textContent = t('clear');
     const lines = cartLines();
     d.querySelector('.kvd-items').innerHTML = lines.length
@@ -2034,7 +2069,7 @@ window.KV = (function () {
     const resBlock = logged && resList.length
       ? '<div class="kvp-sec"><b>' + t('myRes') + ' · ' + resList.length + '</b>' +
         resList.map(x => '<div class="kvp-ord"><div class="kvp-ord-h"><span>' +
-          esc(x.product_name || x.product_id) + '</span><b>' + (x.reserve_date || '') + '</b></div>' +
+          esc(x.product_name || x.product_id) + '</span><b>' + (x.reserve_date ? fmtDate(x.reserve_date) + (x.reserve_time ? ' ' + x.reserve_time : '') : '') + '</b></div>' +
           '<p>' + stLabel(x.status) +
           (x.status === 'active' || x.status === 'notified'
             ? ' · <button class="kvp-res-cancel" data-res-cancel="' + x.id + '">' + t('resCancel') + '</button>' : '') +
