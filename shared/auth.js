@@ -691,6 +691,39 @@ window.KVAuth = (function () {
       return error ? null : data;
     } catch (e) { return null; }
   }
+  // промокод: проверку и списание делает сервер, клиент только показывает результат
+  async function promoCheck(code, city, sum, cats) {
+    if (!cloudOn()) return null;
+    try {
+      const c = await client();
+      const { data, error } = await c.rpc('promo_check', { p_code: code, p_city: city, p_sum: sum, p_categories: cats || null });
+      if (error) return null;
+      return Array.isArray(data) ? data[0] : data;
+    } catch (e) { return null; }
+  }
+  async function promoUse(code, orderId) {
+    if (!user || !cloudOn() || !code) return false;
+    try {
+      const c = await client();
+      const { error } = await c.rpc('promo_use', { p_code: code, p_order: orderId || null });
+      return !error;
+    } catch (e) { return false; }
+  }
+
+  // заявка «сообщить о поступлении»: та же таблица броней, вид notify, со своим городом
+  async function apiRestock(data) {
+    if (!user || !cloudOn()) return false;
+    try {
+      const c = await client();
+      const { error } = await c.from('reservations').insert({
+        user_id: user.id, telegram_id: (profile && profile.telegram_id) || null,
+        city: data.city, product_id: data.product_id,
+        product_name: data.product_name || data.product_id,
+        kind: 'notify', status: 'waiting', qty: 1
+      });
+      return !error;
+    } catch (e) { return false; }
+  }
   async function apiCancelReservation(id) {
     if (!user || !cloudOn()) return false;
     try {
@@ -712,7 +745,7 @@ window.KVAuth = (function () {
       const { error } = await c.from('orders').insert({
         user_id: user.id, city: data.city, items: data.items, sum: data.sum,
         delivery: data.delivery, address: data.address || null,
-        contact: data.contact || null, comment: data.comment || null, status: 'new'
+        contact: data.contact || null, comment: data.comment || null, pay_way: data.pay_way || 'cash', status: 'new'
       });
       return !error;
     } catch (e) { return false; }
@@ -787,7 +820,7 @@ window.KVAuth = (function () {
   return {
     init, signUp, signIn, signOut, openModal, decorateProfile,
     apiReserve, apiOrder, loggedIn, contact, saveContact,
-    apiMyReservations, apiCancelReservation, apiMyOrders,
+    apiMyReservations, apiCancelReservation, apiMyOrders, apiRestock, promoCheck, promoUse,
     apiAllReviews, apiMyReviews, apiReviewables, apiReview, cloudOn,
     isAdmin, role, refresh: afterAuth, reservationLoad, accessToken,
     _tgWidget: tgWidget,

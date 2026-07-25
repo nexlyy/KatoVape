@@ -122,7 +122,13 @@ window.KV = (function () {
       edit: 'Изменить', apply: 'Применить',
       dataWarn: 'Проверьте данные внимательно: по ним оформляется отправка. Ошибка задержит посылку.',
       confirmTitle: 'Проверьте данные получателя', confirmOk: 'Всё верно, оформить',
-      payLater: 'Оплатить при выдаче', payTitle: 'Оплата', payCardBtn: 'Оплатить картой', payFail: 'Оплата не прошла, попробуйте ещё раз',
+      payLater: 'Оплатить при выдаче', payTitle: 'Оплата', payCardBtn: 'Оплатить картой',
+      promoWhy_not_found: 'Такого промокода нет', promoWhy_inactive: 'Промокод отключён',
+      promoWhy_expired: 'Срок промокода истёк', promoWhy_not_started: 'Промокод ещё не начал действовать',
+      promoWhy_other_city: 'Промокод действует в другом городе', promoWhy_other_category: 'Промокод на другую категорию',
+      promoWhy_min_sum: 'Сумма заказа слишком мала для этого промокода', promoWhy_limit: 'Промокод уже исчерпан',
+      promoWhy_used_by_you: 'Вы уже использовали этот промокод', hitBadge: 'Хит',
+      payWay: 'Способ оплаты', payCash: 'Наличными', payCard: 'Картой', payCardNote: '+10% к сумме', payFail: 'Оплата не прошла, попробуйте ещё раз',
       checkData: 'Проверьте данные:', fioPh: 'Фамилия и имя',
       errFio: 'Укажите фамилию и имя', errPhone2: 'Телефон в формате +48 600 000 000',
       errEmail2: 'Проверьте адрес почты', errPaczko2: 'Номер пачкомата выглядит как KAT01M',
@@ -174,7 +180,13 @@ window.KV = (function () {
       edit: 'Змінити', apply: 'Застосувати',
       dataWarn: 'Перевірте дані уважно: за ними оформлюється відправка. Помилка затримає посилку.',
       confirmTitle: 'Перевірте дані отримувача', confirmOk: 'Все вірно, оформити',
-      payLater: 'Оплата при отриманні', payTitle: 'Оплата', payCardBtn: 'Оплатити карткою', payFail: 'Оплата не пройшла, спробуйте ще раз',
+      payLater: 'Оплата при отриманні', payTitle: 'Оплата', payCardBtn: 'Оплатити карткою',
+      promoWhy_not_found: 'Такого промокоду немає', promoWhy_inactive: 'Промокод вимкнено',
+      promoWhy_expired: 'Термін промокоду минув', promoWhy_not_started: 'Промокод ще не почав діяти',
+      promoWhy_other_city: 'Промокод діє в іншому місті', promoWhy_other_category: 'Промокод на іншу категорію',
+      promoWhy_min_sum: 'Сума замовлення замала для цього промокоду', promoWhy_limit: 'Промокод вичерпано',
+      promoWhy_used_by_you: 'Ви вже використали цей промокод', hitBadge: 'Хіт',
+      payWay: 'Спосіб оплати', payCash: 'Готівкою', payCard: 'Карткою', payCardNote: '+10% до суми', payFail: 'Оплата не пройшла, спробуйте ще раз',
       checkData: 'Перевірте дані:', fioPh: 'Прізвище та ім’я',
       errFio: 'Вкажіть прізвище та ім’я', errPhone2: 'Телефон у форматі +48 600 000 000',
       errEmail2: 'Перевірте адресу пошти', errPaczko2: 'Номер поштомата виглядає як KAT01M',
@@ -226,7 +238,13 @@ window.KV = (function () {
       edit: 'Zmień', apply: 'Zastosuj',
       dataWarn: 'Sprawdź dane uważnie: na ich podstawie wysyłamy paczkę. Błąd opóźni dostawę.',
       confirmTitle: 'Sprawdź dane odbiorcy', confirmOk: 'Zgadza się, zamawiam',
-      payLater: 'Płatność przy odbiorze', payTitle: 'Płatność', payCardBtn: 'Zapłać kartą', payFail: 'Płatność nie przeszła, spróbuj ponownie',
+      payLater: 'Płatność przy odbiorze', payTitle: 'Płatność', payCardBtn: 'Zapłać kartą',
+      promoWhy_not_found: 'Nie ma takiego kodu', promoWhy_inactive: 'Kod jest wyłączony',
+      promoWhy_expired: 'Kod wygasł', promoWhy_not_started: 'Kod jeszcze nie działa',
+      promoWhy_other_city: 'Kod działa w innym mieście', promoWhy_other_category: 'Kod na inną kategorię',
+      promoWhy_min_sum: 'Zbyt mała kwota zamówienia dla tego kodu', promoWhy_limit: 'Kod został wyczerpany',
+      promoWhy_used_by_you: 'Ten kod już został przez Ciebie użyty', hitBadge: 'Hit',
+      payWay: 'Sposób płatności', payCash: 'Gotówką', payCard: 'Kartą', payCardNote: '+10% do sumy', payFail: 'Płatność nie przeszła, spróbuj ponownie',
       checkData: 'Sprawdź dane:', fioPh: 'Imię i nazwisko',
       errFio: 'Podaj imię i nazwisko', errPhone2: 'Telefon w formacie +48 600 000 000',
       errEmail2: 'Sprawdź adres e-mail', errPaczko2: 'Numer paczkomatu wygląda jak KAT01M',
@@ -331,6 +349,9 @@ window.KV = (function () {
   // считает сервер в create-payment/create-checkout, чтобы списанная сумма совпадала.
   const CARD_SURCHARGE = 0.10;
   const cardTotal = () => Math.round(grandTotal() * (1 + CARD_SURCHARGE));
+  // способ оплаты выбирается в окне заказа: наличными при выдаче или картой (+10%)
+  let payWay = localStorage.getItem('kv_payway') === 'card' ? 'card' : 'cash';
+  const payTotal = () => (payWay === 'card' ? cardTotal() : grandTotal());
 
   // локализованное значение: объект {ru,uk,pl} -> строка текущего языка
   function loc(o) { return o ? (o[lang] || o.ru || '') : ''; }
@@ -385,7 +406,7 @@ window.KV = (function () {
     if (!(cfg.SUPABASE_URL && cfg.SUPABASE_ANON_KEY) || cfg.BACKEND !== 'supabase') return null;
     try {
       const res = await fetch(cfg.SUPABASE_URL.replace(/\/$/, '') + '/rest/v1/products?city=eq.' +
-        encodeURIComponent(city) + '&select=id,flavor,price,qty,tiers', {
+        encodeURIComponent(city) + '&select=id,flavor,price,qty,tiers,hit', {
         headers: { apikey: cfg.SUPABASE_ANON_KEY }, cache: 'no-store'
       });
       if (!res.ok) return null;
@@ -417,6 +438,7 @@ window.KV = (function () {
       // оптовые ступени из облака (правятся в админке) поверх файла
       const trw = rs.find(x => x.tiers && x.tiers.length);
       if (trw) it.tiers = trw.tiers;
+      it.hit = rs.some(x => x.hit);
     }));
   }
 
@@ -743,6 +765,8 @@ window.KV = (function () {
       if (e.target.closest('.kvc-apply')) { applyConfirm(); return; }
       if (e.target.closest('.kvc-tgphone')) { requestPhone(); return; }
       if (e.target.closest('.kvc-map')) { openGeo(); return; }
+      const pw = e.target.closest('[data-payway]');
+      if (pw) { payWay = pw.dataset.payway; localStorage.setItem('kv_payway', payWay); renderConfirm(); return; }
       if (e.target.closest('.kvc-later')) { placeOrder(); return; }   // оплата при выдаче
       if (e.target.closest('.kvc-go')) { placeOrder(); return; }
     });
@@ -803,17 +827,24 @@ window.KV = (function () {
       // Пока карта отключена, оформление заказа должно оставаться главным действием:
       // кнопка карты идёт сверху приглушённой, под ней обычное «оформить».
       const actions = cardOn
-        ? '<div class="kvc-cardnote">' + t('cardPlus').replace('{sum}', cardTotal()) + '</div>' +
-          '<div id="kvc-pay" class="kvc-pay"></div>' +
+        ? '<div id="kvc-pay" class="kvc-pay"></div>' +
           '<button class="kvc-later">' + t('payLater') + '</button>' +
           '<div class="kvc-btns kvc-btns-edit"><button class="kvc-edit">' + t('edit') + '</button></div>'
         : (pay ? '<div id="kvc-pay" class="kvc-pay"></div>' : '') +
           '<div class="kvc-btns"><button class="kvc-edit">' + t('edit') + '</button>' +
           '<button class="kvc-go">' + t('confirmOk') + '</button></div>';
+      // Способ оплаты выбирается тут же: наличными цена обычная, картой дороже на 10%.
+      // Выбор влияет на итог, поэтому сумма пересчитывается сразу над кнопками.
+      const payBox = '<div class="kvc-pays"><span class="kvc-pays-t">' + t('payWay') + '</span>' +
+        [['cash', t('payCash'), grandTotal()], ['card', t('payCard'), cardTotal()]].map(([k, lbl, sum]) =>
+          '<button class="kvc-pay-opt' + (payWay === k ? ' sel' : '') + '" data-payway="' + k + '" type="button">' +
+          '<b>' + lbl + '</b><em>' + sum + ' zł</em>' +
+          (k === 'card' ? '<i>' + t('payCardNote') + '</i>' : '') + '</button>').join('') + '</div>';
       inner = need.map(f =>
         '<div class="kvc-row"><span>' + f.lbl + '</span><b>' + (esc(f.v || '') || '<i class="kvc-none">—</i>') + '</b></div>').join('') +
-        '<div class="kvc-sum"><span>' + t('total') + '</span><b>' + grandTotal() + ' zł</b></div>' +
         '<div class="kvc-row"><span>' + t('delivery') + '</span><b>' + deliveryLabel(cur.method) + '</b></div>' +
+        payBox +
+        '<div class="kvc-sum"><span>' + t('total') + '</span><b>' + payTotal() + ' zł</b></div>' +
         commentBox('order', orderComment) +
         '<div class="kvc-warn">' + t('dataWarn') + '</div>' + actions;
     }
@@ -849,7 +880,7 @@ window.KV = (function () {
       flavor: l.flavor ? l.flavor.name : '', n: l.n, sum: l.sum
     }));
     return {
-      city, sum: grandTotal(), amount: cardTotal() * 100,   // amount — для оплаты картой (+10%)
+      city, sum: payTotal(), amount: payTotal() * 100, pay_way: payWay,
       delivery: cur.method, promo: appliedPromo ? appliedPromo.code : '',
       address: inpost ? normPaczko(ct.paczkomat) : (cur.addr || ''),
       contact: { name: ct.name.trim(), phone: normPhonePl(ct.phone), email: ct.email.trim(),
@@ -865,6 +896,9 @@ window.KV = (function () {
     track('checkout', { total: grandTotal(), delivery: currentDelivery().method });
     cart = {};
     orderComment = '';
+    // промокод одноразовый: после заказа снимаем его, чтобы он не тянулся в следующий
+    appliedPromo = null;
+    localStorage.removeItem('kv_promo');
     saveCart();
     closeConfirm();
     const kvd = document.getElementById('kvd'); if (kvd) kvd.hidden = true;
@@ -887,6 +921,8 @@ window.KV = (function () {
     const ok = await KVAuth.apiOrder(orderData());
     if (btn) { btn.disabled = false; if (btn.dataset.txt) btn.textContent = btn.dataset.txt; }
     if (!ok) { toast(t('orderFail')); return; }
+    // код засчитываем только на состоявшийся заказ, иначе лимит съедался бы примеркой
+    if (appliedPromo && window.KVAuth && KVAuth.promoUse) KVAuth.promoUse(appliedPromo.code).catch(() => {});
     finishOrder();
   }
   // онлайн-оплата: монтируем кнопки Stripe (сайт) или инвойс Telegram (мини-апп) в окно
@@ -1149,8 +1185,10 @@ window.KV = (function () {
       }
       if (e.target.closest('.kvd-promo-go')) {
         const inp = d.querySelector('.kvd-promo input');
-        toast(applyPromo(inp.value) ? ui('discount') : ui('promoBad'));
-        drawDrawer();
+        applyPromo(inp.value).then(r => {
+          toast(r.ok ? ui('discount') : t('promoWhy_' + (r.reason || 'not_found')));
+          drawDrawer();
+        });
       }
       if (e.target.closest('.kvd-repeat')) repeatOrder();
       const dopt = e.target.closest('[data-deliv]');
@@ -1335,13 +1373,14 @@ window.KV = (function () {
     if (!list.length) return '';
     return '<div class="kv-revs"><b>' + ui('reviews') + '</b>' + list.map(rv =>
       '<div class="kv-rev"><span class="kv-rev-h">' + esc(rv.author || t('you')) +
-      (rv.flavor ? ' <i class="kv-rev-fl">' + esc(rv.flavor) + '</i>' : '') +
+      (rv.flavor ? ' <i class="kv-rev-fl">' + esc(flavorName(rv.flavor)) + '</i>' : '') +
       ' <em>' + '★'.repeat(rv.stars || 5) + '</em></span>' + esc(rv.body || '') + '</div>').join('') + '</div>';
   }
 
   // ==== бейджи (10): хит / выбор менеджера / осталось мало ====
   function badgesHTML(item) {
     const m = meta[item.id], out = [];
+    if (item.hit) out.push('<span class="kv-badge hit">' + t('hitBadge') + '</span>');
     if (m && m.badges) m.badges.forEach(b => out.push('<span class="kv-badge ' + b + '">' + ui(b) + '</span>'));
     const q = qty(item);
     if (q > 0 && q <= 3) out.push('<span class="kv-badge few">' + ui('lastFew') + '</span>');
@@ -1447,14 +1486,30 @@ window.KV = (function () {
   }
 
   // ==== промокод, реферал, скидка (4, 25) ====
+  // Промокоды живут в базе и правятся в панели. Скидку считает сервер (promo_check):
+  // так нельзя подобрать чужой код или подкрутить процент из браузера.
+  // content.promos остаётся запасом для демо без облака.
   function findPromo(code) {
     return (content.promos || []).find(p => p.code.toUpperCase() === String(code).trim().toUpperCase());
   }
-  function applyPromo(code) {
-    const p = findPromo(code);
-    if (!p) { appliedPromo = null; return false; }
+  async function applyPromo(code) {
+    const raw = String(code || '').trim().toUpperCase();
+    if (!raw) { appliedPromo = null; localStorage.removeItem('kv_promo'); return { ok: false, reason: 'not_found' }; }
+    if (window.KVAuth && KVAuth.promoCheck && KVAuth.cloudOn && KVAuth.cloudOn()) {
+      const cats = [...new Set(cartLines().map(l => l.item._cat).filter(Boolean))];
+      const res = await KVAuth.promoCheck(raw, city, cartTotal(), cats);
+      if (res && res.ok) {
+        appliedPromo = { code: raw, type: res.kind === 'percent' ? 'percent' : 'fixed', value: res.value, discount: res.discount };
+        localStorage.setItem('kv_promo', raw);
+        return { ok: true };
+      }
+      appliedPromo = null; localStorage.removeItem('kv_promo');
+      return { ok: false, reason: (res && res.reason) || 'not_found' };
+    }
+    const p = findPromo(raw);
+    if (!p) { appliedPromo = null; return { ok: false, reason: 'not_found' }; }
     appliedPromo = p; localStorage.setItem('kv_promo', p.code);
-    return true;
+    return { ok: true };
   }
   function invitedCount() { return +(localStorage.getItem('kv_invited') || 0); }
   function referralReady() {
@@ -1479,7 +1534,8 @@ window.KV = (function () {
   function discount() {
     const sub = cartTotal();
     let d = 0;
-    if (appliedPromo) d += appliedPromo.type === 'percent' ? Math.round(sub * appliedPromo.value / 100) : appliedPromo.value;
+    if (appliedPromo) d += appliedPromo.discount != null ? appliedPromo.discount
+      : (appliedPromo.type === 'percent' ? Math.round(sub * appliedPromo.value / 100) : appliedPromo.value);
     return Math.min(d, sub);
   }
   function grandTotal() { return Math.max(cartTotal() - discount(), 0) + deliveryFee(); }
@@ -1505,8 +1561,24 @@ window.KV = (function () {
   }
 
   // ==== уведомить о поступлении (14) ====
-  function notifyRestock(id) {
+  // Заявка «сообщить о поступлении»: пишем её в базу вместе с городом, и бот сам напишет
+  // человеку, как только позиция появится в наличии именно в этом городе.
+  // Гостю писать некуда — отправляем его в бота диплинком, там заявка оформится сама.
+  async function notifyRestock(id) {
     const item = find(id); if (!item) return;
+    const logged = window.KVAuth && KVAuth.loggedIn && KVAuth.loggedIn();
+    if (logged && KVAuth.apiRestock) {
+      const ok = await KVAuth.apiRestock({ city, product_id: item.id, product_name: item.name });
+      toast(t(ok ? 'notifyOk' : 'notifyFail'));
+      return;
+    }
+    const bot = (window.KV_CONFIG || {}).TELEGRAM_BOT;
+    if (bot) {
+      // res_<id>_<город> без даты бот понимает как заявку на поступление
+      openTg('https://t.me/' + bot + '?start=res_' + encodeURIComponent(item.id) + '_' + city);
+      toast(t('notifyOk'));
+      return;
+    }
     tgSend(ui('notifyMsg') + item.name + ' (' + cityName(currentCity) + ')', ui('notify'));
   }
 
@@ -1992,7 +2064,7 @@ window.KV = (function () {
     const reviews = reviewsFor(item.id);
     const revList = reviews.length ? reviews.map(rv =>
       '<div class="kv-rev"><span class="kv-rev-h">' + esc(rv.author || t('you')) +
-      (rv.flavor ? ' <i class="kv-rev-fl">' + esc(rv.flavor) + '</i>' : '') +
+      (rv.flavor ? ' <i class="kv-rev-fl">' + esc(flavorName(rv.flavor)) + '</i>' : '') +
       ' <em>' + '★'.repeat(rv.stars || 5) + '</em></span>' + esc(rv.body || '') + '</div>').join('')
       : '<p class="kvm-norevs">' + t('noRevsYet') + '</p>';
     const starPick = [1, 2, 3, 4, 5].map(i =>
@@ -2152,7 +2224,7 @@ window.KV = (function () {
     tg: '<svg viewBox="0 0 24 24" width="19" height="19" fill="currentColor"><path d="M21.9 4.3 2.5 11.8c-.9.4-.9 1.2 0 1.5l4.9 1.5 1.9 5.9c.2.5.6.6 1 .3l2.7-2 4.8 3.5c.5.4 1.2.1 1.4-.5l3.4-16c.2-.9-.5-1.5-1.6-1.2z"/></svg>',
     burger: '<svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>',
     prof: '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>',
-    fav: '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-4.5-9.5-8.5C1 9 3 6 6 6c2 0 3 1 4 2 1-1 2-2 4-2 3 0 5 3 3.5 6.5C19 16.5 12 21 12 21z"/></svg>'
+    fav: '<svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.3 4.7 13a4.6 4.6 0 0 1 6.5-6.5l.8.8.8-.8A4.6 4.6 0 1 1 19.3 13z"/></svg>'
   };
   // Шапка мини-аппа: справа — менеджер, канал, бургер. Профиль/избранное/язык уезжают в
   // бургер-меню, чтобы элементы не толпились в строке и не было сдвига (корзина — свой #topCart).
@@ -2558,6 +2630,7 @@ window.KV = (function () {
 .kv-star{color:var(--kv-line)}.kv-star.on{color:#ffb020}
 .kv-stars i{font-style:normal;color:var(--kv-muted);font-size:11px;margin-left:5px}
 .kv-badges{display:flex;gap:5px;flex-wrap:wrap}
+.kv-badge.hit{background:var(--kv-accent);color:var(--kv-accent-ink)}
 .kv-badge{font-size:10px;font-weight:800;padding:3px 8px;border-radius:99px;text-transform:uppercase;letter-spacing:.4px}
 .kv-badge.hit{background:#ff5c3322;color:#ff6a3d}
 .kv-badge.choice{background:#8f6bff22;color:#9a7bff}
@@ -2824,6 +2897,13 @@ body.kv-noscroll{overflow:hidden}
 .kvc-go{flex:2;background:var(--kv-accent);color:var(--kv-accent-ink);border:none;border-radius:11px;padding:12px;font-weight:800;font-size:13px;cursor:pointer;font-family:inherit}
 .kvc-go[disabled]{opacity:.6;cursor:default}
 .kvc-pay{margin-top:14px;min-height:44px}
+.kvc-pays{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.kvc-pays-t{width:100%;font-size:11px;font-weight:800;color:var(--kv-muted);text-transform:uppercase;letter-spacing:.4px}
+.kvc-pay-opt{flex:1;min-width:120px;display:flex;flex-direction:column;gap:2px;align-items:flex-start;background:var(--kv-surface);border:1px solid var(--kv-line);border-radius:12px;padding:10px 12px;cursor:pointer;font-family:inherit;color:var(--kv-text)}
+.kvc-pay-opt b{font-size:13px}
+.kvc-pay-opt em{font-style:normal;font-size:14px;font-weight:800;color:var(--kv-accent-2,var(--kv-accent))}
+.kvc-pay-opt i{font-style:normal;font-size:10.5px;color:var(--kv-muted)}
+.kvc-pay-opt.sel{border-color:var(--kv-accent);background:var(--kv-surface2)}
 .kvc-later{width:100%;margin-top:10px;background:none;border:1px solid var(--kv-line);color:var(--kv-muted);border-radius:11px;padding:11px;font-weight:700;font-size:12.5px;cursor:pointer;font-family:inherit}
 .kvc-btns-edit{margin-top:8px}.kvc-btns-edit .kvc-edit{flex:1}
 .kvc-f{display:flex;flex-direction:column;gap:5px;margin-bottom:10px;font-size:12px;font-weight:700;color:var(--kv-muted)}
@@ -2917,7 +2997,7 @@ body.kv-noscroll{overflow:hidden}
     }
     // восстанавливаем ранее введённый промокод
     const savedPromo = localStorage.getItem('kv_promo');
-    if (savedPromo) appliedPromo = findPromo(savedPromo) || null;
+    if (savedPromo) applyPromo(savedPromo).then(() => drawDrawer());
     // имя из профиля, иначе имя из Telegram
     let savedProf = null;
     try { savedProf = JSON.parse(localStorage.getItem('kv_profile') || 'null'); } catch (e) {}
