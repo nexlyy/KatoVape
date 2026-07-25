@@ -15,6 +15,9 @@ window.KV_CONFIG = {
   // чекаут работает как раньше (оплата при выдаче). Как включить: deploy/PAYMENTS_SETUP.md.
   // STRIPE_PK — публичный ключ (pk_test_… / pk_live_…), секретный живёт только в Supabase.
   PAYMENTS: true,
+  // карта временно отключена: кнопка оплаты объясняет это и ведёт к менеджеру города.
+  // Вернуть онлайн-оплату = поставить false (ключи и функции уже настроены).
+  PAYMENTS_CARD_OFF: true,
   STRIPE_PK: 'pk_live_51TwKp12Oh3bIhyuZcduvlmYmOyWc92Q3z4lLhhDvzu3W6FNtCLjSIdCrlD67rWUYTpcMqFqT3f56fbuDj53JRWg900Y20uiegv',
   PAYMENTS_CURRENCY: 'pln',
 

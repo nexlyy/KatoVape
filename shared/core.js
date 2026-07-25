@@ -122,7 +122,7 @@ window.KV = (function () {
       edit: 'Изменить', apply: 'Применить',
       dataWarn: 'Проверьте данные внимательно: по ним оформляется отправка. Ошибка задержит посылку.',
       confirmTitle: 'Проверьте данные получателя', confirmOk: 'Всё верно, оформить',
-      payLater: 'Оплатить при выдаче', payTitle: 'Оплата', payFail: 'Оплата не прошла, попробуйте ещё раз',
+      payLater: 'Оплатить при выдаче', payTitle: 'Оплата', payCardBtn: 'Оплатить картой', payFail: 'Оплата не прошла, попробуйте ещё раз',
       checkData: 'Проверьте данные:', fioPh: 'Фамилия и имя',
       errFio: 'Укажите фамилию и имя', errPhone2: 'Телефон в формате +48 600 000 000',
       errEmail2: 'Проверьте адрес почты', errPaczko2: 'Номер пачкомата выглядит как KAT01M',
@@ -174,7 +174,7 @@ window.KV = (function () {
       edit: 'Змінити', apply: 'Застосувати',
       dataWarn: 'Перевірте дані уважно: за ними оформлюється відправка. Помилка затримає посилку.',
       confirmTitle: 'Перевірте дані отримувача', confirmOk: 'Все вірно, оформити',
-      payLater: 'Оплата при отриманні', payTitle: 'Оплата', payFail: 'Оплата не пройшла, спробуйте ще раз',
+      payLater: 'Оплата при отриманні', payTitle: 'Оплата', payCardBtn: 'Оплатити карткою', payFail: 'Оплата не пройшла, спробуйте ще раз',
       checkData: 'Перевірте дані:', fioPh: 'Прізвище та ім’я',
       errFio: 'Вкажіть прізвище та ім’я', errPhone2: 'Телефон у форматі +48 600 000 000',
       errEmail2: 'Перевірте адресу пошти', errPaczko2: 'Номер поштомата виглядає як KAT01M',
@@ -226,7 +226,7 @@ window.KV = (function () {
       edit: 'Zmień', apply: 'Zastosuj',
       dataWarn: 'Sprawdź dane uważnie: na ich podstawie wysyłamy paczkę. Błąd opóźni dostawę.',
       confirmTitle: 'Sprawdź dane odbiorcy', confirmOk: 'Zgadza się, zamawiam',
-      payLater: 'Płatność przy odbiorze', payTitle: 'Płatność', payFail: 'Płatność nie przeszła, spróbuj ponownie',
+      payLater: 'Płatność przy odbiorze', payTitle: 'Płatność', payCardBtn: 'Zapłać kartą', payFail: 'Płatność nie przeszła, spróbuj ponownie',
       checkData: 'Sprawdź dane:', fioPh: 'Imię i nazwisko',
       errFio: 'Podaj imię i nazwisko', errPhone2: 'Telefon w formacie +48 600 000 000',
       errEmail2: 'Sprawdź adres e-mail', errPaczko2: 'Numer paczkomatu wygląda jak KAT01M',
@@ -798,8 +798,10 @@ window.KV = (function () {
       // если оплата подключена — показываем кнопки Apple Pay / Google Pay / карта (сайт)
       // или кнопку нативного инвойса (мини-апп); плюс запасной путь «оплата при выдаче»
       const pay = window.KVPay && KVPay.enabled();
+      // наценку за карту показываем только когда оплата картой реально работает
+      const cardOn = pay && !(window.KV_CONFIG || {}).PAYMENTS_CARD_OFF;
       const actions = pay
-        ? '<div class="kvc-cardnote">' + t('cardPlus').replace('{sum}', cardTotal()) + '</div>' +
+        ? (cardOn ? '<div class="kvc-cardnote">' + t('cardPlus').replace('{sum}', cardTotal()) + '</div>' : '') +
           '<div id="kvc-pay" class="kvc-pay"></div>' +
           '<button class="kvc-later">' + t('payLater') + '</button>' +
           '<div class="kvc-btns kvc-btns-edit"><button class="kvc-edit">' + t('edit') + '</button></div>'
@@ -2103,9 +2105,10 @@ window.KV = (function () {
   function orderLog() { try { return JSON.parse(localStorage.getItem('kv_orders') || '[]'); } catch (e) { return []; } }
   function logOrder() {
     const log = orderLog();
+    // храним структуру, а не строку: по id позиция в истории открывает карточку товара
     log.unshift({ ts: Date.now(), city, n: cartCount(), total: grandTotal(),
       deliv: currentDelivery().method,
-      items: cartLines().map(l => l.item.name + (l.flavor ? ' (' + flavorName(l.flavor) + ')' : '') + ' ×' + l.n) });
+      items: cartLines().map(l => ({ id: l.item.id, name: l.item.name, flavor: l.flavor ? l.flavor.name : '', n: l.n })) });
     localStorage.setItem('kv_orders', JSON.stringify(log.slice(0, 20)));
   }
   const PROF_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>';
@@ -2356,7 +2359,14 @@ window.KV = (function () {
       ordCount = orders.length;
       ordInner = orders.length
         ? orders.slice(0, 6).map(o => '<div class="kvp-ord"><div class="kvp-ord-h"><span>' +
-            fmtDate(o.ts) + '</span><b>' + o.total + ' zł</b></div><p>' + esc((o.items || []).join(', ')) + '</p></div>').join('') +
+            fmtDate(o.ts) + '</span><b>' + o.total + ' zł</b></div>' +
+            // старые записи хранят строки, новые — объекты с id: их делаем кликабельными
+            '<p class="kvp-ord-items">' + (o.items || []).map(i => typeof i === 'string'
+              ? esc(i)
+              : (i.id && find(i.id)
+                  ? '<button class="kvp-ord-i" data-goto="' + esc(i.id) + '">' + esc(i.name + (i.flavor ? ' ' + flavorName(i.flavor) : '')) + ' ×' + (i.n || 1) + '</button>'
+                  : esc(i.name + (i.flavor ? ' ' + flavorName(i.flavor) : '') + ' ×' + (i.n || 1)))
+            ).join(' ') + '</p></div>').join('') +
           (hasLastOrder() ? '<button class="kvp-repeat">' + ui('repeat') + '</button>' : '')
         : '<p class="kvp-empty">' + t('noOrders') + '</p>';
     }

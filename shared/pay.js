@@ -11,9 +11,14 @@ window.KVPay = (function () {
 
   const tgApp = () => (window.Telegram && window.Telegram.WebApp) || null;
   const inMiniApp = () => { const a = tgApp(); return !!(a && a.initData); };
+  // Оплата картой временно выключена (CARD_OFF): вместо формы Stripe показываем кнопку,
+  // которая честно говорит, что оплата недоступна, и уводит к менеджеру. Ключи и функции
+  // остаются рабочими — снять флаг в конфиге достаточно, чтобы вернуть оплату.
+  const cardOff = () => !!(CFG.PAYMENTS_CARD_OFF);
   const cloudOn = () => CFG.BACKEND === 'supabase' && !!(CFG.SUPABASE_URL && CFG.SUPABASE_ANON_KEY);
   // оплата доступна: включён флаг, есть облако и адрес функций; на сайте нужен ещё ключ Stripe
-  const enabled = () => !!(CFG.PAYMENTS && cloudOn() && CFG.FUNCTIONS_URL && (inMiniApp() || CFG.STRIPE_PK));
+  const enabled = () => !!(CFG.PAYMENTS && cloudOn() && CFG.FUNCTIONS_URL &&
+    (cardOff() || inMiniApp() || CFG.STRIPE_PK));
   const fnUrl = p => CFG.FUNCTIONS_URL.replace(/\/$/, '') + p;
 
   // Stripe.js грузим с их домена один раз (для кошельков он обязан быть с js.stripe.com)
@@ -120,12 +125,22 @@ window.KVPay = (function () {
     (document.head || document.documentElement).appendChild(s);
   }
 
+  // заглушка на время, пока карта отключена: одна кнопка вместо формы оплаты
+  function mountOff(box, cb) {
+    const btn = document.createElement('button');
+    btn.type = 'button'; btn.className = 'kvpay-btn kvpay-off';
+    btn.textContent = (window.KV && KV.t) ? KV.t('payCardBtn') : 'Оплатить картой';
+    btn.onclick = () => cb.onError('card_off');
+    box.appendChild(btn);
+  }
+
   // монтируем оплату в переданный контейнер; cb: {onSuccess, onError, onCancel}
   async function mount(box, data, cb) {
     injectCSS();
     box.innerHTML = '';
     try {
-      if (inMiniApp()) mountTg(box, data, cb);
+      if (cardOff()) mountOff(box, cb);
+      else if (inMiniApp()) mountTg(box, data, cb);
       else await mountWeb(box, data, cb);
     } catch (e) { cb.onError((e && e.message) || 'pay'); }
   }
