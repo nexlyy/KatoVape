@@ -49,6 +49,15 @@ export async function tgCall(method, body, token = BOT_TOKEN) {
 export const sendMessage = (chat_id, text, extra = {}) =>
   tgCall('sendMessage', { chat_id, text, parse_mode: 'HTML', disable_web_page_preview: true, ...extra });
 
+// правка уже отправленного сообщения: список заказов листается и обновляется на месте,
+// без новых сообщений в чате
+export const editMessage = (chat_id, message_id, text, extra = {}) =>
+  tgCall('editMessageText', { chat_id, message_id, text, parse_mode: 'HTML', disable_web_page_preview: true, ...extra });
+
+// ответ на нажатие инлайн-кнопки (иначе у кнопки бесконечно крутится часики)
+export const answerCallback = (id, text, alert) =>
+  tgCall('answerCallbackQuery', { callback_query_id: id, ...(text ? { text } : {}), ...(alert ? { show_alert: true } : {}) });
+
 export async function setWebhook(url, secret) {
   return tgCall('setWebhook', { url, secret_token: secret, allowed_updates: ['message', 'callback_query'] });
 }

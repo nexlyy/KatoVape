@@ -908,6 +908,14 @@ let groups = [], cityNow = 'katowice';
 // значения обратно флаг не снимал, и сохранение всё равно считало заново.
 // оптовые ступени: цена за штуку при 3/5/10 шт (q=1 — базовая цена товара)
 function tierP(tiers, q) { const t = (tiers || []).find(x => +x.q === q); return t && t.p != null ? t.p : ''; }
+// Нормализованная подпись ступеней: «3:36|5:33|10:30». База отдаёт jsonb со своим порядком
+// ключей ({"p":40,"q":1}), поэтому сравнивать JSON-строки нельзя — панель несохранённых
+// правок из-за этого висела всегда, даже когда ничего не меняли.
+function tiersKey(tiers) {
+  if (!tiers || !tiers.length) return '';
+  return [...tiers].map(x => Number(x.q) + ':' + Number(x.p))
+    .sort((a, b) => parseInt(a) - parseInt(b)).join('|');
+}
 function buildTiers(base, t3, t5, t10) {
   const arr = [];
   const b = base == null ? null : Number(base);
@@ -925,7 +933,7 @@ function changedItems() {
     const priceRaw = gv('price');
     const price = priceRaw === '' ? null : Number(priceRaw);
     const tiers = buildTiers(price, gv('t3'), gv('t5'), gv('t10'));
-    const tiersChanged = JSON.stringify(tiers) !== JSON.stringify(g.head.tiers || null);
+    const tiersChanged = tiersKey(tiers) !== tiersKey(g.head.tiers);
     const headChanged = name !== (g.head.name || '') || brand !== (g.head.brand || '')
       || category !== (g.head.category || '') || nic !== (g.head.nic || '') || price !== g.head.price || tiersChanged;
     const rows = [];

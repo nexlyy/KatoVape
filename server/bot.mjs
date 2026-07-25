@@ -1,4 +1,4 @@
-import { BOT_TOKEN, sendMessage, tgCall, getUpdates, deleteWebhook, setMenuButton } from './tg.mjs';
+import { BOT_TOKEN, sendMessage, editMessage, answerCallback, tgCall, getUpdates, deleteWebhook, setMenuButton } from './tg.mjs';
 import { tr, pickLang } from './i18n.mjs';
 
 const SUPA = (process.env.SUPABASE_URL || '').replace(/\/$/, '');
@@ -150,8 +150,13 @@ async function handleUpdate(u) {
     await sendMessage(m.chat.id, tr(lang, 'adminPanel'), { reply_markup: { inline_keyboard: [[{ text: tr(lang, 'adminPanel'), web_app: { url: ADMIN_URL } }]] } });
     return;
   }
-  // менеджеру — текущие заказы, только просмотр (действия в веб-админке)
-  if (text === '/orders') { if (await isManager(f.id)) await handleOrders(m.chat.id, f.id); return; }
+  // заказы менеджера: список кнопками, карточка и смена статуса прямо в боте
+  if (text === '/orders') {
+    if (!(await isManager(f.id))) return;
+    const scr = await ordersScreen(f.id, 0, 'active');
+    await sendMessage(m.chat.id, scr.text, { reply_markup: scr.markup });
+    return;
+  }
   // не подтвердил 18+ — гейт; не заполнил профиль — принимаем ответ шага
   if (!st || !st.age_ok) { await sendAgeGate(m.chat.id, lang); return; }
   if (!st.onboarding_done) { await onboardingAnswer(m, st, lang, text); return; }
@@ -181,6 +186,31 @@ async function handleCallback(q) {
     await setBotUser(f.id, { city, step: 'paczkomat' });
     await askStep(chat, 'paczkomat', lang);
     return;
+  }
+
+  // ---- экраны заказов (только для менеджеров) ----
+  // o:list:<страница>:<режим> | o:card:<id>:<режим> | o:set:<id>:<статус>:<режим>
+  if (data.startsWith('o:')) {
+    if (!(await isManager(f.id))) { await answerCallback(q.id, 'Нет доступа', true); return; }
+    const mid = q.message && q.message.message_id;
+    const [, kind, a, b, c] = data.split(':');
+    if (kind === 'list') {
+      const scr = await ordersScreen(f.id, Number(a) || 0, b || 'active');
+      await editMessage(chat, mid, scr.text, { reply_markup: scr.markup });
+      return;
+    }
+    if (kind === 'card') {
+      const scr = await orderCard(f.id, a, b || 'active');
+      await editMessage(chat, mid, scr.text, { reply_markup: scr.markup });
+      return;
+    }
+    if (kind === 'set') {
+      const note = await setOrderStatus(f.id, a, b, c || 'active');
+      await answerCallback(q.id, note);
+      const scr = await orderCard(f.id, a, c || 'active');
+      await editMessage(chat, mid, scr.text, { reply_markup: scr.markup });
+      return;
+    }
   }
 }
 
@@ -297,25 +327,97 @@ async function isManager(tgId) {
   if (MANAGERS.includes(Number(tgId))) return true;
   return !!(await adminOf(tgId));
 }
-// текущие заказы для менеджера: только чтение, статусы меняются в веб-админке.
-// Менеджер города видит заказы своего города, владелец и разработчик — все.
-async function handleOrders(chat, tgId) {
+// ---- заказы в боте: список кнопками, карточка заказа, смена статуса ----
+// Менеджер города видит только свой город, владелец и разработчик — все.
+const ORDER_PAGE = 6;
+const ST_LABEL = { new: 'новый', confirmed: 'подтверждён', done: 'выдан', cancelled: 'отменён' };
+const PAY_LABEL = { paid: 'оплачен', pending: 'ждёт оплаты', unpaid: 'при выдаче', failed: 'оплата не прошла' };
+
+async function cityFilterFor(tgId) {
   const me = await adminOf(tgId);
-  const onlyCity = me && me.role === 'manager' ? me.city : null;
+  return me && me.role === 'manager' && me.city ? me.city : null;
+}
+
+// список заказов страницами: каждая строка — кнопка, ведущая в карточку заказа
+async function ordersScreen(tgId, page = 0, mode = 'active') {
+  const onlyCity = await cityFilterFor(tgId);
+  const statuses = mode === 'all' ? '' : '&status=in.(new,confirmed)';
   const rows = await sbSelect('orders',
-    'status=in.(new,confirmed)' + (onlyCity ? '&city=eq.' + enc(onlyCity) : '') +
-    '&order=created_at.desc&limit=20&select=id,city,sum,status,payment_status,contact').catch(() => []);
-  if (!rows || !rows.length) { await sendMessage(chat, 'Текущих заказов нет.'); return; }
-  let buf = '<b>Текущие заказы</b> (' + rows.length + '):\n\n';
-  for (const o of rows) {
-    const c = o.contact || {};
-    const pay = o.payment_status === 'paid' ? 'оплачен' : (o.payment_status === 'pending' ? 'ждёт оплаты' : 'при выдаче');
-    const line = '<b>№' + o.id + '</b> · ' + esc(o.city) + ' · ' + (o.sum || 0) + ' zł · ' + pay + ' · ' + esc(o.status) +
-      (c.name ? '\n' + esc(c.name) + (c.phone ? ', ' + esc(c.phone) : '') : '') + '\n\n';
-    if (buf.length + line.length > 3800) { await sendMessage(chat, buf); buf = ''; }
-    buf += line;
+    'select=id,city,sum,status,payment_status,contact,created_at' + statuses +
+    (onlyCity ? '&city=eq.' + enc(onlyCity) : '') +
+    '&order=id.desc&limit=' + (ORDER_PAGE + 1) + '&offset=' + (page * ORDER_PAGE)).catch(() => []);
+  const list = (rows || []).slice(0, ORDER_PAGE);
+  const hasMore = (rows || []).length > ORDER_PAGE;
+
+  if (!list.length) {
+    return { text: page ? 'Больше заказов нет.' : (mode === 'all' ? 'Заказов пока нет.' : 'Активных заказов нет.'),
+      markup: { inline_keyboard: [[{ text: mode === 'all' ? '· Только активные ·' : '· Показать все ·', callback_data: 'o:list:0:' + (mode === 'all' ? 'active' : 'all') }]] } };
   }
-  if (buf.trim()) await sendMessage(chat, buf);
+
+  const kb = list.map(o => {
+    const c = o.contact || {};
+    return [{ text: '№' + o.id + ' · ' + (o.sum || 0) + ' zł · ' + (ST_LABEL[o.status] || o.status) +
+      (c.name ? ' · ' + String(c.name).split(/\s+/)[0] : ''), callback_data: 'o:card:' + o.id + ':' + mode }];
+  });
+  const nav = [];
+  if (page > 0) nav.push({ text: '‹ Назад', callback_data: 'o:list:' + (page - 1) + ':' + mode });
+  if (hasMore) nav.push({ text: 'Дальше ›', callback_data: 'o:list:' + (page + 1) + ':' + mode });
+  if (nav.length) kb.push(nav);
+  kb.push([{ text: mode === 'all' ? '· Только активные ·' : '· Показать все ·', callback_data: 'o:list:0:' + (mode === 'all' ? 'active' : 'all') }]);
+
+  const title = mode === 'all' ? 'Все заказы' : 'Активные заказы';
+  return { text: '<b>' + title + '</b>' + (onlyCity ? ' · ' + esc(onlyCity) : '') +
+    '\nВыберите заказ, чтобы посмотреть состав и сменить статус.', markup: { inline_keyboard: kb } };
+}
+
+// карточка одного заказа: состав, клиент, оплата и кнопки статусов
+async function orderCard(tgId, id, mode = 'active') {
+  const onlyCity = await cityFilterFor(tgId);
+  const rows = await sbSelect('orders', 'id=eq.' + Number(id) +
+    '&select=id,city,items,sum,status,payment_status,delivery,address,contact,comment,created_at,telegram_id').catch(() => []);
+  const o = rows && rows[0];
+  if (!o) return { text: 'Заказ не найден.', markup: { inline_keyboard: [[{ text: '‹ К списку', callback_data: 'o:list:0:' + mode }]] } };
+  // менеджер чужого города не должен видеть карточку, даже зная номер
+  if (onlyCity && o.city !== onlyCity) {
+    return { text: 'Этот заказ относится к другому городу.', markup: { inline_keyboard: [[{ text: '‹ К списку', callback_data: 'o:list:0:' + mode }]] } };
+  }
+
+  const c = o.contact || {};
+  const items = (o.items || []).map((x, i) => (i + 1) + ') ' +
+    (typeof x === 'string' ? x : (x.name || x.id) + (x.flavor ? ', ' + x.flavor : '') + ' x' + (x.n || 1) +
+      (x.sum ? ' = ' + x.sum + ' zł' : ''))).join('\n');
+  const text = '<b>Заказ №' + o.id + '</b> · ' + esc(o.city) + '\n' +
+    'Статус: <b>' + (ST_LABEL[o.status] || o.status) + '</b> · ' + (PAY_LABEL[o.payment_status] || o.payment_status) + '\n' +
+    'Оформлен: ' + fmtDMY(o.created_at) + '\n\n' + esc(items) +
+    '\n\nИтого: <b>' + (o.sum || 0) + ' zł</b>' +
+    '\nПолучение: ' + esc((o.delivery || '') + (o.address ? ', ' + o.address : '')) +
+    (o.comment ? '\nКомментарий: ' + esc(o.comment) : '') +
+    (c.name || c.phone ? '\n\nКлиент: ' + esc([c.name, c.phone, c.email].filter(Boolean).join(', ')) : '');
+
+  const acts = [];
+  if (o.status === 'new') acts.push({ text: 'Подтвердить', callback_data: 'o:set:' + o.id + ':confirmed:' + mode });
+  if (o.status === 'new' || o.status === 'confirmed') {
+    acts.push({ text: 'Выдан', callback_data: 'o:set:' + o.id + ':done:' + mode });
+    acts.push({ text: 'Отменить', callback_data: 'o:set:' + o.id + ':cancelled:' + mode });
+  }
+  const kb = [];
+  if (acts.length) kb.push(acts.slice(0, 2)), acts.length > 2 && kb.push(acts.slice(2));
+  kb.push([{ text: '‹ К списку', callback_data: 'o:list:0:' + mode }]);
+  return { text, markup: { inline_keyboard: kb } };
+}
+
+// смена статуса из бота: то же самое, что кнопки в панели, клиенту уходит уведомление джобой
+async function setOrderStatus(tgId, id, status, mode) {
+  const onlyCity = await cityFilterFor(tgId);
+  const rows = await sbSelect('orders', 'id=eq.' + Number(id) + '&select=id,city,status').catch(() => []);
+  const o = rows && rows[0];
+  if (!o) return 'Заказ не найден.';
+  if (onlyCity && o.city !== onlyCity) return 'Это заказ другого города.';
+  if (!['confirmed', 'done', 'cancelled'].includes(status)) return 'Неизвестный статус.';
+  try {
+    await sbUpdate('orders', 'id=eq.' + Number(id), { status, updated_at: new Date().toISOString() });
+    return 'Заказ №' + id + ': ' + (ST_LABEL[status] || status);
+  } catch (e) { return 'Не удалось изменить статус.'; }
 }
 
 async function tgLoop() {
