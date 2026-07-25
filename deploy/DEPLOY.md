@@ -30,7 +30,7 @@ ssh mcr "systemctl restart katovape-api"
 
 Важно: браузеры кешируют скрипты по строке `?v=` в подключении. Поменяли `shared/*.js` —
 поднимите номер версии во всех восьми демо (`demos/*/site|app/index.html`), иначе у людей
-останется старый файл.
+останется старый файл. Админка (demos/admin/index.html) подключает config.js своей строкой — её версию поднимайте вместе с остальными.
 
 ## Применить миграции базы
 Автоматического `db push` тут нет (проект не слинкован с CLI), миграции применяются вручную:
@@ -44,13 +44,15 @@ Supabase → SQL Editor → New query → вставить файл целико
 вместе с `0019` — иначе останется старая политика на брони из `0003`, и статусы чужого города
 всё ещё будут доступны на запись.
 
-## Обновить функции оплаты
+## Обновить edge-функции
 Из корня проекта:
 ```
 supabase functions deploy create-payment  --no-verify-jwt --project-ref vffqnydxofvunwausakv
 supabase functions deploy create-checkout --no-verify-jwt --project-ref vffqnydxofvunwausakv
 supabase functions deploy stripe-webhook  --no-verify-jwt --project-ref vffqnydxofvunwausakv
 supabase functions deploy telegram-auth   --no-verify-jwt --project-ref vffqnydxofvunwausakv
+supabase functions deploy login           --no-verify-jwt --project-ref vffqnydxofvunwausakv
+supabase functions deploy signup          --no-verify-jwt --project-ref vffqnydxofvunwausakv
 ```
 Подробности по ключам и вебхуку — в `deploy/PAYMENTS_SETUP.md`.
 
