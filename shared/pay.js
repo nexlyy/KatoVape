@@ -121,6 +121,8 @@ window.KVPay = (function () {
     s.textContent = '.kvpay-btn{width:100%;background:#635bff;color:#fff;border:none;border-radius:12px;' +
       'padding:14px;font-weight:800;font-size:14px;cursor:pointer;font-family:inherit}' +
       '.kvpay-btn[disabled]{opacity:.6;cursor:default}' +
+      // карта отключена: кнопка приглушённая, чтобы не выглядела основным действием
+      '.kvpay-off{background:none;border:1px solid var(--kv-line,rgba(127,127,127,.35));color:var(--kv-muted,#889);font-weight:700}' +
       '.kvpay-note{margin-top:10px;font-size:12px;line-height:1.45;color:var(--kv-muted,#889)}';
     (document.head || document.documentElement).appendChild(s);
   }
@@ -130,7 +132,15 @@ window.KVPay = (function () {
     const btn = document.createElement('button');
     btn.type = 'button'; btn.className = 'kvpay-btn kvpay-off';
     btn.textContent = (window.KV && KV.t) ? KV.t('payCardBtn') : 'Оплатить картой';
-    btn.onclick = () => cb.onError('card_off');
+    let busy = false;
+    btn.onclick = () => {
+      if (busy) return;                     // второй тап не должен открывать чат дважды
+      busy = true; setTimeout(() => { busy = false; }, 1200);
+      cb.onError('card_off');
+      // чат менеджера открываем прямо в обработчике клика: из таймера браузер счёл бы
+      // это всплывающим окном и заблокировал бы переход
+      if (window.KV && KV.openManager) KV.openManager();
+    };
     box.appendChild(btn);
   }
 

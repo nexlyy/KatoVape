@@ -122,6 +122,12 @@ drop policy if exists res_own_sel on public.reservations;
 create policy res_own_sel on public.reservations
   for select using (auth.uid() = user_id or public.admin_sees_city(city));
 
+-- статусы броней (выдана, отмена) менеджер меняет только в своём городе;
+-- без этого прежняя политика на is_admin() пускала бы его в чужие города
+drop policy if exists res_admin_upd on public.reservations;
+create policy res_admin_upd on public.reservations
+  for update using (public.admin_sees_city(city)) with check (public.admin_sees_city(city));
+
 -- сводка отдаёт роль и город, панель по ним решает, что показывать
 create or replace function public.admin_overview()
 returns json language sql stable security definer set search_path = public as $$

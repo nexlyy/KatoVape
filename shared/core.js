@@ -800,12 +800,15 @@ window.KV = (function () {
       const pay = window.KVPay && KVPay.enabled();
       // наценку за карту показываем только когда оплата картой реально работает
       const cardOn = pay && !(window.KV_CONFIG || {}).PAYMENTS_CARD_OFF;
-      const actions = pay
-        ? (cardOn ? '<div class="kvc-cardnote">' + t('cardPlus').replace('{sum}', cardTotal()) + '</div>' : '') +
+      // Пока карта отключена, оформление заказа должно оставаться главным действием:
+      // кнопка карты идёт сверху приглушённой, под ней обычное «оформить».
+      const actions = cardOn
+        ? '<div class="kvc-cardnote">' + t('cardPlus').replace('{sum}', cardTotal()) + '</div>' +
           '<div id="kvc-pay" class="kvc-pay"></div>' +
           '<button class="kvc-later">' + t('payLater') + '</button>' +
           '<div class="kvc-btns kvc-btns-edit"><button class="kvc-edit">' + t('edit') + '</button></div>'
-        : '<div class="kvc-btns"><button class="kvc-edit">' + t('edit') + '</button>' +
+        : (pay ? '<div id="kvc-pay" class="kvc-pay"></div>' : '') +
+          '<div class="kvc-btns"><button class="kvc-edit">' + t('edit') + '</button>' +
           '<button class="kvc-go">' + t('confirmOk') + '</button></div>';
       inner = need.map(f =>
         '<div class="kvc-row"><span>' + f.lbl + '</span><b>' + (esc(f.v || '') || '<i class="kvc-none">—</i>') + '</b></div>').join('') +
@@ -898,8 +901,10 @@ window.KV = (function () {
       // покупателю бессмысленно: даём понятный текст и путь к менеджеру города.
       onError: code => {
         if (code === 'out_of_stock') { toast(t('orderFail')); return; }
+        // при отключённой карте чат менеджера открывает сам pay.js, внутри клика:
+        // из таймера браузер посчитал бы это всплывающим окном и заблокировал
         toast(t('payOff'));
-        setTimeout(openManager, 900);
+        if (code !== 'card_off') setTimeout(openManager, 900);
       },
       onCancel: () => {}
     });
