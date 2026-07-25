@@ -19,16 +19,14 @@ rsync -az deploy/          mcr:/opt/katovape/server/deploy/
 (БД `/opt/katovape/data/katovape.db` rsync не трогает — она вне выгружаемых папок.)
 
 ## 2. Прод-конфиг фронта
-На VPS перезаписать `/opt/katovape/site/shared/config.js`, указав адрес API и бота:
-```js
-window.KV_CONFIG = {
-  BACKEND: 'local',
-  LOCAL_API: 'https://SUBDOMAIN/api',   // API за nginx
-  SUPABASE_URL: '', SUPABASE_ANON_KEY: '', FUNCTIONS_URL: '',
-  TELEGRAM_BOT: 'ИМЯ_БОТА_без_@',
-  ADMIN_IDS: [5301671230]
-};
+На VPS перезаписать `/opt/katovape/site/shared/config.js` копией `deploy/config.prod.example.js`,
+подставив свой поддомен и имя бота:
 ```
+scp deploy/config.prod.example.js mcr:/opt/katovape/site/shared/config.js
+```
+Второй копии настроек тут намеренно нет: список полей (ссылки городов `CITY_LINKS`, выключатель
+оплаты `PAYMENTS_CARD_OFF`, `ADMIN_URL`) живёт только в `config.prod.example.js`, иначе при
+каждом обновлении пришлось бы править два места и одно из них отставало бы.
 (Витрина на localhost-хосте пускает вход только локально; на реальном домене — против этого API. Логика уже в auth.js.)
 
 ## 3. Настройка на сервере

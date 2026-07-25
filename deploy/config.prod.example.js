@@ -10,6 +10,7 @@ window.KV_CONFIG = {
 
   TELEGRAM_BOT: 'ИМЯ_БОТА_без_собачки', // для кнопки "Войти через Telegram" на сайте (нужен /setdomain у BotFather)
   ADMIN_IDS: [5301671230],
+  ADMIN_URL: 'https://nexlyy.github.io/KatoVape/demos/admin/',   // куда ведёт кнопка «Панель управления» у админа
 
   // Оплата: включить после настройки Stripe и Supabase (см. deploy/PAYMENTS_SETUP.md).
   // STRIPE_PK — публичный ключ pk_test_… или pk_live_…, секретный ключ в Supabase, не тут.
