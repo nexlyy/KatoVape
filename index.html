@@ -50,12 +50,8 @@ h1 span{background:linear-gradient(100deg,var(--acc),#7ad0ff);-webkit-background
 .card{background:var(--panel);border:1px solid var(--line);border-radius:18px;overflow:hidden;transition:border-color .15s,transform .15s}
 .card:hover{border-color:#3a3a46;transform:translateY(-2px)}
 .swatch{height:78px;position:relative;display:flex;align-items:flex-end;padding:12px 16px;font-weight:800;font-size:13px}
-.swatch.neon{background:#0a0a10;color:#c8ff2e}
-.swatch.neon::after{content:"";position:absolute;top:14px;right:14px;width:38px;height:38px;border-radius:50%;background:radial-gradient(circle,#c8ff2e,#8f6bff)}
-.swatch.frost{background:linear-gradient(120deg,#dff0ff,#e7e2ff 60%,#dcfff0);color:#1861ff}
-.swatch.frost::after{content:"";position:absolute;top:16px;right:16px;width:34px;height:34px;border-radius:12px;background:linear-gradient(120deg,#1861ff,#38c6ff);box-shadow:0 6px 16px rgba(24,97,255,.35)}
-.swatch.street{background:#ffd500;color:#0d0d0d}
-.swatch.street::after{content:"UA→PL";position:absolute;top:14px;right:12px;background:#0057b7;color:#fff;font-family:monospace;font-size:11px;padding:4px 8px;border:2px solid #0d0d0d;transform:rotate(4deg)}
+.swatch.vapor{background:linear-gradient(160deg,#0f141b,#141b24);color:#5ff3d0}
+.swatch.admin{background:#121821;color:#67d9f5}
 .card-body{padding:16px 18px 18px}
 .card h2{font-size:16px;font-weight:800;margin-bottom:6px}
 .card .desc{color:var(--mut);font-size:13px;line-height:1.55;margin-bottom:14px}
@@ -81,16 +77,15 @@ footer a{color:var(--acc);text-decoration:none}
   </header>
 
   <section class="hero">
-    <h1>Три стиля витрины,<br><span>один движок наличия</span></h1>
-    <p class="lead">В каждом стиле сайт и мини-приложение Telegram. Все шесть страниц читают одну базу
-      <a href="data/products.json">products.json</a>: поменяешь остаток в файле, и маркеры меняются везде сразу.</p>
+    <h1>Витрина KatoVape,<br><span>наличие из одной базы</span></h1>
+    <p class="lead">Сайт и мини-приложение Telegram работают на одном ядре и читают общий каталог: остатки и цены правятся в панели управления и сразу видны на витрине.</p>
     <div class="chips">
       <span class="chip"><i>◍</i>3 города</span>
       <span class="chip"><i>◍</i>корзина + автозаказ</span>
       <span class="chip"><i>◍</i>промокоды и бронь</span>
       <span class="chip"><i>◍</i>фильтры и поиск</span>
       <span class="chip"><i>◍</i>RU / UA / PL</span>
-      <span class="chip"><i>◍</i>светлая и тёмная тема</span>
+      <span class="chip"><i>◍</i>оптовые цены</span>
     </div>
   </section>
 
@@ -99,37 +94,24 @@ footer a{color:var(--acc);text-decoration:none}
 
   <div class="grid">
     <div class="card">
-      <div class="swatch neon">НЕОН</div>
+      <div class="swatch vapor">VAPOR</div>
       <div class="card-body">
-        <h2>Неон</h2>
-        <p class="desc">Тёмный, кислотно-зелёный, кот-логотип в шапке. Есть светлая тема.</p>
+        <h2>Витрина</h2>
+        <p class="desc">Тёмная тема с дымом на фоне, каталог кубами, карточка товара с вкусами и оптовыми ценами.</p>
         <div class="links">
-          <a href="demos/neon/site/">Сайт<small>карточки с фото</small></a>
-          <a href="demos/neon/app/">Мини-апп<small>тёмная лента</small></a>
+          <a href="demos/vapor/site/">Сайт<small>полная витрина</small></a>
+          <a href="demos/vapor/app/">Мини-апп<small>для Telegram</small></a>
         </div>
       </div>
     </div>
 
     <div class="card">
-      <div class="swatch frost">ФРОСТ</div>
+      <div class="swatch admin">ПАНЕЛЬ</div>
       <div class="card-body">
-        <h2>Фрост</h2>
-        <p class="desc">Светлое морозное стекло, синий акцент, плавающие пятна цвета.</p>
+        <h2>Управление</h2>
+        <p class="desc">Заказы, брони, ассортимент, клиенты и рассылка. Менеджер видит свой город, владелец — все.</p>
         <div class="links">
-          <a href="demos/frost/site/">Сайт<small>стеклянные карточки</small></a>
-          <a href="demos/frost/app/">Мини-апп<small>светлая лента</small></a>
-        </div>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="swatch street">СТРИТ</div>
-      <div class="card-body">
-        <h2>Стрит</h2>
-        <p class="desc">Жёлто-синие цвета Украины, толстые рамки, штампы, бегущая строка.</p>
-        <div class="links">
-          <a href="demos/street/site/">Сайт<small>карточки-стикеры</small></a>
-          <a href="demos/street/app/">Мини-апп<small>лента со штампами</small></a>
+          <a href="demos/admin/">Открыть панель<small>вход по аккаунту или Telegram</small></a>
         </div>
       </div>
     </div>

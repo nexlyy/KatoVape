@@ -142,10 +142,13 @@ $$;
 grant execute on function public.admin_overview() to authenticated;
 
 -- расстановка менеджеров по городам, о которой договорились
+-- Три владельца (город не задаём: владелец работает со всеми городами) и менеджеры городов.
+-- Роли владельцев не понижаем: иначе повторный прогон миграции отобрал бы раздел «Доступ»
+-- и выдавать права стало бы некому.
 insert into public.admins (telegram_id, note, role, city) values
-  (5301671230, 'nexrsy',            'dev',     null),
-  (8108651376, 'Elfbaro Manager',   'owner',   null),
-  (855010368,  'Менеджер Катовице', 'manager', 'katowice'),
-  (8658843544, 'Менеджер Варшава',  'manager', 'warszawa'),
-  (6017482088, 'Менеджер Гливице',  'manager', 'gliwice')
+  (5301671230, 'nexrsy',           'owner',   null),
+  (8108651376, 'Elfbaro Manager',  'owner',   null),
+  (855010368,  'Влад',             'owner',   null),
+  (8658843544, 'Менеджер Варшава', 'manager', 'warszawa'),
+  (6017482088, 'Менеджер Гливице', 'manager', 'gliwice')
 on conflict (telegram_id) do update set role = excluded.role, note = excluded.note, city = excluded.city;

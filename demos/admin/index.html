@@ -185,6 +185,49 @@ td .sub{display:block;color:var(--muted);font-size:11.5px;margin-top:2px}
   .savebar{transition:none}
 }
 
+/* ---- телефон: панелью пользуются менеджеры прямо в поле ---- */
+@media(max-width:700px){
+  .main{padding:16px 12px 120px}
+  .head h1{font-size:18px}
+  .head p{font-size:12.5px}
+  .summary{gap:2px 16px;padding:10px 0 12px;margin-bottom:12px}
+  .panel-head{padding:11px 12px}
+  .panel-body{padding:12px}
+  .tools{gap:6px}
+  .tools input,.tools select{width:100%;min-width:0}
+  .tools .btn{flex:1;justify-content:center}
+
+  /* таблицы не влезают в узкий экран: каждая строка становится карточкой,
+     заголовки столбцов подписываются слева через data-l */
+  table,thead,tbody,tr,th,td{display:block}
+  thead{display:none}
+  tr{border:1px solid var(--line);border-radius:var(--r);margin-bottom:10px;background:var(--surface-2);overflow:hidden}
+  td{border-bottom:1px solid var(--line);padding:9px 12px;display:flex;gap:10px;align-items:flex-start}
+  td:last-child{border-bottom:none}
+  td::before{content:attr(data-l);flex:0 0 40%;max-width:40%;color:var(--muted);font-size:11px;
+    text-transform:uppercase;letter-spacing:.04em;font-weight:600;padding-top:2px}
+  td:empty{display:none}
+  td .tools{justify-content:flex-end}
+  td .btn.sm{flex:1}
+
+  /* карточка товара: поля в две колонки, вкусы крупными строками */
+  .item{padding:12px}
+  .item-top{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+  .item-top input{width:100%}
+  .i-name{grid-column:1 / -1}
+  .i-nic,.i-price,.i-tier{width:100%}
+  .item-top .btn.danger{grid-column:1 / -1;justify-content:center}
+  .flav{gap:8px;padding:9px 0}
+  .flav input{width:64px}
+  .add-flav input{flex:1;min-width:0}
+
+  .savebar{padding:10px 12px;gap:8px}
+  .savebar b{font-size:12.5px;width:100%}
+  .savebar span{display:none}
+  .savebar .btn{flex:1;justify-content:center}
+  .toast{bottom:110px;font-size:12.5px}
+}
+
 .toast{position:fixed;left:50%;bottom:88px;transform:translate(-50%,14px);z-index:var(--z-toast);
   background:var(--accent);color:var(--accent-ink);font-weight:600;font-size:13px;
   padding:10px 18px;border-radius:99px;opacity:0;pointer-events:none;transition:opacity var(--t),transform var(--t)}
@@ -262,7 +305,125 @@ const UK = {
   'Отменённая или просроченная бронь возвращает товар в наличие сама.': 'Скасована або протермінована бронь повертає товар у наявність сама.',
   'Роль': 'Роль', 'Доступ выдан': 'Доступ надано', 'Доступ забран': 'Доступ забрано',
   'Выдать доступ': 'Надати доступ', 'Забрать': 'Забрати', 'Логин или почта': 'Логін або пошта',
-  'Telegram ID': 'Telegram ID', 'Кому': 'Кому', 'Комментарий': 'Коментар'
+  'Telegram ID': 'Telegram ID', 'Кому': 'Кому', 'Комментарий': 'Коментар',
+  'Не задан Supabase': 'Не задано Supabase',
+  'Заполните SUPABASE_URL и ключ в shared/config.js.': 'Заповніть SUPABASE_URL і ключ у shared/config.js.',
+  'панель управления': 'панель керування',
+  'Вход для менеджеров': 'Вхід для менеджерів',
+  'Войдите аккаунтом магазина или через Telegram. Доступ открыт только тем, кому его выдали.': 'Увійдіть акаунтом магазину або через Telegram. Доступ відкрито лише тим, кому його надали.',
+  'Логин, почта или телефон': 'Логін, пошта або телефон',
+  'Пароль': 'Пароль',
+  'или': 'або',
+  'У этого аккаунта нет доступа в панель. Попросите владельца выдать его во вкладке «Доступ».': 'Цей акаунт не має доступу до панелі. Попросіть власника надати його у вкладці «Доступ».',
+  'Есть несохранённые изменения в ассортименте. Уйти и потерять их?': 'Є незбережені зміни в асортименті. Піти й втратити їх?',
+  'Есть несохранённые изменения. Сменить город и потерять их?': 'Є незбережені зміни. Змінити місто й втратити їх?',
+  'Подтверждайте и отмечайте выдачу — клиенту уходит уведомление в Telegram.': 'Підтверджуйте та відмічайте видачу — клієнту надходить сповіщення в Telegram.',
+  'заказов всего': 'замовлень усього',
+  'активных броней': 'активних броней',
+  'клиентов': 'клієнтів',
+  'в боте': 'у боті',
+  'отзывов': 'відгуків',
+  'нет данных': 'немає даних',
+  'все': 'усі',
+  'Как только кто-то оформит заказ на витрине, он появится здесь.': 'Щойно хтось оформить замовлення на вітрині, воно зʼявиться тут.',
+  'Здесь появятся брони с витрины и заявки «сообщить о поступлении».': 'Тут зʼявляться броні з вітрини та заявки «повідомити про надходження».',
+  'Аккаунты появятся, когда люди начнут входить в магазин.': 'Акаунти зʼявляться, коли люди почнуть входити до магазину.',
+  'Счётчик наполняется, когда люди открывают карточки и бронируют.': 'Лічильник наповнюється, коли люди відкривають картки та бронюють.',
+  'разослана': 'розіслана',
+  'отправляем': 'надсилаємо',
+  'в очереди': 'у черзі',
+  'Сейчас подписчиков нет: попросите людей открыть бота и нажать «Старт».': 'Наразі підписників немає: попросіть людей відкрити бота й натиснути «Старт».',
+  'В очереди, бот разошлёт за минуту…': 'У черзі, бот розішле за хвилину…',
+  'Рассылка отправлена': 'Розсилку надіслано',
+  'Отправляем…': 'Надсилаємо…',
+  'В очереди…': 'У черзі…',
+  'Бот пока не забрал очередь. Проверьте, что он запущен на сервере.': 'Бот ще не забрав чергу. Перевірте, що він запущений на сервері.',
+  'Кто имеет доступ': 'Хто має доступ',
+  'Способ': 'Спосіб',
+  'Кто': 'Хто',
+  'Идентификатор': 'Ідентифікатор',
+  'Впишите логин или почту': 'Впишіть логін або пошту',
+  'Доступ выдан: ': 'Доступ надано: ',
+  'Telegram ID это только цифры': 'Telegram ID — це лише цифри',
+  'Доступ выдан по Telegram ID': 'Доступ надано за Telegram ID',
+  'Забрать доступ у ': 'Забрати доступ у ',
+  'Такого аккаунта нет. По Telegram ID можно выдать заранее.': 'Такого акаунта немає. За Telegram ID можна надати заздалегідь.',
+  'Себя разжаловать нельзя': 'Себе понизити не можна',
+  'Выдавать доступ могут только владелец и разработчик': 'Надавати доступ може лише власник',
+  'Неизвестная роль': 'Невідома роль',
+  'Изменено товаров: ': 'Змінено товарів: ',
+  'Добавьте первый товар формой ниже.': 'Додайте перший товар формою нижче.',
+  'В этом городе пусто': 'У цьому місті порожньо',
+  'без вкуса': 'без смаку',
+  'шт': 'шт',
+  'Удалить «': 'Видалити «',
+  '» со всеми вкусами?': '» з усіма смаками?',
+  'Удалить вкус «': 'Видалити смак «',
+  'Цена у «': 'Ціна у «',
+  '» не число': '» не число',
+  'Сохранено: ': 'Збережено: ',
+  'id должен совпадать с товаром на витрине, тогда наличие подтянется в карточку.': 'id має збігатися з товаром на вітрині, тоді наявність підтягнеться в картку.',
+  'логин или почта аккаунта': 'логін або пошта акаунта',
+  'Telegram ID, например 5301671230': 'Telegram ID, наприклад 5301671230',
+  'Заполните оба поля': 'Заповніть обидва поля',
+  'Проверяем…': 'Перевіряємо…',
+  'Не вышло войти': 'Не вдалося увійти',
+  'ошибка входа': 'помилка входу',
+  'Отказ': 'Відмова',
+  'Выдан': 'Видано',
+  'Выдана': 'Видана',
+  'Отмена': 'Скасування',
+  'Заказ': 'Замовлення',
+  'Состав': 'Склад',
+  'Клиент': 'Клієнт',
+  'Статус': 'Статус',
+  'Заказов пока нет': 'Замовлень поки немає',
+  'Броней нет': 'Броней немає',
+  'Город': 'Місто',
+  'Дата': 'Дата',
+  'Тип': 'Тип',
+  'Товар': 'Товар',
+  'ФИО': 'ПІБ',
+  'Телефон': 'Телефон',
+  'Почта': 'Пошта',
+  'Пачкомат': 'Пачкомат',
+  'Аккаунт': 'Акаунт',
+  'Регистрация': 'Реєстрація',
+  'Клиентов пока нет': 'Клієнтів поки немає',
+  'Событие': 'Подія',
+  'Раз': 'Разів',
+  'Данных пока нет': 'Даних поки немає',
+  'Новая рассылка': 'Нова розсилка',
+  'Последние рассылки': 'Останні розсилки',
+  'Текст': 'Текст',
+  'Ушло / ошибок': 'Надіслано / помилок',
+  'Когда': 'Коли',
+  'Отправить': 'Надіслати',
+  'Сначала напишите текст': 'Спершу напишіть текст',
+  'Ставим в очередь…': 'Ставимо в чергу…',
+  'Новый товар': 'Новий товар',
+  'Название': 'Назва',
+  'Бренд': 'Бренд',
+  'Категория': 'Категорія',
+  'Крепость': 'Міцність',
+  'Цена zł': 'Ціна zł',
+  'Цена': 'Ціна',
+  'Удалить товар': 'Видалити товар',
+  'Новый вкус': 'Новий смак',
+  'Добавить вкус': 'Додати смак',
+  'Добавить': 'Додати',
+  'Найти товар': 'Знайти товар',
+  'Товар удалён': 'Товар видалено',
+  'Вкус удалён': 'Смак видалено',
+  'Вкус добавлен': 'Смак додано',
+  'Товар добавлен': 'Товар додано',
+  'Нужен id товара': 'Потрібен id товару',
+  'Впишите название вкуса': 'Впишіть назву смаку',
+  'Выдать по логину': 'Надати за логіном',
+  'Выдать по Telegram ID': 'Надати за Telegram ID',
+  'Забрать': 'Забрати',
+  'Роль': 'Роль',
+  'Доступ забран': 'Доступ забрано',
 };
 let admLang = localStorage.getItem('kv_adm_lang') ||
   (String(navigator.language || '').toLowerCase().startsWith('uk') ? 'uk' : 'ru');
@@ -303,17 +464,17 @@ function authView(errText) {
   app.innerHTML = `
     <div class="auth"><div class="auth-box">
       <div class="auth-mark"><img src="../../data/photos/cat.png" alt=""><div>
-        <b>KatoVape</b><span>панель управления</span></div></div>
-      <h1>Вход для менеджеров</h1>
-      <p class="lead">Войдите аккаунтом магазина или через Telegram. Доступ открыт только тем, кому его выдали.</p>
+        <b>KatoVape</b><span>${L('панель управления')}</span></div></div>
+      <h1>${L('Вход для менеджеров')}</h1>
+      <p class="lead">${L('Войдите аккаунтом магазина или через Telegram. Доступ открыт только тем, кому его выдали.')}</p>
       <form id="pwform">
-        <label class="f">Логин, почта или телефон
+        <label class="f">${L('Логин, почта или телефон')}
           <input id="ident" autocomplete="username" placeholder="manager"></label>
-        <label class="f">Пароль
+        <label class="f">${L('Пароль')}
           <input id="pw" type="password" autocomplete="current-password" placeholder="••••••••"></label>
         <button class="btn primary" type="submit" id="pwgo">${L('Войти')}</button>
       </form>
-      <div class="sep">или</div>
+      <div class="sep">${L('или')}</div>
       <div class="tgwrap" id="tgwrap"></div>
       <div class="msg err" id="err" ${errText ? '' : 'hidden'}>${errText ? esc(errText) : ''}</div>
     </div></div>`;
@@ -323,8 +484,8 @@ function authView(errText) {
     const btn = document.getElementById('pwgo');
     const ident = document.getElementById('ident').value.trim();
     const pw = document.getElementById('pw').value;
-    if (!ident || !pw) return showErr('Заполните оба поля');
-    btn.disabled = true; btn.textContent = 'Проверяем…';
+    if (!ident || !pw) return showErr(L('Заполните оба поля'));
+    btn.disabled = true; btn.textContent = L('Проверяем…');
     try {
       // логин разрешает и пароль проверяет сервер, наружу почта менеджера не уходит
       const res = await fetch(CFG.FUNCTIONS_URL.replace(/\/$/, '') + '/login', {
@@ -338,7 +499,7 @@ function authView(errText) {
       await afterLogin();
     } catch (e2) {
       btn.disabled = false; btn.textContent = L('Войти');
-      showErr(e2.message || 'Не вышло войти');
+      showErr(e2.message || L('Не вышло войти'));
     }
   };
 
@@ -370,7 +531,7 @@ async function exchangeTg(body) {
 }
 window.onTgAuth = async u => {
   try { await exchangeTg({ mode: 'widget', payload: u }); await afterLogin(); }
-  catch (e) { authView(e.message || 'ошибка входа'); }
+  catch (e) { authView(e.message || L('ошибка входа')); }
 };
 // панель открыта из бота как мини-апп: initData уже подписан, вход идёт сам
 async function tgInitLogin() {
@@ -385,7 +546,7 @@ async function afterLogin() {
   const { data: ov, error } = await sb.rpc('admin_overview');
   if (error || !ov) {
     await sb.auth.signOut();
-    return authView('У этого аккаунта нет доступа в панель. Попросите владельца выдать его во вкладке «Доступ».');
+    return authView(L('У этого аккаунта нет доступа в панель. Попросите владельца выдать его во вкладке «Доступ».'));
   }
   me = user; overview = ov;
   const { data: p } = await sb.from('profiles').select('display_name, username, avatar').eq('id', user.id).maybeSingle();
@@ -394,7 +555,7 @@ async function afterLogin() {
 }
 
 /* ================= каркас ================= */
-const ROLE_RU = { owner: 'владелец', dev: 'разработчик', manager: 'менеджер' };
+const ROLE_RU = { owner: L('владелец'), dev: L('разработчик'), manager: L('менеджер') };
 // подписи считаем на каждый рендер: иначе переключатель языка их не обновит
 const TABS = () => [
   ['orders', L('Заказы'), ov => ov.orders_new],
@@ -407,7 +568,7 @@ const TABS = () => [
 ];
 
 function shell() {
-  const name = (profile && (profile.display_name || profile.username)) || 'менеджер';
+  const name = (profile && (profile.display_name || profile.username)) || L('менеджер');
   const av = profile && profile.avatar;
   app.innerHTML = `
     <div class="shell">
@@ -422,11 +583,11 @@ function shell() {
           }).join('')}
         </nav>
         <div class="admlang">
-          ${['ru', 'uk'].map(l => `<button data-lang="${l}" class="${l === admLang ? 'on' : ''}">${l.toUpperCase()}</button>`).join('')}
+          ${[['ru', 'RU'], ['uk', 'UA']].map(([l, lb]) => `<button data-lang="${l}" class="${l === admLang ? 'on' : ''}">${lb}</button>`).join('')}
         </div>
         <div class="who">
           <div class="who-ava">${av ? `<img src="${esc(av)}" alt="">` : esc(name[0].toUpperCase())}</div>
-          <div class="who-name"><b>${esc(name)}</b><span>${esc(L(ROLE_RU[overview && overview.role] || 'доступ выдан'))}${
+          <div class="who-name"><b>${esc(name)}</b><span>${esc(L(ROLE_RU[overview && overview.role] || L('доступ выдан')))}${
             myCity() ? ' · ' + esc(CITY_LABEL[myCity()] || myCity()) : ''}</span></div>
           <button class="btn quiet sm" id="logout">${L('Выйти')}</button>
         </div>
@@ -435,15 +596,15 @@ function shell() {
     </div>
     <div class="savebar" id="savebar">
       <b id="sb-count">${L('Изменений нет')}</b>
-      <span id="sb-note">не сохранено</span>
+      <span id="sb-note">${L('не сохранено')}</span>
       <div class="grow"></div>
-      <button class="btn quiet" id="sb-reset">Отменить</button>
-      <button class="btn primary" id="sb-apply">Применить</button>
+      <button class="btn quiet" id="sb-reset">${L('Отменить')}</button>
+      <button class="btn primary" id="sb-apply">${L('Применить')}</button>
     </div>`;
   document.getElementById('nav').onclick = e => {
     const b = e.target.closest('[data-t]');
     if (!b || b.dataset.t === tab) return;
-    if (hasChanges() && !confirm('Есть несохранённые изменения в ассортименте. Уйти и потерять их?')) return;
+    if (hasChanges() && !confirm(L('Есть несохранённые изменения в ассортименте. Уйти и потерять их?'))) return;
     clearDirty(); tab = b.dataset.t; shell();
   };
   document.querySelector('.admlang').onclick = e => {
@@ -468,14 +629,16 @@ function panel(title, body, tools) {
 }
 function table(head, rows) {
   if (!rows.length) return '';
+  // data-l дублирует заголовок столбца: на телефоне строка превращается в карточку,
+  // и подпись показывается слева от значения (шапка таблицы там скрыта)
   return `<div class="scroll"><table><thead><tr>${head.map(h => `<th>${h}</th>`).join('')}</tr></thead>
-    <tbody>${rows.map(r => `<tr>${r.map(c => `<td>${c == null ? '' : c}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+    <tbody>${rows.map(r => `<tr>${r.map((c, i) => `<td data-l="${esc(String(head[i] || '').replace(/<[^>]*>/g, ''))}">${c == null ? '' : c}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
 }
 
 // статусы: русский текст в словаре, перевод накладываем при выводе через L()
-const ST = { new: ['новый', 'new'], confirmed: ['подтверждён', 'live'], done: ['выдан', 'ok'],
-  cancelled: ['отменён', 'off'], active: ['активна', 'live'], notified: ['напомнили', 'live'],
-  expired: ['истекла', 'off'], waiting: ['ждёт', 'new'] };
+const ST = { new: [L('новый'), 'new'], confirmed: [L('подтверждён'), 'live'], done: [L('выдан'), 'ok'],
+  cancelled: [L('отменён'), 'off'], active: [L('активна'), 'live'], notified: [L('напомнили'), 'live'],
+  expired: [L('истекла'), 'off'], waiting: [L('ждёт'), 'new'] };
 const pill = s => { const x = ST[s] || [s, '']; return `<span class="pill ${x[1]}">${esc(L(x[0]))}</span>`; };
 
 function itemsStr(items) {
@@ -486,7 +649,7 @@ function itemsStr(items) {
 /* ================= вкладки ================= */
 async function render() {
   const m = document.getElementById('main'); if (!m) return;
-  const titles = { orders: [L('Заказы'), 'Подтверждайте и отмечайте выдачу — клиенту уходит уведомление в Telegram.'],
+  const titles = { orders: [L('Заказы'), L('Подтверждайте и отмечайте выдачу — клиенту уходит уведомление в Telegram.')],
     reservations: [L('Бронь'), L('Отменённая или просроченная бронь возвращает товар в наличие сама.')],
     products: [L('Ассортимент'), L('Правки видны на витрине сразу после сохранения.')],
     customers: [L('Клиенты'), L('Те, кто заводил аккаунт в магазине.')],
@@ -514,12 +677,12 @@ function summaryHTML() {
   const row = (v, label, hot) => `<div class="${hot ? 'hot' : ''}"><b>${v == null ? 0 : v}</b><span>${label}</span></div>`;
   return `<div class="summary">
     ${row(o.orders_new, L('новых заказов'), o.orders_new > 0)}
-    ${row(o.orders, 'заказов всего')}
-    ${row(o.res_active, 'активных броней', o.res_active > 0)}
+    ${row(o.orders, L('заказов всего'))}
+    ${row(o.res_active, L('активных броней'), o.res_active > 0)}
     ${row(o.waiting, L('ждут поступления'))}
-    ${row(o.users, 'клиентов')}
-    ${row(o.bot_users, 'в боте')}
-    ${row(o.reviews, 'отзывов')}
+    ${row(o.users, L('клиентов'))}
+    ${row(o.bot_users, L('в боте'))}
+    ${row(o.reviews, L('отзывов'))}
   </div>`;
 }
 function swap(m, html) { const p = m.querySelector('.panel'); if (p) p.outerHTML = html; }
@@ -533,21 +696,21 @@ async function renderOrders(m) {
   const { data } = await sb.from('orders').select('*').order('id', { ascending: false }).limit(200);
   const rows = (data || []).map(o => {
     const c = o.contact || {};
-    const who = [c.name, c.phone, c.email, c.paczkomat ? 'пачкомат ' + c.paczkomat : ''].filter(Boolean).map(esc).join('<br>');
+    const who = [c.name, c.phone, c.email, c.paczkomat ? L('пачкомат ') + c.paczkomat : ''].filter(Boolean).map(esc).join('<br>');
     const acts = o.status === 'new'
-      ? btn('ost', o.id, 'confirmed', L('Подтвердить'), 'primary') + btn('ost', o.id, 'cancelled', 'Отказ', 'danger')
+      ? btn('ost', o.id, 'confirmed', L('Подтвердить'), 'primary') + btn('ost', o.id, 'cancelled', L('Отказ'), 'danger')
       : o.status === 'confirmed'
-        ? btn('ost', o.id, 'done', 'Выдан', 'primary') + btn('ost', o.id, 'cancelled', 'Отказ', 'danger') : '';
+        ? btn('ost', o.id, 'done', L('Выдан'), 'primary') + btn('ost', o.id, 'cancelled', L('Отказ'), 'danger') : '';
     return [`<span class="num">#${o.id}</span><span class="sub">${fdate(o.created_at)}</span>`,
       esc(itemsStr(o.items)) +
         `<span class="sub">${esc(CITY_LABEL[o.city] || o.city)} · ${esc(o.delivery || '')}${o.address ? ' · ' + esc(o.address) : ''}</span>` +
         (o.comment ? `<span class="sub">${L('Комментарий')}: ${esc(o.comment)}</span>` : ''),
-      who || '<span class="sub">нет данных</span>',
+      who || '<span class="sub">' + L('нет данных') + '</span>',
       `<span class="num">${o.sum || 0} zł</span>`, pill(o.status), `<div class="tools">${acts}</div>`];
   });
   swap(m, panel(L('Все заказы'), rows.length
-    ? table(['Заказ', 'Состав', 'Клиент', L('Сумма'), 'Статус', ''], rows)
-    : empty('Заказов пока нет', 'Как только кто-то оформит заказ на витрине, он появится здесь.')));
+    ? table([L('Заказ'), L('Состав'), L('Клиент'), L('Сумма'), L('Статус'), ''], rows)
+    : empty(L('Заказов пока нет'), L('Как только кто-то оформит заказ на витрине, он появится здесь.'))));
   bindStatus(m, 'ost', 'orders');
 }
 
@@ -555,7 +718,7 @@ async function renderReservations(m) {
   const { data } = await sb.from('reservations').select('*').order('id', { ascending: false }).limit(300);
   const rows = (data || []).map(r => {
     const acts = r.kind === 'reserve' && (r.status === 'active' || r.status === 'notified')
-      ? btn('rst', r.id, 'done', 'Выдана', 'primary') + btn('rst', r.id, 'cancelled', 'Отмена', 'danger') : '';
+      ? btn('rst', r.id, 'done', L('Выдана'), 'primary') + btn('rst', r.id, 'cancelled', L('Отмена'), 'danger') : '';
     return [`<span class="num">#${r.id}</span><span class="sub">${fdate(r.created_at)}</span>`,
       esc(r.product_name || r.product_id) + (r.flavor ? `<span class="sub">${esc(r.flavor)}</span>` : ''),
       esc(CITY_LABEL[r.city] || r.city),
@@ -564,8 +727,8 @@ async function renderReservations(m) {
       `<span class="num">${r.telegram_id || '—'}</span>`, `<div class="tools">${acts}</div>`];
   });
   swap(m, panel(L('Брони и заявки'), rows.length
-    ? table(['Бронь', L('Товар'), 'Город', 'Дата', 'Тип', 'Статус', 'Telegram', ''], rows)
-    : empty('Броней нет', 'Здесь появятся брони с витрины и заявки «сообщить о поступлении».')));
+    ? table([L('Бронь'), L('Товар'), L('Город'), L('Дата'), L('Тип'), L('Статус'), 'Telegram', ''], rows)
+    : empty(L('Броней нет'), L('Здесь появятся брони с витрины и заявки «сообщить о поступлении».'))));
   bindStatus(m, 'rst', 'reservations');
 }
 function btn(kind, id, st, label, cls) {
@@ -593,25 +756,25 @@ async function renderCustomers(m) {
     esc(u.display_name || u.username || '—') + (u.telegram_username ? `<span class="sub">@${esc(u.telegram_username)}</span>` : ''),
     esc(u.full_name || '—'), esc(u.phone || '—'), esc(u.email || '—'),
     u.paczkomat ? esc(u.paczkomat) : '—', `<span class="num">${fdate(u.created_at)}</span>`]);
-  swap(m, panel('Клиенты', rows.length
-    ? table([L('Аккаунт'), 'ФИО', 'Телефон', 'Почта', 'Пачкомат', L('Регистрация')], rows)
-    : empty('Клиентов пока нет', 'Аккаунты появятся, когда люди начнут входить в магазин.')));
+  swap(m, panel(L('Клиенты'), rows.length
+    ? table([L('Аккаунт'), L('ФИО'), L('Телефон'), L('Почта'), L('Пачкомат'), L('Регистрация')], rows)
+    : empty(L('Клиентов пока нет'), L('Аккаунты появятся, когда люди начнут входить в магазин.'))));
 }
 
 async function renderDemand(m) {
   const { data } = await sb.from('demand').select('*').order('n', { ascending: false }).limit(100);
   const rows = (data || []).map(d => [esc(d.product_id), esc(d.event), `<span class="num">${d.n}</span>`]);
   swap(m, panel(L('Спрос'), rows.length
-    ? table([L('Товар'), L('Событие'), 'Раз'], rows)
-    : empty('Данных пока нет', 'Счётчик наполняется, когда люди открывают карточки и бронируют.')));
+    ? table([L('Товар'), L('Событие'), L('Раз')], rows)
+    : empty(L('Данных пока нет'), L('Счётчик наполняется, когда люди открывают карточки и бронируют.'))));
 }
 
 async function renderBroadcast(m) {
   const { count } = await sb.from('bot_users').select('telegram_id', { count: 'exact', head: true }).eq('opted_in', true);
   const { data: last } = await sb.from('broadcasts').select('*').order('id', { ascending: false }).limit(5);
-  const bcPill = s => s === 'done' ? '<span class="pill ok">разослана</span>'
-    : s === 'sending' ? '<span class="pill live">отправляем</span>'
-    : '<span class="pill new">в очереди</span>';
+  const bcPill = s => s === 'done' ? '<span class="pill ok">' + L('разослана') + '</span>'
+    : s === 'sending' ? '<span class="pill live">' + L('отправляем') + '</span>'
+    : '<span class="pill new">' + L('в очереди') + '</span>';
   const hist = (last || []).map(b => [`<span class="num">#${b.id}</span>`, esc((b.text || '').slice(0, 60)),
     bcPill(b.status),
     `<span class="num">${b.sent || 0} / ${b.failed || 0}</span>`, `<span class="num">${b.sent_at ? fdate(b.sent_at) : '—'}</span>`]);
@@ -622,17 +785,17 @@ async function renderBroadcast(m) {
         <span class="hint" style="margin:0" id="bcres"></span>
       </div>
       <p class="hint">Получают только те, кто писал боту. Кому не доставилось, того бот сам исключит из списка.
-      ${count ? '' : 'Сейчас подписчиков нет: попросите людей открыть бота и нажать «Старт».'}</p>
-    </div>`) + (hist.length ? panel('Последние рассылки', table(['#', 'Текст', 'Статус', L('Ушло / ошибок'), 'Когда'], hist)) : ''));
+      ${count ? '' : L('Сейчас подписчиков нет: попросите людей открыть бота и нажать «Старт».')}</p>
+    </div>`) + (hist.length ? panel(L('Последние рассылки'), table(['#', L('Текст'), L('Статус'), L('Ушло / ошибок'), L('Когда')], hist)) : ''));
 
   const send = document.getElementById('bcsend');
   if (send) send.onclick = async () => {
     const text = document.getElementById('bctext').value.trim();
-    if (!text) return toast('Сначала напишите текст', true);
+    if (!text) return toast(L('Сначала напишите текст'), true);
     send.disabled = true; send.textContent = L('Ставим в очередь…');
     const { data, error } = await sb.from('broadcasts').insert({ text, author: me.id }).select().single();
-    if (error) { send.disabled = false; send.textContent = 'Отправить'; return toast(error.message, true); }
-    document.getElementById('bcres').textContent = 'В очереди, бот разошлёт за минуту…';
+    if (error) { send.disabled = false; send.textContent = L('Отправить'); return toast(error.message, true); }
+    document.getElementById('bcres').textContent = L('В очереди, бот разошлёт за минуту…');
     watchBroadcast(data.id);
   };
 }
@@ -645,13 +808,13 @@ async function watchBroadcast(id) {
     const res = document.getElementById('bcres');
     if (data.status === 'done') {
       if (res) res.textContent = `Готово: доставлено ${data.sent}, не дошло ${data.failed}`;
-      toast('Рассылка отправлена');
+      toast(L('Рассылка отправлена'));
       return render();
     }
-    if (res) res.textContent = data.status === 'sending' ? 'Отправляем…' : 'В очереди…';
+    if (res) res.textContent = data.status === 'sending' ? L('Отправляем…') : L('В очереди…');
   }
   const res = document.getElementById('bcres');
-  if (res) res.textContent = 'Бот пока не забрал очередь. Проверьте, что он запущен на сервере.';
+  if (res) res.textContent = L('Бот пока не забрал очередь. Проверьте, что он запущен на сервере.');
 }
 
 const ROLE_OPTS = ['manager', 'dev', 'owner'];
@@ -664,30 +827,30 @@ const citySelect = id => `<select id="${id}" style="width:auto">` +
 async function renderAccess(m) {
   const { data } = await sb.rpc('admin_access_list');
   const rows = (data || []).map(a => [
-    a.kind === 'telegram' ? '<span class="pill live">Telegram</span>' : '<span class="pill">Пароль</span>',
+    a.kind === 'telegram' ? '<span class="pill live">Telegram</span>' : '<span class="pill">' + L('Пароль') + '</span>',
     esc(a.who), `<span class="num">${esc(a.ident)}</span>`,
     `<span class="pill ${a.role === 'manager' ? '' : 'ok'}">${esc(L(ROLE_RU[a.role] || a.role))}</span>`,
-    a.city ? esc(CITY_LABEL[a.city] || a.city) : '<span class="sub">все</span>',
+    a.city ? esc(CITY_LABEL[a.city] || a.city) : '<span class="sub">' + L('все') + '</span>',
     `<span class="num">${fdate(a.added_at)}</span>`,
     `<button class="btn sm danger" data-revoke="${esc(a.ident)}">${L('Забрать')}</button>`]);
-  swap(m, panel('Кто имеет доступ', table(['Способ', 'Кто', 'Идентификатор', L('Роль'), L('Город'), 'Выдан', ''], rows)) +
+  swap(m, panel(L('Кто имеет доступ'), table([L('Способ'), L('Кто'), L('Идентификатор'), L('Роль'), L('Город'), L('Выдан'), ''], rows)) +
     panel(L('Выдать доступ'), `<div class="panel-body">
       <div class="tools">
-        <input id="grant" placeholder="логин или почта аккаунта" style="width:230px">
+        <input id="grant" placeholder="${L('логин или почта аккаунта')}" style="width:230px">
         ${roleSelect('grantrole', 'manager')}
         ${citySelect('grantcity')}
-        <button class="btn primary" id="grantgo">Выдать по логину</button>
+        <button class="btn primary" id="grantgo">${L('Выдать по логину')}</button>
       </div>
       <div class="tools" style="margin-top:10px">
-        <input id="granttg" placeholder="Telegram ID, например 5301671230" style="width:230px" inputmode="numeric">
+        <input id="granttg" placeholder="${L('Telegram ID, например 5301671230')}" style="width:230px" inputmode="numeric">
         ${roleSelect('granttgrole', 'manager')}
         ${citySelect('granttgcity')}
-        <button class="btn" id="granttggo">Выдать по Telegram ID</button>
+        <button class="btn" id="granttggo">${L('Выдать по Telegram ID')}</button>
       </div>
       <p class="hint">По логину доступ выдаётся тем, кто уже завёл аккаунт с паролем. По Telegram ID можно выдать
       заранее: человек получит доступ сам, как только первый раз откроет магазин через бота.
       Повторная выдача тому же человеку просто меняет роль и город.</p>
-      <p class="hint"><b>Владелец</b> может всё, включая выдачу доступа. <b>Разработчик</b> и <b>менеджер</b>
+      <p class="hint"><b>Владелец</b> может всё, включая выдачу доступа. <b>Разработчик</b> и <b>${L('менеджер')}</b>
       этот раздел не видят. Менеджер работает только со своим городом: ассортимент, заказы и брони
       других городов ему не показываются, уведомления о заказах приходят только по его городу.</p>
     </div>`));
@@ -695,7 +858,7 @@ async function renderAccess(m) {
   const byLogin = document.getElementById('grantgo');
   if (byLogin) byLogin.onclick = async () => {
     const login = document.getElementById('grant').value.trim();
-    if (!login) return toast('Впишите логин или почту', true);
+    if (!login) return toast(L('Впишите логин или почту'), true);
     byLogin.disabled = true;
     const { data: name, error } = await sb.rpc('admin_grant', {
       p_login: login, p_role: document.getElementById('grantrole').value,
@@ -703,13 +866,13 @@ async function renderAccess(m) {
     });
     byLogin.disabled = false;
     if (error) return toast(grantErr(error), true);
-    toast('Доступ выдан: ' + name);
+    toast(L('Доступ выдан: ') + name);
     render();
   };
   const byTg = document.getElementById('granttggo');
   if (byTg) byTg.onclick = async () => {
     const tid = document.getElementById('granttg').value.trim();
-    if (!/^\d+$/.test(tid)) return toast('Telegram ID это только цифры', true);
+    if (!/^\d+$/.test(tid)) return toast(L('Telegram ID это только цифры'), true);
     byTg.disabled = true;
     const { error } = await sb.rpc('admin_grant_telegram', {
       p_tid: Number(tid), p_role: document.getElementById('granttgrole').value,
@@ -717,23 +880,23 @@ async function renderAccess(m) {
     });
     byTg.disabled = false;
     if (error) return toast(grantErr(error), true);
-    toast('Доступ выдан по Telegram ID');
+    toast(L('Доступ выдан по Telegram ID'));
     render();
   };
   m.querySelectorAll('[data-revoke]').forEach(b => b.onclick = async () => {
-    if (!confirm('Забрать доступ у ' + b.dataset.revoke + '?')) return;
+    if (!confirm(L('Забрать доступ у ') + b.dataset.revoke + '?')) return;
     const { error } = await sb.rpc('admin_revoke', { p_ident: b.dataset.revoke });
     if (error) return toast(grantErr(error), true);
-    toast('Доступ забран');
+    toast(L('Доступ забран'));
     render();
   });
 }
 function grantErr(error) {
   const s = String(error.message || '');
-  if (s.includes('NO_USER')) return 'Такого аккаунта нет. По Telegram ID можно выдать заранее.';
-  if (s.includes('SELF_REVOKE')) return 'Себя разжаловать нельзя';
-  if (s.includes('NOT_ALLOWED')) return 'Выдавать доступ могут только владелец и разработчик';
-  if (s.includes('BAD_ROLE')) return 'Неизвестная роль';
+  if (s.includes('NO_USER')) return L('Такого аккаунта нет. По Telegram ID можно выдать заранее.');
+  if (s.includes('SELF_REVOKE')) return L('Себя разжаловать нельзя');
+  if (s.includes('NOT_ALLOWED')) return L('Выдавать доступ могут только владелец и разработчик');
+  if (s.includes('BAD_ROLE')) return L('Неизвестная роль');
   return s;
 }
 
@@ -785,8 +948,8 @@ function updateSaveBar() {
   bar.classList.toggle('show', n > 0);
   const c = document.getElementById('sb-count');
   const note = document.getElementById('sb-note');
-  if (c) c.textContent = n === 1 ? L('Изменён один товар') : 'Изменено товаров: ' + n;
-  if (note) note.textContent = 'изменения ещё не сохранены';
+  if (c) c.textContent = n === 1 ? L('Изменён один товар') : L('Изменено товаров: ') + n;
+  if (note) note.textContent = L('изменения ещё не сохранены');
 }
 function hasChanges() { return changedItems().length > 0; }
 window.addEventListener('beforeunload', e => { if (hasChanges()) { e.preventDefault(); e.returnValue = ''; } });
@@ -804,16 +967,16 @@ async function renderProducts(m) {
   // менеджеру показываем только его город, владельцу и разработчику — все
   const cities = citiesAllowed();
   const tools = cities.map(c => `<button class="btn sm ${c === cityNow ? 'primary' : ''}" data-city="${c}">${c}</button>`).join('') +
-    `<input id="pq" placeholder="Найти товар" style="width:190px">`;
+    `<input id="pq" placeholder="${L('Найти товар')}" style="width:190px">`;
 
   const body = groups.length ? groups.map((g, gi) => `
     <div class="item" data-g="${gi}" data-search="${esc(((g.head.name || '') + ' ' + g.id).toLowerCase())}">
       <div class="item-top">
-        <input class="i-name" data-p="name" value="${esc(g.head.name || '')}" placeholder="Название">
-        <input class="i-brand" data-p="brand" value="${esc(g.head.brand || '')}" placeholder="Бренд">
-        <input class="i-cat" data-p="category" value="${esc(g.head.category || '')}" placeholder="Категория">
-        <input class="i-nic" data-p="nic" value="${esc(g.head.nic || '')}" placeholder="Крепость">
-        <input class="i-price" data-p="price" value="${g.head.price == null ? '' : g.head.price}" placeholder="Цена zł" inputmode="numeric">
+        <input class="i-name" data-p="name" value="${esc(g.head.name || '')}" placeholder="${L('Название')}">
+        <input class="i-brand" data-p="brand" value="${esc(g.head.brand || '')}" placeholder="${L('Бренд')}">
+        <input class="i-cat" data-p="category" value="${esc(g.head.category || '')}" placeholder="${L('Категория')}">
+        <input class="i-nic" data-p="nic" value="${esc(g.head.nic || '')}" placeholder="${L('Крепость')}">
+        <input class="i-price" data-p="price" value="${g.head.price == null ? '' : g.head.price}" placeholder="${L('Цена zł')}" inputmode="numeric">
         <input class="i-tier" data-p="t3" value="${tierP(g.head.tiers, 3)}" placeholder="3шт" inputmode="numeric" title="Цена за штуку при 3 шт">
         <input class="i-tier" data-p="t5" value="${tierP(g.head.tiers, 5)}" placeholder="5шт" inputmode="numeric" title="Цена за штуку при 5 шт">
         <input class="i-tier" data-p="t10" value="${tierP(g.head.tiers, 10)}" placeholder="10шт" inputmode="numeric" title="Цена за штуку при 10 шт">
@@ -822,29 +985,29 @@ async function renderProducts(m) {
       <div class="item-id">${esc(g.id)}</div>
       <div class="flavs">${g.items.map((r, ri) => `
         <div class="flav" data-f="${gi}:${ri}">
-          <span class="flav-n">${esc(r.flavor || 'без вкуса')}</span>
+          <span class="flav-n">${esc(r.flavor || L('без вкуса'))}</span>
           <input data-q="1" value="${r.qty == null ? 0 : r.qty}" inputmode="numeric">
           <span class="unit">шт</span>
           <button class="btn sm danger" data-delf="${gi}:${ri}" title="Удалить вкус">×</button>
         </div>`).join('')}</div>
       <div class="add-flav">
-        <input data-nf="${gi}" placeholder="Новый вкус" style="width:180px">
-        <input data-nq="${gi}" placeholder="шт" style="width:74px" inputmode="numeric">
-        <button class="btn sm" data-addf="${gi}">Добавить вкус</button>
+        <input data-nf="${gi}" placeholder="${L('Новый вкус')}" style="width:180px">
+        <input data-nq="${gi}" placeholder="${L('шт')}" style="width:74px" inputmode="numeric">
+        <button class="btn sm" data-addf="${gi}">${L('Добавить вкус')}</button>
       </div>
-    </div>`).join('') : empty(L('В этом городе пусто'), 'Добавьте первый товар формой ниже.');
+    </div>`).join('') : empty(L('В этом городе пусто'), L('Добавьте первый товар формой ниже.'));
 
-  swap(m, panel(L('Товары · ') + cityNow, body, tools) + panel('Новый товар', `<div class="panel-body">
+  swap(m, panel(L('Товары · ') + cityNow, body, tools) + panel(L('Новый товар'), `<div class="panel-body">
       <div class="tools">
         <input id="np_id" placeholder="id, например hqd" style="width:150px">
-        <input id="np_name" placeholder="Название" style="width:170px">
-        <input id="np_cat" placeholder="Категория" style="width:140px">
+        <input id="np_name" placeholder="${L('Название')}" style="width:170px">
+        <input id="np_cat" placeholder="${L('Категория')}" style="width:140px">
         <input id="np_flavor" placeholder="Вкус (можно пусто)" style="width:170px">
-        <input id="np_price" placeholder="Цена" style="width:90px" inputmode="numeric">
-        <input id="np_qty" placeholder="шт" style="width:74px" inputmode="numeric">
+        <input id="np_price" placeholder="${L('Цена')}" style="width:90px" inputmode="numeric">
+        <input id="np_qty" placeholder="${L('шт')}" style="width:74px" inputmode="numeric">
         <button class="btn primary" id="np_add">${L('Добавить')}</button>
       </div>
-      <p class="hint">id должен совпадать с товаром на витрине, тогда наличие подтянется в карточку.</p>
+      <p class="hint">${L('id должен совпадать с товаром на витрине, тогда наличие подтянется в карточку.')}</p>
     </div>`));
 
   bindProducts(m);
@@ -853,7 +1016,7 @@ async function renderProducts(m) {
 
 function bindProducts(m) {
   m.querySelectorAll('[data-city]').forEach(b => b.onclick = () => {
-    if (hasChanges() && !confirm('Есть несохранённые изменения. Сменить город и потерять их?')) return;
+    if (hasChanges() && !confirm(L('Есть несохранённые изменения. Сменить город и потерять их?'))) return;
     clearDirty(); cityNow = b.dataset.city; render();
   });
   const pq = document.getElementById('pq');
@@ -872,15 +1035,15 @@ function bindProducts(m) {
   });
   m.querySelectorAll('[data-delp]').forEach(b => b.onclick = async () => {
     const g = groups[+b.dataset.delp]; if (!g) return;
-    if (!confirm('Удалить «' + (g.head.name || g.id) + '» со всеми вкусами?')) return;
+    if (!confirm(L('Удалить «') + (g.head.name || g.id) + L('» со всеми вкусами?'))) return;
     const { error } = await sb.from('products').delete().match({ id: g.id, city: cityNow });
     if (error) return toast(error.message, true);
-    toast('Товар удалён'); clearDirty(); render();
+    toast(L('Товар удалён')); clearDirty(); render();
   });
   m.querySelectorAll('[data-delf]').forEach(b => b.onclick = async () => {
     const [gi, ri] = b.dataset.delf.split(':').map(Number);
     const r = groups[gi] && groups[gi].items[ri]; if (!r) return;
-    if (!confirm('Удалить вкус «' + (r.flavor || 'без вкуса') + '»?')) return;
+    if (!confirm(L('Удалить вкус «') + (r.flavor || L('без вкуса')) + '»?')) return;
     const { error } = await sb.from('products').delete().match({ id: r.id, city: r.city, flavor: r.flavor });
     if (error) return toast(error.message, true);
     toast(L('Вкус удалён')); clearDirty(); render();
@@ -896,12 +1059,12 @@ function bindProducts(m) {
       nic: h.nic, price: h.price, qty: +qv || 0, updated_at: new Date().toISOString()
     }], { onConflict: 'id,city,flavor' });
     if (error) return toast(error.message, true);
-    toast('Вкус добавлен'); clearDirty(); render();
+    toast(L('Вкус добавлен')); clearDirty(); render();
   });
   const add = document.getElementById('np_add');
   if (add) add.onclick = async () => {
     const id = document.getElementById('np_id').value.trim();
-    if (!id) return toast('Нужен id товара', true);
+    if (!id) return toast(L('Нужен id товара'), true);
     const priceRaw = document.getElementById('np_price').value.trim();
     const { error } = await sb.from('products').upsert([{
       id, city: cityNow, flavor: document.getElementById('np_flavor').value.trim(),
@@ -912,7 +1075,7 @@ function bindProducts(m) {
       updated_at: new Date().toISOString()
     }], { onConflict: 'id,city,flavor' });
     if (error) return toast(error.message, true);
-    toast('Товар добавлен'); clearDirty(); render();
+    toast(L('Товар добавлен')); clearDirty(); render();
   };
 }
 
@@ -922,7 +1085,7 @@ async function saveProducts() {
   // не расходились между собой
   const changed = changedItems();
   const broken = changed.find(x => x.bad);
-  if (broken) return toast('Цена у «' + (broken.name || broken.g.id) + '» не число', true);
+  if (broken) return toast(L('Цена у «') + (broken.name || broken.g.id) + L('» не число'), true);
   const out = [];
   changed.forEach(x => x.rows.forEach(({ r, qty }) => out.push({
     id: r.id, city: r.city, flavor: r.flavor, name: x.name || r.id,
@@ -932,9 +1095,9 @@ async function saveProducts() {
   if (!out.length) { clearDirty(); return toast(L('Изменений нет')); }
   btn.disabled = true; btn.textContent = L('Сохраняем…');
   const { error } = await sb.from('products').upsert(out, { onConflict: 'id,city,flavor' });
-  btn.disabled = false; btn.textContent = 'Применить';
+  btn.disabled = false; btn.textContent = L('Применить');
   if (error) return toast(error.message, true);
-  toast('Сохранено: ' + out.length);
+  toast(L('Сохранено: ') + out.length);
   clearDirty();
   render();
 }

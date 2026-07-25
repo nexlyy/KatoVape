@@ -561,7 +561,7 @@ window.KV = (function () {
       rows = '<div class="kvf-list">' + item.flavors.map((f, i) => {
         const have = f.qty > 0;
         return '<div class="kvf-row' + (have ? '' : ' off') + '">' +
-          '<span class="kvf-name"><span class="kvf-ic">' + flavorIcon(f.name) + '</span>' + flavorName(f) + '</span>' +
+          '<span class="kvf-name">' + flavorName(f) + '</span>' +
           '<span class="kvf-qty">' + (have ? t('left', f.qty) : t('qtyNone')) + '</span>' +
           (have ? '<button class="kvf-add" data-add="' + item.id + '" data-fl="' + i + '">' + t('add') + '</button>' : '') +
           '</div>';
@@ -2628,7 +2628,6 @@ window.KV = (function () {
 .kv-sub-box p{color:var(--kv-muted);margin:10px 0 20px;line-height:1.5;font-size:13.5px}
 .kv-sub-go{display:block;background:var(--kv-accent);color:var(--kv-accent-ink);text-decoration:none;font-weight:800;padding:13px;border-radius:12px;font-size:14px}
 .kv-sub-later{background:none;border:none;color:var(--kv-muted);margin-top:12px;cursor:pointer;font-family:inherit;font-size:12.5px}
-.kvf-ic{margin-right:2px}
 body.kv-noscroll{overflow:hidden}
 .kvm{position:fixed;inset:0;z-index:150;background:rgba(6,6,10,.72);display:flex;align-items:flex-end;justify-content:center}
 @media(min-width:640px){.kvm{align-items:center;padding:24px}}
