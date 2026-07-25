@@ -1958,25 +1958,67 @@ window.KV = (function () {
     const cfg = window.KV_CONFIG || {};
     openTg(cfg.TG_CHANNEL || 'https://t.me/c/2500101660');   // канал KatoVape (id -1002500101660)
   }
-  // кнопки в шапке мини-аппа: избранное, связь с менеджером, канал Telegram
+  // смена языка из бургер-меню (та же логика, что в langSwitch)
+  function setLang(l) {
+    if (l === lang) return;
+    lang = l; localStorage.setItem('kv_lang', l);
+    const cs = document.getElementById('city'); if (cs) citySwitch(cs);
+    const ls = document.getElementById('lang'); if (ls) langSwitch(ls);
+    const fp = document.getElementById('filters'); if (fp) filterPanel(fp);
+    drawDrawer(); if (hooks.render) hooks.render(); renderInfo(); if (hooks.cart) hooks.cart();
+  }
+  const LANG_FULL = { ru: 'Русский', uk: 'Українська', pl: 'Polski' };
   const HX_ICON = {
-    fav: '<svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-4.5-9.5-8.5C1 9 3 6 6 6c2 0 3 1 4 2 1-1 2-2 4-2 3 0 5 3 3.5 6.5C19 16.5 12 21 12 21z"/></svg>',
     mgr: '<svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
-    tg: '<svg viewBox="0 0 24 24" width="19" height="19" fill="currentColor"><path d="M21.9 4.3 2.5 11.8c-.9.4-.9 1.2 0 1.5l4.9 1.5 1.9 5.9c.2.5.6.6 1 .3l2.7-2 4.8 3.5c.5.4 1.2.1 1.4-.5l3.4-16c.2-.9-.5-1.5-1.6-1.2z"/></svg>'
+    tg: '<svg viewBox="0 0 24 24" width="19" height="19" fill="currentColor"><path d="M21.9 4.3 2.5 11.8c-.9.4-.9 1.2 0 1.5l4.9 1.5 1.9 5.9c.2.5.6.6 1 .3l2.7-2 4.8 3.5c.5.4 1.2.1 1.4-.5l3.4-16c.2-.9-.5-1.5-1.6-1.2z"/></svg>',
+    burger: '<svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>',
+    prof: '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>',
+    fav: '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-4.5-9.5-8.5C1 9 3 6 6 6c2 0 3 1 4 2 1-1 2-2 4-2 3 0 5 3 3.5 6.5C19 16.5 12 21 12 21z"/></svg>'
   };
+  // Шапка мини-аппа: справа — менеджер, канал, бургер. Профиль/избранное/язык уезжают в
+  // бургер-меню, чтобы элементы не толпились в строке и не было сдвига (корзина — свой #topCart).
   function mountHeaderExtras() {
     const prof = document.getElementById('profile');
     if (!prof || document.getElementById('kv-hx')) return;
+    const langEl = document.getElementById('lang'); if (langEl) langEl.style.display = 'none';
+    prof.style.display = 'none';
     const wrap = document.createElement('div');
     wrap.id = 'kv-hx'; wrap.className = 'kv-hx';
     wrap.innerHTML =
-      '<button class="kv-hx-b" id="kv-hx-fav" type="button" aria-label="' + t('myFavs') + '">' + HX_ICON.fav + '</button>' +
       '<button class="kv-hx-b" id="kv-hx-mgr" type="button" aria-label="' + t('write') + '">' + HX_ICON.mgr + '</button>' +
-      '<button class="kv-hx-b" id="kv-hx-tg" type="button" aria-label="Telegram">' + HX_ICON.tg + '</button>';
-    prof.parentNode.insertBefore(wrap, prof);
-    document.getElementById('kv-hx-fav').onclick = openProfile;
+      '<button class="kv-hx-b" id="kv-hx-tg" type="button" aria-label="Telegram">' + HX_ICON.tg + '</button>' +
+      '<div class="kv-burger-wrap">' +
+        '<button class="kv-hx-b" id="kv-hx-burger" type="button" aria-label="Menu">' + HX_ICON.burger + '</button>' +
+        '<div class="kv-burger" id="kv-burger" hidden></div></div>';
+    prof.parentNode.insertBefore(wrap, prof.nextSibling);
     document.getElementById('kv-hx-mgr').onclick = openManager;
     document.getElementById('kv-hx-tg').onclick = openChannel;
+    const burger = document.getElementById('kv-burger');
+    document.getElementById('kv-hx-burger').onclick = e => {
+      e.stopPropagation();
+      if (burger.hidden) renderBurger();
+      burger.hidden = !burger.hidden;
+    };
+    burger.onclick = e => {
+      const b = e.target.closest('[data-b]');
+      if (b) {
+        burger.hidden = true;
+        if (b.dataset.b === 'profile') openProfile();
+        else { openProfile(); setTimeout(() => { const f = document.querySelector('#kvp .kvp-favs'); if (f) f.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 80); }
+        return;
+      }
+      const bl = e.target.closest('[data-blang]');
+      if (bl) { burger.hidden = true; setLang(bl.dataset.blang); }
+    };
+    document.addEventListener('click', () => { if (!burger.hidden) burger.hidden = true; });
+  }
+  function renderBurger() {
+    const burger = document.getElementById('kv-burger'); if (!burger) return;
+    burger.innerHTML =
+      '<button data-b="profile">' + HX_ICON.prof + '<span>' + t('profile') + '</span></button>' +
+      '<button data-b="favs">' + HX_ICON.fav + '<span>' + t('myFavs') + '</span></button>' +
+      '<div class="kv-burger-sep"></div>' +
+      ['ru', 'uk', 'pl'].map(l => '<button data-blang="' + l + '"' + (l === lang ? ' class="on"' : '') + '>' + LANG_FULL[l] + '</button>').join('');
   }
   function profileBtn(el) {
     el.innerHTML = '<button class="kv-prof" aria-label="' + t('profile') + '">' + PROF_ICON + '</button>';
@@ -2283,9 +2325,16 @@ window.KV = (function () {
 /* шторка языков/города в мини-аппе: якорим меню к своей кнопке и поднимаем над шапкой */
 #lang,#city{position:relative}
 .kv-city-menu{z-index:200}
-.kv-hx{display:inline-flex;gap:3px;align-items:center}
+.kv-hx{display:inline-flex;gap:2px;align-items:center}
 .kv-hx-b{display:grid;place-items:center;width:34px;height:34px;border:none;background:none;color:var(--kv-text,currentColor);border-radius:50%;cursor:pointer;padding:0;opacity:.85}
 .kv-hx-b:hover{opacity:1;background:var(--kv-surface,rgba(127,127,127,.12))}
+.kv-burger-wrap{position:relative;display:inline-flex}
+.kv-burger{position:absolute;top:calc(100% + 6px);right:0;z-index:210;min-width:186px;background:var(--kv-surface2,#fff);border:1px solid var(--kv-line,rgba(127,127,127,.25));border-radius:13px;padding:6px;box-shadow:0 18px 40px rgba(0,0,0,.28);display:flex;flex-direction:column;gap:2px}
+.kv-burger[hidden]{display:none}
+.kv-burger button{display:flex;align-items:center;gap:9px;background:none;border:none;color:var(--kv-text,inherit);font-family:inherit;font-size:13.5px;font-weight:700;padding:9px 11px;border-radius:9px;cursor:pointer;text-align:left;width:100%}
+.kv-burger button:hover{background:var(--kv-surface,rgba(127,127,127,.12))}
+.kv-burger button.on{color:var(--kv-accent-2,var(--kv-accent,inherit))}
+.kv-burger-sep{height:1px;background:var(--kv-line,rgba(127,127,127,.2));margin:4px 2px}
 .kv-stars{display:inline-flex;align-items:center;gap:1px;font-size:12px}
 .kv-star{color:var(--kv-line)}.kv-star.on{color:#ffb020}
 .kv-stars i{font-style:normal;color:var(--kv-muted);font-size:11px;margin-left:5px}
