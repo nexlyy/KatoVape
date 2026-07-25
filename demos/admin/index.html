@@ -100,6 +100,10 @@ select:focus{outline:none;border-color:var(--accent)}
 .who-name{flex:1;min-width:0}
 .who-name b{display:block;font-size:12.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .who-name span{font-size:11px;color:var(--muted)}
+.admlang{display:flex;gap:4px;padding:0 14px 10px}
+.admlang button{flex:1;border:1px solid var(--line);border-radius:8px;padding:5px 0;font-size:11.5px;font-weight:700;color:var(--muted)}
+.admlang button.on{border-color:var(--accent);color:var(--accent);background:var(--accent-dim)}
+@media(max-width:820px){.admlang{padding:0 10px 10px}}
 
 .main{min-width:0;padding:22px clamp(16px,3vw,28px) 96px}
 .head{display:flex;align-items:baseline;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:6px}
@@ -201,7 +205,73 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 const CFG = window.KV_CONFIG || {};
 const app = document.getElementById('app');
 const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-const fdate = s => { try { return new Date(s).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }); } catch (e) { return s; } };
+// единый формат даты во всей панели: DD-MM-YYYY, время рядом
+const pad2 = n => String(n).padStart(2, '0');
+const fdate = s => {
+  try {
+    const d = new Date(s);
+    if (isNaN(d)) return s || '';
+    return pad2(d.getDate()) + '-' + pad2(d.getMonth() + 1) + '-' + d.getFullYear() + ' ' + pad2(d.getHours()) + ':' + pad2(d.getMinutes());
+  } catch (e) { return s; }
+};
+// дата без времени (бронь), из ISO YYYY-MM-DD без сдвига по часовому поясу
+const fday = s => s ? String(s).slice(0, 10).split('-').reverse().join('-') : '';
+
+/* ================= язык панели: русский и украинский ================= */
+// Переводим по исходной русской строке: L('Заказы'). Нет перевода — остаётся русский,
+// поэтому новые строки не ломают интерфейс и переводятся по мере надобности.
+const UK = {
+  'Заказы': 'Замовлення', 'Бронь': 'Бронь', 'Ассортимент': 'Асортимент', 'Клиенты': 'Клієнти',
+  'Спрос': 'Попит', 'Рассылка': 'Розсилка', 'Доступ': 'Доступ', 'Выйти': 'Вийти',
+  'управление': 'керування', 'владелец': 'власник', 'разработчик': 'розробник', 'менеджер': 'менеджер',
+  'доступ выдан': 'доступ надано',
+  'Войти': 'Увійти', 'Заполните оба поля': 'Заповніть обидва поля', 'Проверяем…': 'Перевіряємо…',
+  'Неверный логин или пароль': 'Невірний логін або пароль', 'Не вышло войти': 'Не вдалося увійти',
+  'не удалось войти': 'не вдалося увійти', 'ошибка входа': 'помилка входу',
+  'новый': 'новий', 'подтверждён': 'підтверджено', 'выдан': 'видано', 'отменён': 'скасовано',
+  'активна': 'активна', 'напомнили': 'нагадали', 'истекла': 'протермінована', 'ждёт': 'очікує',
+  'Ошибка': 'Помилка', 'Статус обновлён': 'Статус оновлено', 'Сохранено': 'Збережено',
+  'Изменений нет': 'Змін немає', 'Применить': 'Застосувати', 'Отменить': 'Скасувати',
+  'Сохраняем…': 'Зберігаємо…', 'не сохранено': 'не збережено', 'изменения ещё не сохранены': 'зміни ще не збережено',
+  'Изменён один товар': 'Змінено один товар', 'Изменено товаров: ': 'Змінено товарів: ',
+  'Все заказы': 'Усі замовлення', 'Заказ': 'Замовлення', 'Состав': 'Склад', 'Клиент': 'Клієнт',
+  'Сумма': 'Сума', 'Статус': 'Статус', 'Заказов пока нет': 'Замовлень поки немає',
+  'Подтвердить': 'Підтвердити', 'Отказ': 'Відмова', 'Выдан': 'Видано', 'Выдана': 'Видана', 'Отмена': 'Скасування',
+  'Товар': 'Товар', 'Город': 'Місто', 'Дата': 'Дата', 'Тип': 'Тип', 'Броней нет': 'Броней немає',
+  'Брони и заявки': 'Броні та заявки', 'бронь': 'бронь', 'ждёт поступления': 'чекає надходження',
+  'Аккаунт': 'Акаунт', 'ФИО': 'ПІБ', 'Телефон': 'Телефон', 'Почта': 'Пошта', 'Пачкомат': 'Пачкомат',
+  'Регистрация': 'Реєстрація', 'Клиентов пока нет': 'Клієнтів поки немає',
+  'Событие': 'Подія', 'Раз': 'Разів', 'Данных пока нет': 'Даних поки немає',
+  'Новая рассылка': 'Нова розсилка', 'Последние рассылки': 'Останні розсилки', 'Текст': 'Текст',
+  'Ушло / ошибок': 'Надіслано / помилок', 'Когда': 'Коли', 'Сначала напишите текст': 'Спершу напишіть текст',
+  'Ставим в очередь…': 'Ставимо в чергу…', 'Отправить': 'Надіслати',
+  'новых заказов': 'нових замовлень', 'заказов всего': 'замовлень усього', 'активных броней': 'активних броней',
+  'ждут поступления': 'чекають надходження', 'клиентов': 'клієнтів', 'в боте': 'у боті', 'отзывов': 'відгуків',
+  'Товары · ': 'Товари · ', 'Новый товар': 'Новий товар', 'Название': 'Назва', 'Бренд': 'Бренд',
+  'Категория': 'Категорія', 'Крепость': 'Міцність', 'Цена zł': 'Ціна zł', 'Цена': 'Ціна',
+  'Удалить товар': 'Видалити товар', 'Новый вкус': 'Новий смак', 'Добавить вкус': 'Додати смак',
+  'Добавить': 'Додати', 'без вкуса': 'без смаку', 'шт': 'шт', 'Найти товар': 'Знайти товар',
+  'В этом городе пусто': 'У цьому місті порожньо', 'Товар удалён': 'Товар видалено',
+  'Вкус удалён': 'Смак видалено', 'Вкус добавлен': 'Смак додано', 'Товар добавлен': 'Товар додано',
+  'Впишите название вкуса': 'Впишіть назву смаку', 'Нужен id товара': 'Потрібен id товару',
+  'Кто может открывать эту панель.': 'Хто може відкривати цю панель.',
+  'Правки видны на витрине сразу после сохранения.': 'Зміни видно на вітрині одразу після збереження.',
+  'Те, кто заводил аккаунт в магазине.': 'Ті, хто створював акаунт у магазині.',
+  'Что чаще всего смотрят и бронируют.': 'Що найчастіше дивляться та бронюють.',
+  'Сообщение уйдёт всем, кто общался с ботом.': 'Повідомлення піде всім, хто спілкувався з ботом.',
+  'Отменённая или просроченная бронь возвращает товар в наличие сама.': 'Скасована або протермінована бронь повертає товар у наявність сама.',
+  'Роль': 'Роль', 'Доступ выдан': 'Доступ надано', 'Доступ забран': 'Доступ забрано',
+  'Выдать доступ': 'Надати доступ', 'Забрать': 'Забрати', 'Логин или почта': 'Логін або пошта',
+  'Telegram ID': 'Telegram ID', 'Кому': 'Кому', 'Комментарий': 'Коментар'
+};
+let admLang = localStorage.getItem('kv_adm_lang') ||
+  (String(navigator.language || '').toLowerCase().startsWith('uk') ? 'uk' : 'ru');
+const L = s => (admLang === 'uk' && UK[s]) || s;
+function setAdmLang(l) {
+  if (l === admLang) return;
+  admLang = l; localStorage.setItem('kv_adm_lang', l);
+  if (me) shell(); else authView();
+}
 
 if (!CFG.SUPABASE_URL || !CFG.SUPABASE_ANON_KEY) {
   app.innerHTML = '<div class="auth"><div class="auth-box"><h1>Не задан Supabase</h1><p class="lead">Заполните SUPABASE_URL и ключ в shared/config.js.</p></div></div>';
@@ -212,6 +282,12 @@ const sb = createClient(CFG.SUPABASE_URL, CFG.SUPABASE_ANON_KEY, {
 });
 
 let me = null, profile = null, tab = 'orders', overview = null;
+
+const CITIES = ['katowice', 'gliwice', 'warszawa'];
+const CITY_LABEL = { katowice: 'Katowice', gliwice: 'Gliwice', warszawa: 'Warszawa' };
+// город менеджера: у владельца и разработчика его нет, значит доступны все города
+const myCity = () => (overview && overview.role === 'manager' && overview.city) || null;
+const citiesAllowed = () => myCity() ? [myCity()] : CITIES;
 
 function toast(text, bad) {
   const el = document.getElementById('toast');
@@ -235,7 +311,7 @@ function authView(errText) {
           <input id="ident" autocomplete="username" placeholder="manager"></label>
         <label class="f">Пароль
           <input id="pw" type="password" autocomplete="current-password" placeholder="••••••••"></label>
-        <button class="btn primary" type="submit" id="pwgo">Войти</button>
+        <button class="btn primary" type="submit" id="pwgo">${L('Войти')}</button>
       </form>
       <div class="sep">или</div>
       <div class="tgwrap" id="tgwrap"></div>
@@ -256,12 +332,12 @@ function authView(errText) {
         body: JSON.stringify({ identifier: ident, password: pw })
       });
       const out = await res.json().catch(() => ({}));
-      if (!res.ok || !out.access_token) throw new Error('Неверный логин или пароль');
+      if (!res.ok || !out.access_token) throw new Error(L('Неверный логин или пароль'));
       const { error } = await sb.auth.setSession({ access_token: out.access_token, refresh_token: out.refresh_token });
       if (error) throw error;
       await afterLogin();
     } catch (e2) {
-      btn.disabled = false; btn.textContent = 'Войти';
+      btn.disabled = false; btn.textContent = L('Войти');
       showErr(e2.message || 'Не вышло войти');
     }
   };
@@ -288,7 +364,7 @@ async function exchangeTg(body) {
     body: JSON.stringify(body)
   });
   const out = await res.json().catch(() => ({}));
-  if (!res.ok || !out.email || !out.otp) throw new Error(out.error || 'не удалось войти');
+  if (!res.ok || !out.email || !out.otp) throw new Error(out.error || L('не удалось войти'));
   const { error } = await sb.auth.verifyOtp({ email: out.email, token: out.otp, type: 'magiclink' });
   if (error) throw error;
 }
@@ -319,14 +395,15 @@ async function afterLogin() {
 
 /* ================= каркас ================= */
 const ROLE_RU = { owner: 'владелец', dev: 'разработчик', manager: 'менеджер' };
-const TABS = [
-  ['orders', 'Заказы', ov => ov.orders_new],
-  ['reservations', 'Бронь', ov => ov.res_active],
-  ['products', 'Ассортимент', null],
-  ['customers', 'Клиенты', null],
-  ['demand', 'Спрос', null],
-  ['broadcast', 'Рассылка', null],
-  ['access', 'Доступ', null]
+// подписи считаем на каждый рендер: иначе переключатель языка их не обновит
+const TABS = () => [
+  ['orders', L('Заказы'), ov => ov.orders_new],
+  ['reservations', L('Бронь'), ov => ov.res_active],
+  ['products', L('Ассортимент'), null],
+  ['customers', L('Клиенты'), null],
+  ['demand', L('Спрос'), null],
+  ['broadcast', L('Рассылка'), null],
+  ['access', L('Доступ'), null]
 ];
 
 function shell() {
@@ -336,24 +413,28 @@ function shell() {
     <div class="shell">
       <aside class="side">
         <div class="brand"><img src="../../data/photos/cat.png" alt=""><div>
-          <b>KatoVape</b><span>управление</span></div></div>
+          <b>KatoVape</b><span>${L('управление')}</span></div></div>
         <nav class="nav" id="nav">
-          ${TABS.filter(([k]) => k !== 'access' || (overview && overview.can_grant)).map(([k, label, badge]) => {
+          ${TABS().filter(([k]) => k !== 'access' || (overview && overview.can_grant)).map(([k, label, badge]) => {
             const n = badge && overview ? badge(overview) : 0;
             return `<button data-t="${k}" class="${k === tab ? 'on' : ''}">${label}
               ${n ? `<i class="count">${n}</i>` : ''}</button>`;
           }).join('')}
         </nav>
+        <div class="admlang">
+          ${['ru', 'uk'].map(l => `<button data-lang="${l}" class="${l === admLang ? 'on' : ''}">${l.toUpperCase()}</button>`).join('')}
+        </div>
         <div class="who">
           <div class="who-ava">${av ? `<img src="${esc(av)}" alt="">` : esc(name[0].toUpperCase())}</div>
-          <div class="who-name"><b>${esc(name)}</b><span>${esc(ROLE_RU[overview && overview.role] || 'доступ выдан')}</span></div>
-          <button class="btn quiet sm" id="logout">Выйти</button>
+          <div class="who-name"><b>${esc(name)}</b><span>${esc(L(ROLE_RU[overview && overview.role] || 'доступ выдан'))}${
+            myCity() ? ' · ' + esc(CITY_LABEL[myCity()] || myCity()) : ''}</span></div>
+          <button class="btn quiet sm" id="logout">${L('Выйти')}</button>
         </div>
       </aside>
       <main class="main" id="main"></main>
     </div>
     <div class="savebar" id="savebar">
-      <b id="sb-count">Изменений нет</b>
+      <b id="sb-count">${L('Изменений нет')}</b>
       <span id="sb-note">не сохранено</span>
       <div class="grow"></div>
       <button class="btn quiet" id="sb-reset">Отменить</button>
@@ -364,6 +445,10 @@ function shell() {
     if (!b || b.dataset.t === tab) return;
     if (hasChanges() && !confirm('Есть несохранённые изменения в ассортименте. Уйти и потерять их?')) return;
     clearDirty(); tab = b.dataset.t; shell();
+  };
+  document.querySelector('.admlang').onclick = e => {
+    const b = e.target.closest('[data-lang]');
+    if (b) setAdmLang(b.dataset.lang);
   };
   document.getElementById('logout').onclick = async () => { await sb.auth.signOut(); me = null; authView(); };
   document.getElementById('sb-reset').onclick = () => { clearDirty(); render(); };
@@ -387,10 +472,11 @@ function table(head, rows) {
     <tbody>${rows.map(r => `<tr>${r.map(c => `<td>${c == null ? '' : c}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
 }
 
+// статусы: русский текст в словаре, перевод накладываем при выводе через L()
 const ST = { new: ['новый', 'new'], confirmed: ['подтверждён', 'live'], done: ['выдан', 'ok'],
   cancelled: ['отменён', 'off'], active: ['активна', 'live'], notified: ['напомнили', 'live'],
   expired: ['истекла', 'off'], waiting: ['ждёт', 'new'] };
-const pill = s => { const x = ST[s] || [s, '']; return `<span class="pill ${x[1]}">${esc(x[0])}</span>`; };
+const pill = s => { const x = ST[s] || [s, '']; return `<span class="pill ${x[1]}">${esc(L(x[0]))}</span>`; };
 
 function itemsStr(items) {
   return (items || []).map(i => typeof i === 'string' ? i
@@ -400,13 +486,13 @@ function itemsStr(items) {
 /* ================= вкладки ================= */
 async function render() {
   const m = document.getElementById('main'); if (!m) return;
-  const titles = { orders: ['Заказы', 'Подтверждайте и отмечайте выдачу — клиенту уходит уведомление в Telegram.'],
-    reservations: ['Бронь', 'Отменённая или просроченная бронь возвращает товар в наличие сама.'],
-    products: ['Ассортимент', 'Правки видны на витрине сразу после сохранения.'],
-    customers: ['Клиенты', 'Те, кто заводил аккаунт в магазине.'],
-    demand: ['Спрос', 'Что чаще всего смотрят и бронируют.'],
-    broadcast: ['Рассылка', 'Сообщение уйдёт всем, кто общался с ботом.'],
-    access: ['Доступ', 'Кто может открывать эту панель.'] };
+  const titles = { orders: [L('Заказы'), 'Подтверждайте и отмечайте выдачу — клиенту уходит уведомление в Telegram.'],
+    reservations: [L('Бронь'), L('Отменённая или просроченная бронь возвращает товар в наличие сама.')],
+    products: [L('Ассортимент'), L('Правки видны на витрине сразу после сохранения.')],
+    customers: [L('Клиенты'), L('Те, кто заводил аккаунт в магазине.')],
+    demand: [L('Спрос'), L('Что чаще всего смотрят и бронируют.')],
+    broadcast: [L('Рассылка'), L('Сообщение уйдёт всем, кто общался с ботом.')],
+    access: [L('Доступ'), L('Кто может открывать эту панель.')] };
   const [h, sub] = titles[tab] || ['', ''];
   m.innerHTML = `<div class="head"><h1>${h}</h1><p>${sub}</p></div>${summaryHTML()}${loading()}`;
   const slot = () => m.querySelector('.panel');
@@ -420,17 +506,17 @@ async function render() {
     else if (tab === 'broadcast') await renderBroadcast(m);
     else if (tab === 'access') await renderAccess(m);
   } catch (e) {
-    const s = slot(); if (s) s.outerHTML = panel('Ошибка', `<div class="empty">${esc(e.message || e)}</div>`);
+    const s = slot(); if (s) s.outerHTML = panel(L('Ошибка'), `<div class="empty">${esc(e.message || e)}</div>`);
   }
 }
 function summaryHTML() {
   const o = overview || {};
   const row = (v, label, hot) => `<div class="${hot ? 'hot' : ''}"><b>${v == null ? 0 : v}</b><span>${label}</span></div>`;
   return `<div class="summary">
-    ${row(o.orders_new, 'новых заказов', o.orders_new > 0)}
+    ${row(o.orders_new, L('новых заказов'), o.orders_new > 0)}
     ${row(o.orders, 'заказов всего')}
     ${row(o.res_active, 'активных броней', o.res_active > 0)}
-    ${row(o.waiting, 'ждут поступления')}
+    ${row(o.waiting, L('ждут поступления'))}
     ${row(o.users, 'клиентов')}
     ${row(o.bot_users, 'в боте')}
     ${row(o.reviews, 'отзывов')}
@@ -449,16 +535,18 @@ async function renderOrders(m) {
     const c = o.contact || {};
     const who = [c.name, c.phone, c.email, c.paczkomat ? 'пачкомат ' + c.paczkomat : ''].filter(Boolean).map(esc).join('<br>');
     const acts = o.status === 'new'
-      ? btn('ost', o.id, 'confirmed', 'Подтвердить', 'primary') + btn('ost', o.id, 'cancelled', 'Отказ', 'danger')
+      ? btn('ost', o.id, 'confirmed', L('Подтвердить'), 'primary') + btn('ost', o.id, 'cancelled', 'Отказ', 'danger')
       : o.status === 'confirmed'
         ? btn('ost', o.id, 'done', 'Выдан', 'primary') + btn('ost', o.id, 'cancelled', 'Отказ', 'danger') : '';
     return [`<span class="num">#${o.id}</span><span class="sub">${fdate(o.created_at)}</span>`,
-      esc(itemsStr(o.items)) + `<span class="sub">${esc(o.city)} · ${esc(o.delivery || '')}${o.address ? ' · ' + esc(o.address) : ''}</span>`,
+      esc(itemsStr(o.items)) +
+        `<span class="sub">${esc(CITY_LABEL[o.city] || o.city)} · ${esc(o.delivery || '')}${o.address ? ' · ' + esc(o.address) : ''}</span>` +
+        (o.comment ? `<span class="sub">${L('Комментарий')}: ${esc(o.comment)}</span>` : ''),
       who || '<span class="sub">нет данных</span>',
       `<span class="num">${o.sum || 0} zł</span>`, pill(o.status), `<div class="tools">${acts}</div>`];
   });
-  swap(m, panel('Все заказы', rows.length
-    ? table(['Заказ', 'Состав', 'Клиент', 'Сумма', 'Статус', ''], rows)
+  swap(m, panel(L('Все заказы'), rows.length
+    ? table(['Заказ', 'Состав', 'Клиент', L('Сумма'), 'Статус', ''], rows)
     : empty('Заказов пока нет', 'Как только кто-то оформит заказ на витрине, он появится здесь.')));
   bindStatus(m, 'ost', 'orders');
 }
@@ -470,12 +558,13 @@ async function renderReservations(m) {
       ? btn('rst', r.id, 'done', 'Выдана', 'primary') + btn('rst', r.id, 'cancelled', 'Отмена', 'danger') : '';
     return [`<span class="num">#${r.id}</span><span class="sub">${fdate(r.created_at)}</span>`,
       esc(r.product_name || r.product_id) + (r.flavor ? `<span class="sub">${esc(r.flavor)}</span>` : ''),
-      esc(r.city), `<span class="num">${r.reserve_date || '—'}</span>`,
-      r.kind === 'reserve' ? 'бронь' : 'ждёт поступления', pill(r.status),
+      esc(CITY_LABEL[r.city] || r.city),
+      `<span class="num">${r.reserve_date ? fday(r.reserve_date) + (r.reserve_time ? ' ' + esc(r.reserve_time) : '') : '—'}</span>`,
+      r.kind === 'reserve' ? L('бронь') : L('ждёт поступления'), pill(r.status),
       `<span class="num">${r.telegram_id || '—'}</span>`, `<div class="tools">${acts}</div>`];
   });
-  swap(m, panel('Брони и заявки', rows.length
-    ? table(['Бронь', 'Товар', 'Город', 'Дата', 'Тип', 'Статус', 'Telegram', ''], rows)
+  swap(m, panel(L('Брони и заявки'), rows.length
+    ? table(['Бронь', L('Товар'), 'Город', 'Дата', 'Тип', 'Статус', 'Telegram', ''], rows)
     : empty('Броней нет', 'Здесь появятся брони с витрины и заявки «сообщить о поступлении».')));
   bindStatus(m, 'rst', 'reservations');
 }
@@ -502,15 +591,15 @@ async function renderCustomers(m) {
     esc(u.full_name || '—'), esc(u.phone || '—'), esc(u.email || '—'),
     u.paczkomat ? esc(u.paczkomat) : '—', `<span class="num">${fdate(u.created_at)}</span>`]);
   swap(m, panel('Клиенты', rows.length
-    ? table(['Аккаунт', 'ФИО', 'Телефон', 'Почта', 'Пачкомат', 'Регистрация'], rows)
+    ? table([L('Аккаунт'), 'ФИО', 'Телефон', 'Почта', 'Пачкомат', L('Регистрация')], rows)
     : empty('Клиентов пока нет', 'Аккаунты появятся, когда люди начнут входить в магазин.')));
 }
 
 async function renderDemand(m) {
   const { data } = await sb.from('demand').select('*').order('n', { ascending: false }).limit(100);
   const rows = (data || []).map(d => [esc(d.product_id), esc(d.event), `<span class="num">${d.n}</span>`]);
-  swap(m, panel('Спрос', rows.length
-    ? table(['Товар', 'Событие', 'Раз'], rows)
+  swap(m, panel(L('Спрос'), rows.length
+    ? table([L('Товар'), L('Событие'), 'Раз'], rows)
     : empty('Данных пока нет', 'Счётчик наполняется, когда люди открывают карточки и бронируют.')));
 }
 
@@ -523,7 +612,7 @@ async function renderBroadcast(m) {
   const hist = (last || []).map(b => [`<span class="num">#${b.id}</span>`, esc((b.text || '').slice(0, 60)),
     bcPill(b.status),
     `<span class="num">${b.sent || 0} / ${b.failed || 0}</span>`, `<span class="num">${b.sent_at ? fdate(b.sent_at) : '—'}</span>`]);
-  swap(m, panel('Новая рассылка', `<div class="panel-body">
+  swap(m, panel(L('Новая рассылка'), `<div class="panel-body">
       <textarea id="bctext" rows="4" placeholder="Что написать подписчикам бота"></textarea>
       <div class="tools" style="margin-top:12px">
         <button class="btn primary" id="bcsend" ${count ? '' : 'disabled'}>Отправить ${count || 0} подписчикам</button>
@@ -531,13 +620,13 @@ async function renderBroadcast(m) {
       </div>
       <p class="hint">Получают только те, кто писал боту. Кому не доставилось, того бот сам исключит из списка.
       ${count ? '' : 'Сейчас подписчиков нет: попросите людей открыть бота и нажать «Старт».'}</p>
-    </div>`) + (hist.length ? panel('Последние рассылки', table(['#', 'Текст', 'Статус', 'Ушло / ошибок', 'Когда'], hist)) : ''));
+    </div>`) + (hist.length ? panel('Последние рассылки', table(['#', 'Текст', 'Статус', L('Ушло / ошибок'), 'Когда'], hist)) : ''));
 
   const send = document.getElementById('bcsend');
   if (send) send.onclick = async () => {
     const text = document.getElementById('bctext').value.trim();
     if (!text) return toast('Сначала напишите текст', true);
-    send.disabled = true; send.textContent = 'Ставим в очередь…';
+    send.disabled = true; send.textContent = L('Ставим в очередь…');
     const { data, error } = await sb.from('broadcasts').insert({ text, author: me.id }).select().single();
     if (error) { send.disabled = false; send.textContent = 'Отправить'; return toast(error.message, true); }
     document.getElementById('bcres').textContent = 'В очереди, бот разошлёт за минуту…';
@@ -564,33 +653,40 @@ async function watchBroadcast(id) {
 
 const ROLE_OPTS = ['manager', 'dev', 'owner'];
 const roleSelect = (id, val) => `<select id="${id}" style="width:auto">` +
-  ROLE_OPTS.map(r => `<option value="${r}" ${r === val ? 'selected' : ''}>${ROLE_RU[r]}</option>`).join('') + '</select>';
+  ROLE_OPTS.map(r => `<option value="${r}" ${r === val ? 'selected' : ''}>${L(ROLE_RU[r])}</option>`).join('') + '</select>';
+// город нужен только менеджеру: у владельца и разработчика доступ ко всем городам
+const citySelect = id => `<select id="${id}" style="width:auto">` +
+  CITIES.map(c => `<option value="${c}">${CITY_LABEL[c]}</option>`).join('') + '</select>';
 
 async function renderAccess(m) {
   const { data } = await sb.rpc('admin_access_list');
   const rows = (data || []).map(a => [
     a.kind === 'telegram' ? '<span class="pill live">Telegram</span>' : '<span class="pill">Пароль</span>',
     esc(a.who), `<span class="num">${esc(a.ident)}</span>`,
-    `<span class="pill ${a.role === 'manager' ? '' : 'ok'}">${esc(ROLE_RU[a.role] || a.role)}</span>`,
+    `<span class="pill ${a.role === 'manager' ? '' : 'ok'}">${esc(L(ROLE_RU[a.role] || a.role))}</span>`,
+    a.city ? esc(CITY_LABEL[a.city] || a.city) : '<span class="sub">все</span>',
     `<span class="num">${fdate(a.added_at)}</span>`,
-    `<button class="btn sm danger" data-revoke="${esc(a.ident)}">Забрать</button>`]);
-  swap(m, panel('Кто имеет доступ', table(['Способ', 'Кто', 'Идентификатор', 'Роль', 'Выдан', ''], rows)) +
-    panel('Выдать доступ', `<div class="panel-body">
+    `<button class="btn sm danger" data-revoke="${esc(a.ident)}">${L('Забрать')}</button>`]);
+  swap(m, panel('Кто имеет доступ', table(['Способ', 'Кто', 'Идентификатор', L('Роль'), L('Город'), 'Выдан', ''], rows)) +
+    panel(L('Выдать доступ'), `<div class="panel-body">
       <div class="tools">
         <input id="grant" placeholder="логин или почта аккаунта" style="width:230px">
         ${roleSelect('grantrole', 'manager')}
+        ${citySelect('grantcity')}
         <button class="btn primary" id="grantgo">Выдать по логину</button>
       </div>
       <div class="tools" style="margin-top:10px">
         <input id="granttg" placeholder="Telegram ID, например 5301671230" style="width:230px" inputmode="numeric">
         ${roleSelect('granttgrole', 'manager')}
+        ${citySelect('granttgcity')}
         <button class="btn" id="granttggo">Выдать по Telegram ID</button>
       </div>
       <p class="hint">По логину доступ выдаётся тем, кто уже завёл аккаунт с паролем. По Telegram ID можно выдать
       заранее: человек получит доступ сам, как только первый раз откроет магазин через бота.
-      Повторная выдача тому же человеку просто меняет роль.</p>
-      <p class="hint"><b>Владелец</b> и <b>разработчик</b> могут всё, включая выдачу доступа.
-      <b>Менеджер</b> видит все разделы, кроме этого.</p>
+      Повторная выдача тому же человеку просто меняет роль и город.</p>
+      <p class="hint"><b>Владелец</b> может всё, включая выдачу доступа. <b>Разработчик</b> и <b>менеджер</b>
+      этот раздел не видят. Менеджер работает только со своим городом: ассортимент, заказы и брони
+      других городов ему не показываются, уведомления о заказах приходят только по его городу.</p>
     </div>`));
 
   const byLogin = document.getElementById('grantgo');
@@ -599,7 +695,8 @@ async function renderAccess(m) {
     if (!login) return toast('Впишите логин или почту', true);
     byLogin.disabled = true;
     const { data: name, error } = await sb.rpc('admin_grant', {
-      p_login: login, p_role: document.getElementById('grantrole').value
+      p_login: login, p_role: document.getElementById('grantrole').value,
+      p_city: document.getElementById('grantcity').value
     });
     byLogin.disabled = false;
     if (error) return toast(grantErr(error), true);
@@ -612,7 +709,8 @@ async function renderAccess(m) {
     if (!/^\d+$/.test(tid)) return toast('Telegram ID это только цифры', true);
     byTg.disabled = true;
     const { error } = await sb.rpc('admin_grant_telegram', {
-      p_tid: Number(tid), p_role: document.getElementById('granttgrole').value
+      p_tid: Number(tid), p_role: document.getElementById('granttgrole').value,
+      p_city: document.getElementById('granttgcity').value
     });
     byTg.disabled = false;
     if (error) return toast(grantErr(error), true);
@@ -684,13 +782,15 @@ function updateSaveBar() {
   bar.classList.toggle('show', n > 0);
   const c = document.getElementById('sb-count');
   const note = document.getElementById('sb-note');
-  if (c) c.textContent = n === 1 ? 'Изменён один товар' : 'Изменено товаров: ' + n;
+  if (c) c.textContent = n === 1 ? L('Изменён один товар') : 'Изменено товаров: ' + n;
   if (note) note.textContent = 'изменения ещё не сохранены';
 }
 function hasChanges() { return changedItems().length > 0; }
 window.addEventListener('beforeunload', e => { if (hasChanges()) { e.preventDefault(); e.returnValue = ''; } });
 
 async function renderProducts(m) {
+  // менеджер не должен даже случайно открыть чужой город (RLS его всё равно не пустит)
+  if (myCity() && cityNow !== myCity()) cityNow = myCity();
   const { data } = await sb.from('products').select('*').eq('city', cityNow).order('id').order('flavor');
   const rows = data || [];
   groups = []; const byId = {};
@@ -698,7 +798,8 @@ async function renderProducts(m) {
     if (!byId[r.id]) { byId[r.id] = { id: r.id, head: r, items: [] }; groups.push(byId[r.id]); }
     byId[r.id].items.push(r);
   });
-  const cities = ['katowice', 'gliwice', 'warszawa'];
+  // менеджеру показываем только его город, владельцу и разработчику — все
+  const cities = citiesAllowed();
   const tools = cities.map(c => `<button class="btn sm ${c === cityNow ? 'primary' : ''}" data-city="${c}">${c}</button>`).join('') +
     `<input id="pq" placeholder="Найти товар" style="width:190px">`;
 
@@ -713,7 +814,7 @@ async function renderProducts(m) {
         <input class="i-tier" data-p="t3" value="${tierP(g.head.tiers, 3)}" placeholder="3шт" inputmode="numeric" title="Цена за штуку при 3 шт">
         <input class="i-tier" data-p="t5" value="${tierP(g.head.tiers, 5)}" placeholder="5шт" inputmode="numeric" title="Цена за штуку при 5 шт">
         <input class="i-tier" data-p="t10" value="${tierP(g.head.tiers, 10)}" placeholder="10шт" inputmode="numeric" title="Цена за штуку при 10 шт">
-        <button class="btn sm danger" data-delp="${gi}">Удалить товар</button>
+        <button class="btn sm danger" data-delp="${gi}">${L('Удалить товар')}</button>
       </div>
       <div class="item-id">${esc(g.id)}</div>
       <div class="flavs">${g.items.map((r, ri) => `
@@ -728,9 +829,9 @@ async function renderProducts(m) {
         <input data-nq="${gi}" placeholder="шт" style="width:74px" inputmode="numeric">
         <button class="btn sm" data-addf="${gi}">Добавить вкус</button>
       </div>
-    </div>`).join('') : empty('В этом городе пусто', 'Добавьте первый товар формой ниже.');
+    </div>`).join('') : empty(L('В этом городе пусто'), 'Добавьте первый товар формой ниже.');
 
-  swap(m, panel('Товары · ' + cityNow, body, tools) + panel('Новый товар', `<div class="panel-body">
+  swap(m, panel(L('Товары · ') + cityNow, body, tools) + panel('Новый товар', `<div class="panel-body">
       <div class="tools">
         <input id="np_id" placeholder="id, например hqd" style="width:150px">
         <input id="np_name" placeholder="Название" style="width:170px">
@@ -738,7 +839,7 @@ async function renderProducts(m) {
         <input id="np_flavor" placeholder="Вкус (можно пусто)" style="width:170px">
         <input id="np_price" placeholder="Цена" style="width:90px" inputmode="numeric">
         <input id="np_qty" placeholder="шт" style="width:74px" inputmode="numeric">
-        <button class="btn primary" id="np_add">Добавить</button>
+        <button class="btn primary" id="np_add">${L('Добавить')}</button>
       </div>
       <p class="hint">id должен совпадать с товаром на витрине, тогда наличие подтянется в карточку.</p>
     </div>`));
@@ -779,13 +880,13 @@ function bindProducts(m) {
     if (!confirm('Удалить вкус «' + (r.flavor || 'без вкуса') + '»?')) return;
     const { error } = await sb.from('products').delete().match({ id: r.id, city: r.city, flavor: r.flavor });
     if (error) return toast(error.message, true);
-    toast('Вкус удалён'); clearDirty(); render();
+    toast(L('Вкус удалён')); clearDirty(); render();
   });
   m.querySelectorAll('[data-addf]').forEach(b => b.onclick = async () => {
     const gi = +b.dataset.addf, g = groups[gi]; if (!g) return;
     const fl = m.querySelector('[data-nf="' + gi + '"]').value.trim();
     const qv = m.querySelector('[data-nq="' + gi + '"]').value.trim();
-    if (!fl) return toast('Впишите название вкуса', true);
+    if (!fl) return toast(L('Впишите название вкуса'), true);
     const h = g.head;
     const { error } = await sb.from('products').upsert([{
       id: g.id, city: cityNow, flavor: fl, name: h.name, brand: h.brand, category: h.category,
@@ -825,8 +926,8 @@ async function saveProducts() {
     brand: x.brand || null, category: x.category || null, nic: x.nic || null,
     price: x.price, tiers: x.tiers, qty: Number.isFinite(qty) ? qty : 0, updated_at: new Date().toISOString()
   })));
-  if (!out.length) { clearDirty(); return toast('Изменений нет'); }
-  btn.disabled = true; btn.textContent = 'Сохраняем…';
+  if (!out.length) { clearDirty(); return toast(L('Изменений нет')); }
+  btn.disabled = true; btn.textContent = L('Сохраняем…');
   const { error } = await sb.from('products').upsert(out, { onConflict: 'id,city,flavor' });
   btn.disabled = false; btn.textContent = 'Применить';
   if (error) return toast(error.message, true);
