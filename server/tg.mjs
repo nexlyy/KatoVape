@@ -58,6 +58,27 @@ export const editMessage = (chat_id, message_id, text, extra = {}) =>
 export const answerCallback = (id, text, alert) =>
   tgCall('answerCallbackQuery', { callback_query_id: id, ...(text ? { text } : {}), ...(alert ? { show_alert: true } : {}) });
 
+// Фото для рассылки. Панель присылает картинку как data:URL, поэтому отправляем её
+// файлом (multipart), а не ссылкой — Telegram по ссылке data: ходить не умеет.
+export async function sendPhoto(chat_id, photo, caption, extra = {}, token = BOT_TOKEN) {
+  if (!token) return { ok: false, error: 'no token' };
+  const body = new FormData();
+  body.set('chat_id', String(chat_id));
+  if (caption) { body.set('caption', caption.slice(0, 1024)); body.set('parse_mode', 'HTML'); }
+  for (const [k, v] of Object.entries(extra)) body.set(k, typeof v === 'string' ? v : JSON.stringify(v));
+
+  if (/^data:/.test(photo)) {
+    const [head, b64] = photo.split(',');
+    const mime = (head.match(/data:([^;]+)/) || [])[1] || 'image/jpeg';
+    const bin = Buffer.from(b64, 'base64');
+    body.set('photo', new Blob([bin], { type: mime }), 'photo.jpg');
+  } else {
+    body.set('photo', photo);            // обычная ссылка на картинку
+  }
+  const res = await fetch(`${API(token)}/sendPhoto`, { method: 'POST', body });
+  return res.json().catch(() => ({ ok: false }));
+}
+
 export async function setWebhook(url, secret) {
   return tgCall('setWebhook', { url, secret_token: secret, allowed_updates: ['message', 'callback_query'] });
 }

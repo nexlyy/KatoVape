@@ -185,47 +185,88 @@ td .sub{display:block;color:var(--muted);font-size:11.5px;margin-top:2px}
   .savebar{transition:none}
 }
 
-/* ---- телефон: панелью пользуются менеджеры прямо в поле ---- */
-@media(max-width:700px){
-  .main{padding:16px 12px 120px}
-  .head h1{font-size:18px}
-  .head p{font-size:12.5px}
-  .summary{gap:2px 16px;padding:10px 0 12px;margin-bottom:12px}
-  .panel-head{padding:11px 12px}
-  .panel-body{padding:12px}
-  .tools{gap:6px}
-  .tools input,.tools select{width:100%;min-width:0}
-  .tools .btn{flex:1;justify-content:center}
+.pform{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px}
+.pform-wide{grid-column:1 / -1}
+.i-hit{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;color:var(--ink-2);white-space:nowrap}
+.i-hit input{width:auto;margin:0}
+.bcphoto{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px}
+.bcpreview{display:block;max-width:220px;max-height:150px;object-fit:cover;border:1px solid var(--line);border-radius:var(--r);margin-top:10px}
+.bcpreview[hidden]{display:none}
 
-  /* таблицы не влезают в узкий экран: каждая строка становится карточкой,
-     заголовки столбцов подписываются слева через data-l */
+/* ================= телефон: свой формат панели, а не сжатый десктоп =================
+   Экран узкий, работают стоя и одной рукой: навигация уезжает вниз крупными кнопками,
+   таблицы становятся карточками, поля и кнопки — не меньше 44px по высоте. */
+@media(max-width:700px){
+  body{padding-bottom:calc(64px + env(safe-area-inset-bottom))}
+  .shell{grid-template-columns:1fr}
+  .side{position:fixed;left:0;right:0;bottom:0;top:auto;height:auto;z-index:var(--z-nav);
+    border:none;border-top:1px solid var(--line);background:var(--surface);
+    padding-bottom:env(safe-area-inset-bottom);box-shadow:0 -10px 30px -20px #000}
+  .brand{display:none}
+  .nav{flex-direction:row;padding:6px;gap:2px;overflow-x:auto;scroll-snap-type:x proximity;
+    scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  .nav::-webkit-scrollbar{display:none}
+  /* ширину задаём явно: базовое width:100% растягивало кнопку на весь экран */
+  .nav button{width:auto;flex:0 0 auto;scroll-snap-align:start;
+    flex-direction:column;gap:3px;align-items:center;justify-content:center;
+    min-width:66px;min-height:52px;padding:6px 8px;font-size:10.5px;font-weight:600;text-align:center;
+    border-radius:12px;line-height:1.15;white-space:nowrap}
+  .nav button.on{background:var(--accent-dim)}
+  .nav .count{position:absolute;transform:translate(18px,-16px);margin:0;font-size:10px;padding:0 5px}
+  .nav button{position:relative}
+  .who{display:none}
+  .admlang{position:fixed;top:10px;right:12px;z-index:calc(var(--z-nav) + 1);padding:0;width:auto;gap:2px}
+  .admlang button{min-width:38px;height:30px;background:var(--surface);backdrop-filter:blur(6px)}
+
+  .main{padding:14px 12px 24px}
+  .head h1{font-size:19px}
+  .head p{font-size:12.5px;line-height:1.45}
+  .summary{gap:8px 18px;padding:10px 0 14px;margin-bottom:14px}
+  .summary div{gap:6px}
+  .panel{border-radius:14px}
+  .panel-head{padding:12px}
+  .panel-body{padding:12px}
+  .tools{gap:8px}
+  .tools input,.tools select,.tools textarea{width:100%;min-height:44px}
+  .tools .btn{flex:1 0 46%;justify-content:center;min-height:44px}
+  .btn{min-height:40px}
+  .btn.sm{min-height:36px;padding:8px 12px;font-size:12.5px}
+  input,select,textarea{font-size:16px;min-height:44px}  /* 16px не даёт iOS зумить поле */
+
+  /* таблица → карточки, подпись столбца слева от значения */
   table,thead,tbody,tr,th,td{display:block}
   thead{display:none}
-  tr{border:1px solid var(--line);border-radius:var(--r);margin-bottom:10px;background:var(--surface-2);overflow:hidden}
-  td{border-bottom:1px solid var(--line);padding:9px 12px;display:flex;gap:10px;align-items:flex-start}
+  .scroll{overflow:visible}
+  tr{border:1px solid var(--line);border-radius:12px;margin-bottom:10px;background:var(--surface-2);overflow:hidden}
+  td{border-bottom:1px solid var(--line);padding:10px 12px;display:flex;gap:10px;align-items:flex-start;font-size:13px}
   td:last-child{border-bottom:none}
-  td::before{content:attr(data-l);flex:0 0 40%;max-width:40%;color:var(--muted);font-size:11px;
-    text-transform:uppercase;letter-spacing:.04em;font-weight:600;padding-top:2px}
+  td::before{content:attr(data-l);flex:0 0 38%;max-width:38%;color:var(--muted);font-size:10.5px;
+    text-transform:uppercase;letter-spacing:.04em;font-weight:700;padding-top:3px}
   td:empty{display:none}
-  td .tools{justify-content:flex-end}
+  td .tools{width:100%;justify-content:stretch}
   td .btn.sm{flex:1}
 
-  /* карточка товара: поля в две колонки, вкусы крупными строками */
+  /* ассортимент: поля товара в две колонки, вкус — крупной строкой */
   .item{padding:12px}
-  .item-top{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+  .item-top{display:grid;grid-template-columns:1fr 1fr;gap:8px}
   .item-top input{width:100%}
-  .i-name{grid-column:1 / -1}
+  .i-name,.item-top .btn.danger,.i-hit{grid-column:1 / -1}
   .i-nic,.i-price,.i-tier{width:100%}
-  .item-top .btn.danger{grid-column:1 / -1;justify-content:center}
-  .flav{gap:8px;padding:9px 0}
-  .flav input{width:64px}
-  .add-flav input{flex:1;min-width:0}
+  .item-top .btn.danger{justify-content:center}
+  .flav{gap:8px;padding:10px 0}
+  .flav input{width:72px}
+  .add-flav{gap:8px}
+  .add-flav input{flex:1 0 100%}
+  .add-flav .btn{flex:1}
 
-  .savebar{padding:10px 12px;gap:8px}
-  .savebar b{font-size:12.5px;width:100%}
+  /* промокоды: форма в одну колонку, чтобы попадать пальцем */
+  .pform{grid-template-columns:1fr;gap:12px}
+
+  .savebar{padding:10px 12px calc(10px + env(safe-area-inset-bottom));bottom:calc(64px + env(safe-area-inset-bottom));gap:8px}
+  .savebar b{width:100%;font-size:12.5px}
   .savebar span{display:none}
   .savebar .btn{flex:1;justify-content:center}
-  .toast{bottom:110px;font-size:12.5px}
+  .toast{bottom:calc(130px + env(safe-area-inset-bottom))}
 }
 
 .toast{position:fixed;left:50%;bottom:88px;transform:translate(-50%,14px);z-index:var(--z-toast);
@@ -241,7 +282,7 @@ td .sub{display:block;color:var(--muted);font-size:11.5px;margin-top:2px}
 <div class="toast" id="toast"></div>
 
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
-<script src="../../shared/config.js?v=11"></script>
+<script src="../../shared/config.js?v=12"></script>
 <script type="module">
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
@@ -446,6 +487,7 @@ let me = null, profile = null, tab = 'orders', overview = null;
 
 const CITIES = ['katowice', 'gliwice', 'warszawa'];
 const CITY_LABEL = { katowice: 'Katowice', gliwice: 'Gliwice', warszawa: 'Warszawa' };
+const PROMO_CATS = ['liquids', 'disposables', 'snus', 'cartridges', 'pods'];
 // город менеджера: у владельца и разработчика его нет, значит доступны все города
 const myCity = () => (overview && overview.role === 'manager' && overview.city) || null;
 const citiesAllowed = () => myCity() ? [myCity()] : CITIES;
@@ -655,6 +697,7 @@ async function render() {
     customers: [L('Клиенты'), L('Те, кто заводил аккаунт в магазине.')],
     demand: [L('Спрос'), L('Что чаще всего смотрят и бронируют.')],
     broadcast: [L('Рассылка'), L('Сообщение уйдёт всем, кто общался с ботом.')],
+    promo: [L('Промокоды'), L('Скидка применяется в корзине. Условия проверяет сервер.')],
     access: [L('Доступ'), L('Кто может открывать эту панель.')] };
   const [h, sub] = titles[tab] || ['', ''];
   m.innerHTML = `<div class="head"><h1>${h}</h1><p>${sub}</p></div>${summaryHTML()}${loading()}`;
@@ -667,6 +710,7 @@ async function render() {
     else if (tab === 'customers') await renderCustomers(m);
     else if (tab === 'demand') await renderDemand(m);
     else if (tab === 'broadcast') await renderBroadcast(m);
+    else if (tab === 'promo') await renderPromo(m);
     else if (tab === 'access') await renderAccess(m);
   } catch (e) {
     const s = slot(); if (s) s.outerHTML = panel(L('Ошибка'), `<div class="empty">${esc(e.message || e)}</div>`);
@@ -779,7 +823,14 @@ async function renderBroadcast(m) {
     bcPill(b.status),
     `<span class="num">${b.sent || 0} / ${b.failed || 0}</span>`, `<span class="num">${b.sent_at ? fdate(b.sent_at) : '—'}</span>`]);
   swap(m, panel(L('Новая рассылка'), `<div class="panel-body">
-      <textarea id="bctext" rows="4" placeholder="Что написать подписчикам бота"></textarea>
+      <textarea id="bctext" rows="4" placeholder="${L('Что написать подписчикам бота')}"></textarea>
+      <div class="bcphoto">
+        <label class="btn" for="bcfile">${L('Прикрепить фото')}</label>
+        <input type="file" id="bcfile" accept="image/*" hidden>
+        <span class="hint" id="bcphotoname" style="margin:0"></span>
+        <button class="btn quiet sm" id="bcphotoclear" hidden>${L('Убрать фото')}</button>
+      </div>
+      <img id="bcpreview" class="bcpreview" alt="" hidden>
       <div class="tools" style="margin-top:12px">
         <button class="btn primary" id="bcsend" ${count ? '' : 'disabled'}>Отправить ${count || 0} подписчикам</button>
         <span class="hint" style="margin:0" id="bcres"></span>
@@ -788,14 +839,44 @@ async function renderBroadcast(m) {
       ${count ? '' : L('Сейчас подписчиков нет: попросите людей открыть бота и нажать «Старт».')}</p>
     </div>`) + (hist.length ? panel(L('Последние рассылки'), table(['#', L('Текст'), L('Статус'), L('Ушло / ошибок'), L('Когда')], hist)) : ''));
 
+  // фото сжимаем до 1280px: Telegram всё равно ужмёт, а хранить гигантские data:URL незачем
+  const file = document.getElementById('bcfile');
+  if (file) file.onchange = () => {
+    const f = file.files && file.files[0]; if (!f) return;
+    const rd = new FileReader();
+    rd.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const max = 1280, sc = Math.min(1, max / Math.max(img.width, img.height));
+        const cv = document.createElement('canvas');
+        cv.width = Math.round(img.width * sc); cv.height = Math.round(img.height * sc);
+        cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+        bcPhoto = cv.toDataURL('image/jpeg', 0.85);
+        const prev = document.getElementById('bcpreview');
+        prev.src = bcPhoto; prev.hidden = false;
+        document.getElementById('bcphotoname').textContent = f.name;
+        document.getElementById('bcphotoclear').hidden = false;
+      };
+      img.src = rd.result;
+    };
+    rd.readAsDataURL(f);
+  };
+  const clr = document.getElementById('bcphotoclear');
+  if (clr) clr.onclick = () => {
+    bcPhoto = null; file.value = '';
+    document.getElementById('bcpreview').hidden = true;
+    document.getElementById('bcphotoname').textContent = '';
+    clr.hidden = true;
+  };
   const send = document.getElementById('bcsend');
   if (send) send.onclick = async () => {
     const text = document.getElementById('bctext').value.trim();
     if (!text) return toast(L('Сначала напишите текст'), true);
     send.disabled = true; send.textContent = L('Ставим в очередь…');
-    const { data, error } = await sb.from('broadcasts').insert({ text, author: me.id }).select().single();
+    const { data, error } = await sb.from('broadcasts').insert({ text, author: me.id, photo: bcPhoto || null }).select().single();
     if (error) { send.disabled = false; send.textContent = L('Отправить'); return toast(error.message, true); }
     document.getElementById('bcres').textContent = L('В очереди, бот разошлёт за минуту…');
+    bcPhoto = null;
     watchBroadcast(data.id);
   };
 }
@@ -823,6 +904,115 @@ const roleSelect = (id, val) => `<select id="${id}" style="width:auto">` +
 // город нужен только менеджеру: у владельца и разработчика доступ ко всем городам
 const citySelect = id => `<select id="${id}" style="width:auto">` +
   CITIES.map(c => `<option value="${c}">${CITY_LABEL[c]}</option>`).join('') + '</select>';
+
+
+/* ================= промокоды ================= */
+// Правила лежат в базе, скидку считает функция promo_check — панель только заводит условия.
+const PROMO_KINDS = [['percent', '%'], ['fixed', 'zł']];
+
+async function renderPromo(m) {
+  const { data } = await sb.from('promo_codes').select('*').order('created_at', { ascending: false });
+  const list = data || [];
+  const now = Date.now();
+  const statusOf = c => {
+    if (!c.active) return ['off', L('выключен')];
+    if (c.expires_at && new Date(c.expires_at).getTime() < now) return ['off', L('истёк')];
+    if (c.starts_at && new Date(c.starts_at).getTime() > now) return ['new', L('ещё не начался')];
+    if (c.max_uses != null && c.used >= c.max_uses) return ['off', L('исчерпан')];
+    return ['ok', L('работает')];
+  };
+  const rows = list.map(c => {
+    const [cls, label] = statusOf(c);
+    const cond = [
+      c.city ? CITY_LABEL[c.city] || c.city : null,
+      c.category ? c.category : null,
+      c.min_sum ? L('от') + ' ' + c.min_sum + ' zł' : null,
+      c.per_user ? c.per_user + ' ' + L('раз на человека') : null
+    ].filter(Boolean).join(' · ');
+    const period = [c.starts_at ? fdate(c.starts_at) : null, c.expires_at ? fdate(c.expires_at) : null]
+      .filter(Boolean).join(' — ') || '<span class="sub">' + L('без срока') + '</span>';
+    return [
+      `<b class="num">${esc(c.code)}</b>` + (c.note ? `<span class="sub">${esc(c.note)}</span>` : ''),
+      `<span class="num">${c.kind === 'percent' ? c.value + ' %' : c.value + ' zł'}</span>`,
+      cond || '<span class="sub">' + L('без условий') + '</span>',
+      period,
+      `<span class="num">${c.used}${c.max_uses != null ? ' / ' + c.max_uses : ''}</span>`,
+      `<span class="pill ${cls}">${label}</span>`,
+      `<div class="tools"><button class="btn sm" data-ptoggle="${esc(c.code)}">${c.active ? L('Выключить') : L('Включить')}</button>` +
+      `<button class="btn sm danger" data-pdel="${esc(c.code)}">${L('Удалить')}</button></div>`
+    ];
+  });
+
+  swap(m, panel(L('Действующие коды'), rows.length
+      ? table([L('Код'), L('Скидка'), L('Условия'), L('Срок'), L('Использован'), L('Статус'), ''], rows)
+      : empty(L('Промокодов нет'), L('Заведите первый код формой ниже.'))) +
+    panel(L('Новый промокод'), `<div class="panel-body">
+      <div class="pform">
+        <label class="f">${L('Код')}<input id="pc_code" placeholder="LETO10" maxlength="24"></label>
+        <label class="f">${L('Тип скидки')}<select id="pc_kind">
+          ${PROMO_KINDS.map(([k, u]) => `<option value="${k}">${k === 'percent' ? L('Процент') : L('Сумма')} (${u})</option>`).join('')}
+        </select></label>
+        <label class="f">${L('Размер')}<input id="pc_value" inputmode="decimal" placeholder="10"></label>
+        <label class="f">${L('Город')}<select id="pc_city">
+          <option value="">${L('все города')}</option>
+          ${CITIES.map(c => `<option value="${c}">${CITY_LABEL[c]}</option>`).join('')}
+        </select></label>
+        <label class="f">${L('Категория')}<select id="pc_cat">
+          <option value="">${L('весь ассортимент')}</option>
+          ${PROMO_CATS.map(c => `<option value="${c}">${c}</option>`).join('')}
+        </select></label>
+        <label class="f">${L('Минимальная сумма')}<input id="pc_min" inputmode="numeric" placeholder="0"></label>
+        <label class="f">${L('Лимит всего')}<input id="pc_max" inputmode="numeric" placeholder="${L('без лимита')}"></label>
+        <label class="f">${L('Раз на человека')}<input id="pc_per" inputmode="numeric" value="1"></label>
+        <label class="f">${L('Действует с')}<input id="pc_from" type="date"></label>
+        <label class="f">${L('Действует до')}<input id="pc_to" type="date"></label>
+        <label class="f pform-wide">${L('Заметка')}<input id="pc_note" placeholder="${L('для чего этот код')}"></label>
+      </div>
+      <div class="tools" style="margin-top:12px"><button class="btn primary" id="pc_add">${L('Создать промокод')}</button></div>
+      <p class="hint">${L('Процент считается от суммы товаров без доставки. Скидка не может превысить корзину.')}</p>
+    </div>`));
+
+  const add = document.getElementById('pc_add');
+  if (add) add.onclick = async () => {
+    const code = (document.getElementById('pc_code').value || '').trim().toUpperCase();
+    const value = Number((document.getElementById('pc_value').value || '').replace(',', '.'));
+    if (!/^[A-Z0-9_-]{3,24}$/.test(code)) return toast(L('Код: латиница, цифры, 3–24 символа'), true);
+    if (!Number.isFinite(value) || value <= 0) return toast(L('Размер скидки указан неверно'), true);
+    const num = id => { const v = (document.getElementById(id).value || '').trim(); return v === '' ? null : Number(v); };
+    const day = (id, end) => {
+      const v = document.getElementById(id).value;
+      return v ? new Date(v + (end ? 'T23:59:59' : 'T00:00:00')).toISOString() : null;
+    };
+    add.disabled = true;
+    const { error } = await sb.from('promo_codes').insert({
+      code, kind: document.getElementById('pc_kind').value, value,
+      city: document.getElementById('pc_city').value || null,
+      category: document.getElementById('pc_cat').value || null,
+      min_sum: num('pc_min') || 0, max_uses: num('pc_max'), per_user: num('pc_per') ?? 1,
+      starts_at: day('pc_from'), expires_at: day('pc_to', true),
+      note: (document.getElementById('pc_note').value || '').trim() || null
+    });
+    add.disabled = false;
+    if (error) return toast(error.code === '23505' ? L('Такой код уже есть') : error.message, true);
+    toast(L('Промокод создан'));
+    render();
+  };
+
+  m.querySelectorAll('[data-ptoggle]').forEach(b => b.onclick = async () => {
+    const code = b.dataset.ptoggle;
+    const cur = list.find(x => x.code === code);
+    const { error } = await sb.from('promo_codes').update({ active: !cur.active }).eq('code', code);
+    if (error) return toast(error.message, true);
+    render();
+  });
+  m.querySelectorAll('[data-pdel]').forEach(b => b.onclick = async () => {
+    if (!confirm(L('Удалить промокод') + ' ' + b.dataset.pdel + '?')) return;
+    const { error } = await sb.from('promo_codes').delete().eq('code', b.dataset.pdel);
+    if (error) return toast(error.message, true);
+    toast(L('Промокод удалён'));
+    render();
+  });
+}
 
 async function renderAccess(m) {
   const { data } = await sb.rpc('admin_access_list');
@@ -901,6 +1091,7 @@ function grantErr(error) {
 }
 
 /* ================= ассортимент ================= */
+let bcPhoto = null;   // картинка рассылки, data:URL
 let groups = [], cityNow = 'katowice';
 
 // Изменения считаем сравнением полей с тем, что пришло из базы. Прежний список
@@ -932,10 +1123,11 @@ function changedItems() {
     const name = gv('name'), brand = gv('brand'), category = gv('category'), nic = gv('nic');
     const priceRaw = gv('price');
     const price = priceRaw === '' ? null : Number(priceRaw);
+    const hit = !!card.querySelector('[data-p="hit"]').checked;
     const tiers = buildTiers(price, gv('t3'), gv('t5'), gv('t10'));
     const tiersChanged = tiersKey(tiers) !== tiersKey(g.head.tiers);
     const headChanged = name !== (g.head.name || '') || brand !== (g.head.brand || '')
-      || category !== (g.head.category || '') || nic !== (g.head.nic || '') || price !== g.head.price || tiersChanged;
+      || category !== (g.head.category || '') || nic !== (g.head.nic || '') || price !== g.head.price || tiersChanged || hit !== !!g.head.hit;
     const rows = [];
     g.items.forEach((r, ri) => {
       const row = card.querySelector('.flav[data-f="' + gi + ':' + ri + '"]'); if (!row) return;
@@ -945,7 +1137,7 @@ function changedItems() {
       if (headChanged || qty !== r.qty) rows.push({ r, qty });
     });
     card.classList.toggle('dirty', headChanged);
-    if (rows.length) out.push({ g, name, brand, category, nic, price, tiers, rows, bad: priceRaw !== '' && !Number.isFinite(price) });
+    if (rows.length) out.push({ g, name, brand, category, nic, price, tiers, hit, rows, bad: priceRaw !== '' && !Number.isFinite(price) });
   });
   return out;
 }
@@ -988,6 +1180,7 @@ async function renderProducts(m) {
         <input class="i-tier" data-p="t3" value="${tierP(g.head.tiers, 3)}" placeholder="3шт" inputmode="numeric" title="Цена за штуку при 3 шт">
         <input class="i-tier" data-p="t5" value="${tierP(g.head.tiers, 5)}" placeholder="5шт" inputmode="numeric" title="Цена за штуку при 5 шт">
         <input class="i-tier" data-p="t10" value="${tierP(g.head.tiers, 10)}" placeholder="10шт" inputmode="numeric" title="Цена за штуку при 10 шт">
+        <label class="i-hit"><input type="checkbox" data-p="hit" ${g.head.hit ? 'checked' : ''}> ${L('Хит')}</label>
         <button class="btn sm danger" data-delp="${gi}">${L('Удалить товар')}</button>
       </div>
       <div class="item-id">${esc(g.id)}</div>
@@ -1036,6 +1229,7 @@ function bindProducts(m) {
   };
   // пересчитываем при каждом вводе: вернул значение обратно — панель сама уходит
   m.querySelectorAll('.item').forEach(card => {
+    card.addEventListener('change', e => { if (e.target.dataset.p === 'hit') updateSaveBar(); });
     card.addEventListener('input', e => {
       if (e.target.dataset.p === undefined && e.target.dataset.q === undefined) return;
       updateSaveBar();
@@ -1098,7 +1292,7 @@ async function saveProducts() {
   changed.forEach(x => x.rows.forEach(({ r, qty }) => out.push({
     id: r.id, city: r.city, flavor: r.flavor, name: x.name || r.id,
     brand: x.brand || null, category: x.category || null, nic: x.nic || null,
-    price: x.price, tiers: x.tiers, qty: Number.isFinite(qty) ? qty : 0, updated_at: new Date().toISOString()
+    price: x.price, tiers: x.tiers, hit: x.hit, qty: Number.isFinite(qty) ? qty : 0, updated_at: new Date().toISOString()
   })));
   if (!out.length) { clearDirty(); return toast(L('Изменений нет')); }
   btn.disabled = true; btn.textContent = L('Сохраняем…');

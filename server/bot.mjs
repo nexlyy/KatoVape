@@ -1,4 +1,4 @@
-import { BOT_TOKEN, sendMessage, editMessage, answerCallback, tgCall, getUpdates, deleteWebhook, setMenuButton } from './tg.mjs';
+import { BOT_TOKEN, sendMessage, sendPhoto, editMessage, answerCallback, tgCall, getUpdates, deleteWebhook, setMenuButton } from './tg.mjs';
 import { tr, pickLang } from './i18n.mjs';
 
 const SUPA = (process.env.SUPABASE_URL || '').replace(/\/$/, '');
@@ -565,7 +565,7 @@ async function doBroadcasts() {
     const users = await sbSelect('bot_users', 'select=telegram_id').catch(() => []);
     let sent = 0, failed = 0;
     for (const u of users || []) {
-      const r = await sendMessage(u.telegram_id, b.text);
+      const r = b.photo ? await sendPhoto(u.telegram_id, b.photo, b.text) : await sendMessage(u.telegram_id, b.text);
       if (r && r.ok) sent++; else failed++;   // 403 (заблокировал бота) просто считаем в failed
       await sleep(60);
     }
