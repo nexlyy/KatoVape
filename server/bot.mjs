@@ -12,6 +12,7 @@ const CITIES = ['katowice', 'gliwice', 'warszawa'];
 const CITY_LABEL = { katowice: 'Katowice', gliwice: 'Gliwice', warszawa: 'Warszawa' };
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const esc = s => String(s == null ? '' : s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+const enc = encodeURIComponent;
 
 async function sb(method, path, body, extra) {
   const res = await fetch(SUPA + '/rest/v1/' + path, {
@@ -150,7 +151,7 @@ async function handleUpdate(u) {
     return;
   }
   // менеджеру — текущие заказы, только просмотр (действия в веб-админке)
-  if (text === '/orders') { if (await isManager(f.id)) await handleOrders(m.chat.id); return; }
+  if (text === '/orders') { if (await isManager(f.id)) await handleOrders(m.chat.id, f.id); return; }
   // не подтвердил 18+ — гейт; не заполнил профиль — принимаем ответ шага
   if (!st || !st.age_ok) { await sendAgeGate(m.chat.id, lang); return; }
   if (!st.onboarding_done) { await onboardingAnswer(m, st, lang, text); return; }
@@ -257,7 +258,7 @@ async function handleReserveLink(m, rest, lang) {
         confirmed_at: new Date().toISOString()
       });
       await sbRpc('bump_demand', { p_product: pid, p_event: 'reserve' }).catch(() => {});
-      await sendMessage(m.chat.id, tr(lang, 'resConfirmed', { name: esc(name), date }));
+      await sendMessage(m.chat.id, tr(lang, 'resConfirmed', { name: esc(name), date: fmtDMY(date) }));
     } catch (e) {
       await sendMessage(m.chat.id, tr(lang, 'resFail'));
     }
@@ -268,16 +269,42 @@ async function handleReserveLink(m, rest, lang) {
   }
 }
 
-// менеджер — из env KV_MANAGER_IDS (владелец) или из таблицы admins (выдаёт владелец/разработчик в панели)
+// ---- доступ менеджеров: роль и город берём из таблицы admins ----
+// Список меняется редко, а джобы ходят по нему часто, поэтому держим короткий кэш.
+let adminsCache = { at: 0, rows: [] };
+async function adminsList() {
+  if (Date.now() - adminsCache.at < 60000) return adminsCache.rows;
+  const rows = await sbSelect('admins', 'select=telegram_id,role,city').catch(() => null);
+  if (rows) adminsCache = { at: Date.now(), rows };
+  return adminsCache.rows;
+}
+// кому слать про город: владелец и разработчик получают всё, менеджер — только свой город.
+// KV_MANAGER_IDS остаётся страховкой на случай пустой таблицы (первый запуск, сбой сети).
+async function managersFor(city) {
+  const rows = await adminsList();
+  const ids = (rows || [])
+    .filter(a => a.role === 'owner' || a.role === 'dev' || (a.role === 'manager' && a.city && a.city === city))
+    .map(a => Number(a.telegram_id))
+    .filter(Boolean);
+  const uniq = [...new Set(ids)];
+  return uniq.length ? uniq : MANAGERS;
+}
+async function adminOf(tgId) {
+  const rows = await adminsList();
+  return (rows || []).find(a => Number(a.telegram_id) === Number(tgId)) || null;
+}
 async function isManager(tgId) {
   if (MANAGERS.includes(Number(tgId))) return true;
-  const r = await sbSelect('admins', 'telegram_id=eq.' + tgId + '&select=telegram_id&limit=1').catch(() => null);
-  return !!(r && r[0]);
+  return !!(await adminOf(tgId));
 }
-// текущие заказы для менеджера: только чтение, статусы меняются в веб-админке
-async function handleOrders(chat) {
+// текущие заказы для менеджера: только чтение, статусы меняются в веб-админке.
+// Менеджер города видит заказы своего города, владелец и разработчик — все.
+async function handleOrders(chat, tgId) {
+  const me = await adminOf(tgId);
+  const onlyCity = me && me.role === 'manager' ? me.city : null;
   const rows = await sbSelect('orders',
-    'status=in.(new,confirmed)&order=created_at.desc&limit=20&select=id,city,sum,status,payment_status,contact').catch(() => []);
+    'status=in.(new,confirmed)' + (onlyCity ? '&city=eq.' + enc(onlyCity) : '') +
+    '&order=created_at.desc&limit=20&select=id,city,sum,status,payment_status,contact').catch(() => []);
   if (!rows || !rows.length) { await sendMessage(chat, 'Текущих заказов нет.'); return; }
   let buf = '<b>Текущие заказы</b> (' + rows.length + '):\n\n';
   for (const o of rows) {
@@ -350,7 +377,7 @@ async function remindManagers() {
     const who = p.telegram_username ? '@' + p.telegram_username : (p.username || '');
     const text = 'Через час бронь: <b>' + esc(r.product_name) + '</b> на ' + esc(r.reserve_time) +
       ' (' + esc(r.city) + ')' + (who ? ', ' + esc(who) : '') + '.';
-    for (const mid of MANAGERS) await sendMessage(mid, text).catch(() => {});
+    for (const mid of await managersFor(r.city)) await sendMessage(mid, text).catch(() => {});
     await sbUpdate('reservations', 'id=eq.' + r.id, { manager_reminded_at: new Date().toISOString() }).catch(() => {});
   }
 }
@@ -359,7 +386,7 @@ async function notifyOrders() {
   // pending (карта/checkout начаты, но не оплачены) менеджеру не показываем — только
   // оплату при выдаче (unpaid) и уже оплаченные онлайн (paid)
   const list = await sbSelect('orders',
-    'manager_notified_at=is.null&payment_status=in.(unpaid,paid)&select=id,city,items,sum,delivery,address,contact,payment_status,payment_provider,profiles(username,telegram_username,telegram_id)').catch(() => []);
+    'manager_notified_at=is.null&payment_status=in.(unpaid,paid)&select=id,city,items,sum,delivery,address,contact,comment,payment_status,payment_provider,profiles(username,telegram_username,telegram_id)').catch(() => []);
   for (const o of list || []) {
     const items = (o.items || []).map((x, i) =>
       (i + 1) + ') ' + (typeof x === 'string' ? x : (x.name || x.id) + (x.flavor ? ', ' + x.flavor : '') + ' x' + (x.n || 1) + (x.sum ? ' = ' + x.sum + ' zl' : ''))).join('\n');
@@ -373,8 +400,10 @@ async function notifyOrders() {
       : '\nОплата при выдаче';
     const text = '<b>Новый заказ №' + o.id + '</b> (' + esc(o.city) + ')\n' + esc(items) +
       '\nИтого: ' + (o.sum || 0) + ' zł' + payLine + '\nПолучение: ' + esc(deliv) +
+      (o.comment ? '\nКомментарий: ' + esc(o.comment) : '') +
       (who ? '\n\nКлиент:\n' + esc(who) : '') + (tgLine ? '\nTelegram: ' + esc(tgLine) : '');
-    for (const mid of MANAGERS) await sendMessage(mid, text).catch(() => {});
+    // уведомление уходит менеджеру города заказа, а не всем менеджерам сразу
+    for (const mid of await managersFor(o.city)) await sendMessage(mid, text).catch(() => {});
     await sbUpdate('orders', 'id=eq.' + o.id, { manager_notified_at: new Date().toISOString() }).catch(() => {});
   }
 }

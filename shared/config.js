@@ -19,7 +19,15 @@ window.KV_CONFIG = {
   PAYMENTS_CURRENCY: 'pln',
 
   TELEGRAM_BOT: 'KatoVape_bot',   // username бота: бронь диплинком, вход в мини-аппе, кнопка "Открыть в Telegram"
-  TG_CHANNEL: 'https://t.me/c/2500101660',   // канал KatoVape (id -1002500101660); заменить на @-ссылку когда будет
+
+  // Ссылки по городам. Кнопка Telegram и связь с менеджером берут их отсюда, поэтому
+  // поменять чат или добавить город можно правкой одного этого блока, без правок кода.
+  // Пустой channel = ссылки ещё нет: кнопка скажет об этом и предложит менеджера.
+  CITY_LINKS: {
+    katowice: { channel: '', manager: 'https://t.me/KatoManager' },
+    gliwice:  { channel: 'https://t.me/+P-8bC9IvIn01YmQy', manager: 'https://t.me/KatoManager' },
+    warszawa: { channel: 'https://t.me/+iV43ZajefN0yMjEy', manager: 'https://t.me/KatoManager' }
+  },
 
   ADMIN_IDS: [5301671230],
   ADMIN_URL: 'https://nexlyy.github.io/KatoVape/demos/admin/?v=2',   // куда ведёт кнопка "В админку" для админов

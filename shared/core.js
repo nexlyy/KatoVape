@@ -14,7 +14,14 @@ window.KV = (function () {
       add: 'В корзину', added: 'добавлено', reserve: 'Бронь',
       cart: 'Корзина', cartEmpty: 'Корзина пустая', total: 'Итого',
       checkout: 'Оформить заказ', clear: 'Очистить',
-      bulkContact: 'Связь с менеджером', cardPlus: 'Картой +10%: {sum} zł',
+      bulkContact: 'Связаться с менеджером', cardPlus: 'Картой +10%: {sum} zł',
+      bulkNote: 'Больше 10 единиц оформляем через менеджера.',
+      noChannel: 'Канал этого города скоро появится',
+      payOff: 'Оплата картой временно недоступна. Свяжитесь с менеджером.',
+      commentLabel: 'Комментарий к заказу', commentPh: 'Пожелания к заказу, необязательно',
+      pickCity: 'Выберите город', pickCityNote: 'Из этого магазина будет ваш заказ. Город можно сменить в любой момент.',
+      favTitle: 'Избранное', favEmpty: 'Пока пусто. Нажмите сердце на карточке товара.',
+      favRemove: 'Убрать', qtyPick: 'Количество',
       copied: 'Заказ уже в сообщении, выбери чат менеджера',
       reserved: 'Бронь уже в сообщении, выбери чат менеджера',
       write: 'Написать менеджеру', order: 'Заказ',
@@ -35,7 +42,14 @@ window.KV = (function () {
       add: 'До кошика', added: 'додано', reserve: 'Бронь',
       cart: 'Кошик', cartEmpty: 'Кошик порожній', total: 'Разом',
       checkout: 'Оформити замовлення', clear: 'Очистити',
-      bulkContact: 'Звʼязок з менеджером', cardPlus: 'Карткою +10%: {sum} zł',
+      bulkContact: 'Звʼязатися з менеджером', cardPlus: 'Карткою +10%: {sum} zł',
+      bulkNote: 'Понад 10 одиниць оформлюємо через менеджера.',
+      noChannel: 'Канал цього міста скоро зʼявиться',
+      payOff: 'Оплата карткою тимчасово недоступна. Звʼяжіться з менеджером.',
+      commentLabel: 'Коментар до замовлення', commentPh: 'Побажання до замовлення, необовʼязково',
+      pickCity: 'Оберіть місто', pickCityNote: 'З цього магазину буде ваше замовлення. Місто можна змінити будь-коли.',
+      favTitle: 'Обране', favEmpty: 'Поки порожньо. Натисніть сердечко на картці товару.',
+      favRemove: 'Прибрати', qtyPick: 'Кількість',
       copied: 'Замовлення вже в повідомленні, обери чат менеджера',
       reserved: 'Бронь вже в повідомленні, обери чат менеджера',
       write: 'Написати менеджеру', order: 'Замовлення',
@@ -56,7 +70,14 @@ window.KV = (function () {
       add: 'Do koszyka', added: 'dodano', reserve: 'Rezerwacja',
       cart: 'Koszyk', cartEmpty: 'Koszyk jest pusty', total: 'Razem',
       checkout: 'Złóż zamówienie', clear: 'Wyczyść',
-      bulkContact: 'Kontakt z menedżerem', cardPlus: 'Kartą +10%: {sum} zł',
+      bulkContact: 'Skontaktuj się z menedżerem', cardPlus: 'Kartą +10%: {sum} zł',
+      bulkNote: 'Powyżej 10 sztuk zamówienie prowadzi menedżer.',
+      noChannel: 'Kanał tego miasta pojawi się wkrótce',
+      payOff: 'Płatność kartą jest chwilowo niedostępna. Prosimy o kontakt z menedżerem.',
+      commentLabel: 'Komentarz do zamówienia', commentPh: 'Uwagi do zamówienia, opcjonalnie',
+      pickCity: 'Wybierz miasto', pickCityNote: 'Z tego sklepu będzie Twoje zamówienie. Miasto można zmienić w każdej chwili.',
+      favTitle: 'Ulubione', favEmpty: 'Na razie pusto. Kliknij serce na karcie produktu.',
+      favRemove: 'Usuń', qtyPick: 'Ilość',
       copied: 'Zamówienie już w wiadomości, wybierz czat managera',
       reserved: 'Rezerwacja już w wiadomości, wybierz czat managera',
       write: 'Napisz do managera', order: 'Zamówienie',
@@ -272,10 +293,11 @@ window.KV = (function () {
       cand.push(tg.initDataUnsafe.user.language_code);
     if (navigator.languages) cand.push.apply(cand, navigator.languages);
     cand.push(navigator.language || '');
+    // автоматически поднимаем только русский и украинский, остальные языки получают
+    // язык по умолчанию (польский выбирается вручную в меню)
     for (const c of cand) {
       const p = String(c).toLowerCase().slice(0, 2);
       if (p === 'uk') return 'uk';
-      if (p === 'pl') return 'pl';
       if (p === 'ru' || p === 'be') return 'ru';
     }
     return 'ru';
@@ -569,10 +591,14 @@ window.KV = (function () {
     return qty(item);
   }
 
-  function cartAdd(id, fl) {
+  // n — сколько добавить (оптовая ступень из карточки), по умолчанию одна штука
+  function cartAdd(id, fl, n) {
     const key = id + '::' + (fl === undefined ? '' : fl);
-    if ((cart[key] || 0) >= availFor(key)) return false;   // больше, чем есть, не продать
-    cart[key] = (cart[key] || 0) + 1;
+    const want = Math.max(1, Math.floor(n || 1));
+    const have = cart[key] || 0;
+    const avail = availFor(key);
+    if (have >= avail) return false;                        // больше, чем есть, не продать
+    cart[key] = Math.min(have + want, avail);               // не даём уйти за остаток
     saveCart();
     return true;
   }
@@ -627,10 +653,10 @@ window.KV = (function () {
   // черновиком в поле ввода, клиенту остаётся нажать отправить. share/url не
   // годился: он показывал окно "Переслать", где менеджера ещё найти надо.
   // В буфер текст тоже кладём, на случай старого клиента без поддержки драфта.
-  function tgSend(text, note) {
+  function tgSend(text, note, to) {
     copyText(text);
     toast(note);
-    const url = MANAGER + '?text=' + encodeURIComponent(text);
+    const url = (to || managerLink()) + '?text=' + encodeURIComponent(text);
     const tg = window.Telegram && window.Telegram.WebApp;
     setTimeout(() => {
       if (tg && tg.initData) tg.openTelegramLink(url);
@@ -651,11 +677,32 @@ window.KV = (function () {
   function normPaczko(s) { return (s || '').trim().toUpperCase().replace(/\s+/g, ''); }
   function validPaczko(s) { return /^[A-Z]{3}\d{2,4}[A-Z]{0,2}$/.test(normPaczko(s)); }
 
-  // крупный опт (позиция от 20 шт) обычным заказом не оформляем — уводим к менеджеру
-  function bulkOrder() { return cartLines().some(l => l.n >= 20); }
+  // ---- комментарий покупателя (бронь и заказ), с живым счётчиком символов ----
+  const COMMENT_MAX = 500;
+  function commentBox(kind, value) {
+    const v = String(value || '').slice(0, COMMENT_MAX);
+    return '<label class="kv-cmt"><span>' + t('commentLabel') +
+      '<i class="kv-cmt-n" data-cmt-n="' + kind + '">' + v.length + ' / ' + COMMENT_MAX + '</i></span>' +
+      '<textarea data-cmt="' + kind + '" rows="2" maxlength="' + COMMENT_MAX + '" placeholder="' +
+      esc(t('commentPh')) + '">' + esc(v) + '</textarea></label>';
+  }
+  // общий обработчик ввода: держит значение и обновляет счётчик, не перерисовывая окно
+  function onCommentInput(e) {
+    const ta = e.target.closest('[data-cmt]'); if (!ta) return;
+    const kind = ta.dataset.cmt;
+    const val = ta.value.slice(0, COMMENT_MAX);
+    if (kind === 'res' && modal) modal.resComment = val; else if (kind === 'order') orderComment = val;
+    const n = document.querySelector('[data-cmt-n="' + kind + '"]');
+    if (n) n.textContent = val.length + ' / ' + COMMENT_MAX;
+  }
+  let orderComment = '';
+
+  // крупный опт (больше 10 единиц суммарно) обычным заказом не оформляем: такой заказ
+  // ведёт менеджер города — ему уходит готовый состав корзины
+  function bulkOrder() { return cartCount() > 10; }
   function checkout() {
     if (!cartCount()) return;
-    if (bulkOrder()) { tgSend(orderText(), t('copied')); return; }
+    if (bulkOrder()) { tgSend(orderText(), t('copied'), managerLink()); return; }
     const cur = currentDelivery();
     if (cur.method === 'courier' && !(cur.addr || '').trim()) { toast(t('needAddr')); openCart(); return; }
     const logged = window.KVAuth && KVAuth.loggedIn && KVAuth.loggedIn();
@@ -699,6 +746,7 @@ window.KV = (function () {
       if (e.target.closest('.kvc-later')) { placeOrder(); return; }   // оплата при выдаче
       if (e.target.closest('.kvc-go')) { placeOrder(); return; }
     });
+    d.addEventListener('input', onCommentInput);
   }
   function contactOf() {
     return (window.KVAuth && KVAuth.contact) ? KVAuth.contact() : { name: '', phone: '', email: '', paczkomat: '' };
@@ -761,6 +809,7 @@ window.KV = (function () {
         '<div class="kvc-row"><span>' + f.lbl + '</span><b>' + (esc(f.v || '') || '<i class="kvc-none">—</i>') + '</b></div>').join('') +
         '<div class="kvc-sum"><span>' + t('total') + '</span><b>' + grandTotal() + ' zł</b></div>' +
         '<div class="kvc-row"><span>' + t('delivery') + '</span><b>' + deliveryLabel(cur.method) + '</b></div>' +
+        commentBox('order', orderComment) +
         '<div class="kvc-warn">' + t('dataWarn') + '</div>' + actions;
     }
     d.querySelector('.kvc-body').innerHTML = '<h3 class="kvc-title">' + t('confirmTitle') + '</h3>' + inner;
@@ -800,6 +849,7 @@ window.KV = (function () {
       address: inpost ? normPaczko(ct.paczkomat) : (cur.addr || ''),
       contact: { name: ct.name.trim(), phone: normPhonePl(ct.phone), email: ct.email.trim(),
         paczkomat: inpost ? normPaczko(ct.paczkomat) : '' },
+      comment: (orderComment || '').slice(0, COMMENT_MAX) || null,
       items
     };
   }
@@ -809,6 +859,7 @@ window.KV = (function () {
     logOrder();
     track('checkout', { total: grandTotal(), delivery: currentDelivery().method });
     cart = {};
+    orderComment = '';
     saveCart();
     closeConfirm();
     const kvd = document.getElementById('kvd'); if (kvd) kvd.hidden = true;
@@ -841,8 +892,13 @@ window.KV = (function () {
     box.dataset.on = '1';   // один монтаж на показ окна, повтор при перерисовке не нужен
     KVPay.mount(box, orderData(), {
       onSuccess: finishOrder,
-      onError: code => toast(code === 'out_of_stock' ? t('orderFail')
-        : (typeof code === 'string' && code && code.length < 80 ? code : t('payFail'))),
+      // Пока онлайн-оплата не запущена, Stripe возвращает технические коды. Показывать их
+      // покупателю бессмысленно: даём понятный текст и путь к менеджеру города.
+      onError: code => {
+        if (code === 'out_of_stock') { toast(t('orderFail')); return; }
+        toast(t('payOff'));
+        setTimeout(openManager, 900);
+      },
       onCancel: () => {}
     });
   }
@@ -1022,7 +1078,8 @@ window.KV = (function () {
       const ok = await KVAuth.apiReserve({
         city, product_id: item.id,
         product_name: item.name + (fl ? ' ' + fl.name : ''),
-        flavor: fl ? fl.name : '', qty: 1, reserve_date: date, reserve_time: modal.resTime
+        flavor: fl ? fl.name : '', qty: 1, reserve_date: date, reserve_time: modal.resTime,
+        comment: (modal.resComment || '').slice(0, COMMENT_MAX) || null
       });
       if (ok !== true) {
         toast(t(ok === 'limitCount' ? 'resLimitCount' : ok === 'limitQty' ? 'resLimitQty'
@@ -1113,6 +1170,10 @@ window.KV = (function () {
           '<span class="kvd-sum">' + l.sum + ' zł</span></div>').join('')
       : '<p class="kvd-empty">' + t('cartEmpty') + '</p>';
 
+    // подсказка, почему вместо оформления предлагается менеджер
+    const goBtn = d.querySelector('.kvd-go');
+    goBtn.classList.toggle('kvd-go-bulk', bulkOrder());
+    goBtn.title = bulkOrder() ? t('bulkNote') : '';
     // блок промо и скидки, либо кнопка повтора заказа для пустой корзины
     const extra = d.querySelector('.kvd-extra');
     if (lines.length) {
@@ -1514,8 +1575,29 @@ window.KV = (function () {
   }
 
   // ==== 18+ гейт с записью согласия + PL-предупреждение (21) ====
-  function ensureGate() {
-    if (localStorage.getItem('kv_age')) return;      // согласие уже дано и записано
+  // Первый запуск: подтверждение 18+, следом выбор города. Оба шага показываются один раз,
+  // ответы лежат в localStorage (kv_age, kv_city_picked). Сменить город потом можно в шапке.
+  function firstRun(afterAll) {
+    const done = () => { if (afterAll) afterAll(); };
+    const askCity = () => {
+      if (localStorage.getItem('kv_city_picked') || cities.length < 2) { done(); return; }
+      const g = document.createElement('div');
+      g.className = 'kv-gate kv-gate-city';
+      g.innerHTML = '<div class="kv-gate-box"><b class="kv-gate-t">' + t('pickCity') + '</b>' +
+        '<p class="kv-gate-warn">' + t('pickCityNote') + '</p>' +
+        '<div class="kv-gate-cities">' + cities.map(c =>
+          '<button data-pick="' + c.id + '">' + cityName(c) + '</button>').join('') + '</div></div>';
+      document.body.appendChild(g);
+      g.onclick = async e => {
+        const b = e.target.closest('[data-pick]'); if (!b) return;
+        localStorage.setItem('kv_city_picked', '1');
+        g.remove();
+        // setCity сам перерисует каталог, шапку и всё, что зависит от города
+        if (b.dataset.pick !== city) await setCity(b.dataset.pick);
+        done();
+      };
+    };
+    if (localStorage.getItem('kv_age')) { askCity(); return; }
     const g = document.createElement('div');
     g.className = 'kv-gate';
     g.innerHTML = '<div class="kv-gate-box"><div class="kv-gate-18">18+</div>' +
@@ -1525,7 +1607,8 @@ window.KV = (function () {
     document.body.appendChild(g);
     g.querySelector('.kv-gate-yes').onclick = () => {
       localStorage.setItem('kv_age', JSON.stringify({ ok: true, ts: Date.now(), v: 1 }));
-      g.remove(); maybeSubscribe();
+      g.remove();
+      askCity();
     };
     g.querySelector('.kv-gate-no').onclick = () => { location.href = 'https://www.google.com'; };
   }
@@ -1621,13 +1704,70 @@ window.KV = (function () {
   }
 
   // ==== избранное ====
+  // Список id хранится в localStorage, как и корзина, поэтому переживает перезагрузку и
+  // не требует входа. Отдельная страница со списком открывается сердцем в шапке.
   function favs() { try { return JSON.parse(localStorage.getItem('kv_favs') || '[]'); } catch (e) { return []; } }
   function isFav(id) { return favs().includes(id); }
+  function saveFavs(f) {
+    localStorage.setItem('kv_favs', JSON.stringify(f));
+    if (hooks.render) hooks.render();
+    const d = document.getElementById('kvfav');
+    if (d && !d.hidden) renderFavs();
+  }
   function toggleFav(id) {
     let f = favs();
-    f = f.includes(id) ? f.filter(x => x !== id) : f.concat(id);
-    localStorage.setItem('kv_favs', JSON.stringify(f));
-    return f.includes(id);
+    const on = !f.includes(id);
+    f = on ? f.concat(id) : f.filter(x => x !== id);
+    saveFavs(f);
+    return on;
+  }
+  function removeFav(id) { saveFavs(favs().filter(x => x !== id)); }
+
+  function ensureFavs() {
+    if (document.getElementById('kvfav')) return;
+    const d = document.createElement('div');
+    d.id = 'kvfav'; d.className = 'kvfav'; d.hidden = true;
+    d.innerHTML = '<div class="kvfav-box"><div class="kvfav-head"><b class="kvfav-title"></b>' +
+      '<button class="kvfav-x" aria-label="close">&times;</button></div><div class="kvfav-body"></div></div>';
+    document.body.appendChild(d);
+    d.addEventListener('click', e => {
+      if (e.target === d || e.target.closest('.kvfav-x')) { closeFavs(); return; }
+      const rm = e.target.closest('[data-favrm]');
+      if (rm) { e.stopPropagation(); removeFav(rm.dataset.favrm); return; }
+      const go = e.target.closest('[data-favgo]');
+      if (go) { closeFavs(); openProduct(go.dataset.favgo); return; }
+    });
+  }
+  function renderFavs() {
+    const d = document.getElementById('kvfav'); if (!d) return;
+    d.querySelector('.kvfav-title').textContent = t('favTitle');
+    // товар мог пропасть из каталога (сменили город) — такие строки просто не показываем
+    const list = favs().map(id => find(id)).filter(Boolean);
+    d.querySelector('.kvfav-body').innerHTML = list.length
+      ? list.map(it => {
+          const st = status(it);
+          return '<div class="kvfav-row"><button class="kvfav-i" data-favgo="' + esc(it.id) + '" type="button">' +
+            '<img src="' + ROOT + 'data/photos/' + it.id + '.jpg" alt="" loading="lazy" onerror="this.style.visibility=\'hidden\'">' +
+            '<span class="kvfav-n">' + esc(it.name) + '<i>' + (st === 'out' ? t('qtyNone') : price(it)) + '</i></span></button>' +
+            '<button class="kvfav-rm" data-favrm="' + esc(it.id) + '" type="button" aria-label="' + t('favRemove') + '">&times;</button></div>';
+        }).join('')
+      : '<p class="kvfav-empty">' + t('favEmpty') + '</p>';
+  }
+  function openFavs() {
+    ensureFavs(); renderFavs();
+    document.getElementById('kvfav').hidden = false;
+    document.body.classList.add('kv-noscroll');
+  }
+  function closeFavs() {
+    const d = document.getElementById('kvfav'); if (d) d.hidden = true;
+    if (!openLayers()) document.body.classList.remove('kv-noscroll');
+  }
+  // не снимаем блокировку скролла, если под нами осталось открытое окно
+  function openLayers() {
+    return ['kvm', 'kvd', 'kvp', 'kvc'].some(id => {
+      const el = document.getElementById(id);
+      return el && !el.hidden;
+    });
   }
 
   // ==== отзывы: только настоящие, живут в Supabase ====
@@ -1681,6 +1821,7 @@ window.KV = (function () {
       if (!modal) return;
       if (e.target.classList.contains('kvm-rev-name')) modal.name = e.target.value;
       if (e.target.classList.contains('kvm-rev-text')) modal.text = e.target.value;
+      onCommentInput(e);
     });
     document.addEventListener('keydown', e => {
       if (e.key === 'Escape' && !d.hidden) closeProduct();
@@ -1779,18 +1920,35 @@ window.KV = (function () {
           (fl ? '<span class="kvm-pick-q">' + (fl.qty > 0 ? t('left', fl.qty) : t('qtyNone')) + '</span>' : '') +
         '</div></div>' : '';
 
-    // кнопка в корзину и оптовая сетка цен
+    // Оптовые цены и выбор количества. Ступени приходят из админки (products.tiers), поэтому
+    // набор кнопок любой: 3/5/10 или другой. Цена за штуку пересчитывается по выбранному
+    // количеству, в корзину уходит именно оно.
     const canAdd = hasFl ? !!(fl && fl.qty > 0) : qty(item) > 0;
+    const stock = hasFl ? (fl ? fl.qty : 0) : qty(item);
+    const tiers = priceTiers(item);
+    const steps = tiers ? [...new Set(tiers.map(x => +x.q))].sort((a, b) => a - b) : [];
+    if (!steps.length || steps[0] !== 1) steps.unshift(1);
+    if (!modal.qty || !steps.includes(modal.qty)) modal.qty = 1;
+    const pickQty = Math.min(modal.qty, Math.max(stock, 1));
+    const unit = tierPrice(item, pickQty) || item.price || 0;
+    const tiersHTML = tiers
+      ? '<div class="kvm-tiers"><span class="kvm-tiers-t">' + t('qtyPick') + '</span>' +
+        steps.map(q => {
+          const p = tierPrice(item, q) || item.price || 0;
+          const off = q > stock;
+          return '<button class="kvm-tier' + (q === pickQty ? ' sel' : '') + (off ? ' off' : '') + '" type="button"' +
+            (off ? ' disabled' : '') + ' data-qty="' + q + '">' +
+            '<b>' + q + '</b> ' + t('pcs') + '<em>' + p + ' zł</em></button>';
+        }).join('') + '</div>'
+      : '';
+    const addSum = unit * pickQty;
     const addBtn = canAdd
-      ? '<button class="kvm-add-cta" data-add="' + item.id + '"' + (hasFl ? ' data-fl="' + modal.fl + '"' : '') + '>' +
-          t('add') + (item.price ? ' · ' + item.price + ' zł' : '') + '</button>'
+      ? '<button class="kvm-add-cta" data-add="' + item.id + '"' + (hasFl ? ' data-fl="' + modal.fl + '"' : '') +
+          ' data-n="' + pickQty + '">' + t('add') +
+          (addSum ? ' · ' + addSum + ' zł' : '') + (pickQty > 1 ? ' (' + pickQty + ' ' + t('pcs') + ')' : '') + '</button>'
       : (st === 'out'
           ? '<button class="kv-restock kvm-restock" data-notify="' + item.id + '">' + ui('notify') + '</button>'
           : '<button class="kvm-add-cta" disabled>' + t('chooseFirst') + '</button>');
-    const tiers = priceTiers(item);
-    const tiersHTML = tiers ?
-      '<div class="kvm-tiers">' + tiers.map(x =>
-        '<span class="kvm-tier"><b>' + x.q + '</b> ' + t('pcs') + '<em>' + x.p + ' zł</em></span>').join('') + '</div>' : '';
     const resBtn = st !== 'out' ? '<button class="kvm-res" data-res="' + item.id + '">' + t('reserve') + '</button>' : '';
 
     // панель брони: дата выдачи, не дальше недели от сегодня
@@ -1816,6 +1974,7 @@ window.KV = (function () {
         '<div class="kvm-rdays">' + RES_SLOTS.map(s =>
           '<button class="kvm-rday' + (s === modal.resTime ? ' sel' : '') + '" data-res-time="' + s + '" type="button">' + s + '</button>').join('') + '</div>' +
         heldNote +
+        commentBox('res', modal.resComment || '') +
         '<p class="kvm-rnote">' + t('resNote') + '</p>' +
         '<button class="kvm-res-go" data-res-go="1" type="button">' + t('resOk') + '</button></div>';
     }
@@ -1860,10 +2019,12 @@ window.KV = (function () {
     if (sel) { modal.fl = +sel.dataset.flSel; modal.flPicked = true; modal.flOpen = false; renderModal(); return; }
     const fav = e.target.closest('[data-fav]');
     if (fav) { e.stopPropagation(); toggleFav(fav.dataset.fav); renderModal(); if (hooks.render) hooks.render(); return; }
+    const q = e.target.closest('[data-qty]');
+    if (q) { e.stopPropagation(); modal.qty = +q.dataset.qty; renderModal(); return; }
     const add = e.target.closest('[data-add]');
     if (add) {
       e.stopPropagation();
-      const ok = cartAdd(add.dataset.add, add.dataset.fl !== undefined ? +add.dataset.fl : undefined);
+      const ok = cartAdd(add.dataset.add, add.dataset.fl !== undefined ? +add.dataset.fl : undefined, +add.dataset.n || 1);
       toast(t(ok ? 'added' : 'maxQty'));
       if (ok) {
         track('add_to_cart', { id: add.dataset.add });
@@ -1953,10 +2114,20 @@ window.KV = (function () {
     const tg = window.Telegram && window.Telegram.WebApp;
     if (tg && tg.initData) tg.openTelegramLink(url); else window.open(url, '_blank');
   }
-  function openManager() { openTg(MANAGER); }
-  function openChannel() {
+  // Ссылки берём из KV_CONFIG.CITY_LINKS по текущему городу: у каждого магазина свой чат
+  // и свой канал. Всё в конфиге, поэтому смена города меняет ссылки сама.
+  function cityLink(kind) {
     const cfg = window.KV_CONFIG || {};
-    openTg(cfg.TG_CHANNEL || 'https://t.me/c/2500101660');   // канал KatoVape (id -1002500101660)
+    const byCity = (cfg.CITY_LINKS || {})[city] || {};
+    return byCity[kind] || '';
+  }
+  function managerLink() { return cityLink('manager') || MANAGER; }
+  function openManager() { openTg(managerLink()); }
+  function openChannel() {
+    const url = cityLink('channel');
+    // для города ссылку ещё не дали — честно говорим об этом и не открываем чужой чат
+    if (!url) { toast(t('noChannel')); return; }
+    openTg(url);
   }
   // смена языка из бургер-меню (та же логика, что в langSwitch)
   function setLang(l) {
@@ -1984,13 +2155,20 @@ window.KV = (function () {
     prof.style.display = 'none';
     const wrap = document.createElement('div');
     wrap.id = 'kv-hx'; wrap.className = 'kv-hx';
+    // порядок слева направо: избранное, менеджер, канал города, бургер — бургер крайний справа
     wrap.innerHTML =
+      '<button class="kv-hx-b" id="kv-hx-fav" type="button" aria-label="' + t('favTitle') + '">' + HX_ICON.fav + '</button>' +
       '<button class="kv-hx-b" id="kv-hx-mgr" type="button" aria-label="' + t('write') + '">' + HX_ICON.mgr + '</button>' +
       '<button class="kv-hx-b" id="kv-hx-tg" type="button" aria-label="Telegram">' + HX_ICON.tg + '</button>' +
       '<div class="kv-burger-wrap">' +
         '<button class="kv-hx-b" id="kv-hx-burger" type="button" aria-label="Menu">' + HX_ICON.burger + '</button>' +
         '<div class="kv-burger" id="kv-burger" hidden></div></div>';
-    prof.parentNode.insertBefore(wrap, prof.nextSibling);
+    // шапка заканчивается этим блоком, поэтому бургер оказывается у правого края панели
+    prof.parentNode.appendChild(wrap);
+    // корзину из шапки темы забираем в ту же группу, иначе она осталась бы висеть отдельно
+    const topCart = document.getElementById('topCart');
+    if (topCart) wrap.insertBefore(topCart, wrap.firstChild);
+    document.getElementById('kv-hx-fav').onclick = openFavs;
     document.getElementById('kv-hx-mgr').onclick = openManager;
     document.getElementById('kv-hx-tg').onclick = openChannel;
     const burger = document.getElementById('kv-burger');
@@ -2003,8 +2181,7 @@ window.KV = (function () {
       const b = e.target.closest('[data-b]');
       if (b) {
         burger.hidden = true;
-        if (b.dataset.b === 'profile') openProfile();
-        else { openProfile(); setTimeout(() => { const f = document.querySelector('#kvp .kvp-favs'); if (f) f.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 80); }
+        if (b.dataset.b === 'profile') openProfile(); else openFavs();
         return;
       }
       const bl = e.target.closest('[data-blang]');
@@ -2159,7 +2336,13 @@ window.KV = (function () {
       ordInner = cOrders.length
         ? cOrders.slice(0, 6).map(o => '<div class="kvp-ord"><div class="kvp-ord-h"><span>' +
             fmtDate(new Date(o.created_at).getTime()) + ' · <i class="kvp-st kvp-st-' + o.status + '">' + stLabel(o.status) + '</i></span><b>' + o.sum + ' zł</b></div>' +
-            '<p>' + esc((o.items || []).map(i => typeof i === 'string' ? i : i.name + (i.flavor ? ' ' + flavorName(i.flavor) : '') + ' ×' + i.n).join(', ')) + '</p>' +
+            // каждая позиция кликабельна: открывает карточку именно этого товара
+            '<p class="kvp-ord-items">' + (o.items || []).map(i => typeof i === 'string'
+              ? esc(i)
+              : (i.id && find(i.id)
+                  ? '<button class="kvp-ord-i" data-goto="' + esc(i.id) + '">' + esc(i.name + (i.flavor ? ' ' + flavorName(i.flavor) : '')) + ' ×' + (i.n || 1) + '</button>'
+                  : esc(i.name + (i.flavor ? ' ' + flavorName(i.flavor) : '') + ' ×' + (i.n || 1)))
+            ).join(' ') + '</p>' +
             // выдан — на каждый купленный товар кнопка отзыва (открывает карточку с нужным вкусом)
             (o.status === 'done'
               ? '<div class="kvp-revbtns">' + (o.items || []).filter(i => i && i.id).map(i =>
@@ -2325,7 +2508,9 @@ window.KV = (function () {
 /* шторка языков/города в мини-аппе: якорим меню к своей кнопке и поднимаем над шапкой */
 #lang,#city{position:relative}
 .kv-city-menu{z-index:200}
-.kv-hx{display:inline-flex;gap:2px;align-items:center}
+/* правая группа шапки: раньше вправо её толкал #lang, теперь он живёт в бургер-меню */
+.kv-hx{display:inline-flex;gap:2px;align-items:center;margin-left:auto}
+.kv-hx .topcart{margin:0 2px 0 0}
 .kv-hx-b{display:grid;place-items:center;width:34px;height:34px;border:none;background:none;color:var(--kv-text,currentColor);border-radius:50%;cursor:pointer;padding:0;opacity:.85}
 .kv-hx-b:hover{opacity:1;background:var(--kv-surface,rgba(127,127,127,.12))}
 .kv-burger-wrap{position:relative;display:inline-flex}
@@ -2335,6 +2520,25 @@ window.KV = (function () {
 .kv-burger button:hover{background:var(--kv-surface,rgba(127,127,127,.12))}
 .kv-burger button.on{color:var(--kv-accent-2,var(--kv-accent,inherit))}
 .kv-burger-sep{height:1px;background:var(--kv-line,rgba(127,127,127,.2));margin:4px 2px}
+.kvfav{position:fixed;inset:0;z-index:170;background:rgba(6,6,10,.74);display:flex;align-items:flex-end;justify-content:center}
+@media(min-width:640px){.kvfav{align-items:center;padding:24px}}
+.kvfav[hidden]{display:none}
+.kvfav-box{width:min(460px,100%);max-height:88vh;display:flex;flex-direction:column;background:var(--kv-surface2);border:1px solid var(--kv-line);border-radius:18px 18px 0 0;padding:16px 16px 20px}
+@media(min-width:640px){.kvfav-box{border-radius:18px}}
+.kvfav-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.kvfav-title{font-size:15px}
+.kvfav-x{width:32px;height:32px;border:none;background:var(--kv-surface);color:var(--kv-muted);border-radius:50%;font-size:20px;cursor:pointer}
+.kvfav-body{overflow-y:auto;display:flex;flex-direction:column;gap:8px}
+.kvfav-row{display:flex;align-items:center;gap:8px}
+.kvfav-i{flex:1;display:flex;align-items:center;gap:10px;background:var(--kv-surface);border:1px solid var(--kv-line);border-radius:12px;padding:8px 10px;cursor:pointer;text-align:left;font-family:inherit;color:var(--kv-text);min-width:0}
+.kvfav-i img{width:44px;height:44px;object-fit:contain;background:#fff;border-radius:9px;flex-shrink:0}
+.kvfav-n{display:flex;flex-direction:column;gap:2px;font-size:13px;font-weight:700;min-width:0}
+.kvfav-n i{font-style:normal;font-size:12px;font-weight:600;color:var(--kv-muted)}
+.kvfav-rm{width:34px;height:34px;flex-shrink:0;border:1px solid var(--kv-line);background:none;color:var(--kv-muted);border-radius:50%;font-size:18px;cursor:pointer}
+.kvfav-empty{color:var(--kv-muted);font-size:12.5px;line-height:1.5;padding:8px 2px}
+.kv-gate-cities{display:flex;flex-direction:column;gap:8px;margin-top:14px}
+.kv-gate-cities button{width:100%;background:var(--kv-accent);color:var(--kv-accent-ink);border:none;border-radius:12px;padding:13px;font-weight:800;font-size:13.5px;cursor:pointer;font-family:inherit}
+.kv-gate-t{display:block;font-size:16px;margin-bottom:6px}
 .kv-stars{display:inline-flex;align-items:center;gap:1px;font-size:12px}
 .kv-star{color:var(--kv-line)}.kv-star.on{color:#ffb020}
 .kv-stars i{font-style:normal;color:var(--kv-muted);font-size:11px;margin-left:5px}
@@ -2503,8 +2707,13 @@ body.kv-noscroll{overflow:hidden}
 .kvm-chip-n{font-weight:700;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .kvm-chip-q{font-size:10.5px;color:var(--kv-muted);font-weight:700}
 .kvm-buy{display:flex;flex-direction:column;gap:9px}
-.kvm-tiers{display:flex;gap:7px;flex-wrap:wrap}
-.kvm-tier{flex:1;min-width:66px;text-align:center;background:var(--kv-surface);border:1px solid var(--kv-line);border-radius:10px;padding:7px 4px;font-size:11px;color:var(--kv-muted);font-weight:700}
+.kvm-tiers{display:flex;gap:7px;flex-wrap:wrap;align-items:center}
+.kvm-tiers-t{width:100%;font-size:11px;font-weight:800;color:var(--kv-muted);text-transform:uppercase;letter-spacing:.4px}
+.kvm-tier{flex:1;min-width:66px;text-align:center;background:var(--kv-surface);border:1px solid var(--kv-line);border-radius:10px;padding:7px 4px;font-size:11px;color:var(--kv-muted);font-weight:700;cursor:pointer;font-family:inherit;transition:border-color .15s,background .15s}
+.kvm-tier:hover:not(.off){border-color:var(--kv-accent)}
+.kvm-tier.sel{border-color:var(--kv-accent);background:var(--kv-surface2)}
+.kvm-tier.sel b{color:var(--kv-accent-2,var(--kv-accent))}
+.kvm-tier.off{opacity:.4;cursor:default}
 .kvm-tier b{display:block;font-size:15px;color:var(--kv-text)}
 .kvm-tier em{display:block;font-style:normal;color:var(--kv-accent-2,var(--kv-accent));font-weight:800;margin-top:1px}
 .kvm-bar>b i{font-style:normal;font-size:9px;opacity:.6}
@@ -2545,6 +2754,14 @@ body.kv-noscroll{overflow:hidden}
 .kvp-ord-h b{color:var(--kv-accent-2,var(--kv-accent))}
 .kvp-ord p{color:var(--kv-muted);margin-top:3px}
 .kvp-repeat{width:100%;background:var(--kv-surface);border:1px solid var(--kv-line);color:var(--kv-text);border-radius:11px;padding:11px;font-weight:700;font-size:12.5px;cursor:pointer;font-family:inherit;margin-top:2px}
+.kvp-ord-items{display:flex;flex-wrap:wrap;gap:5px}
+.kvp-ord-i{background:var(--kv-surface2);border:1px solid var(--kv-line);color:var(--kv-text);border-radius:8px;padding:5px 9px;font-size:11.5px;font-weight:600;cursor:pointer;font-family:inherit;text-align:left}
+.kvp-ord-i:hover{border-color:var(--kv-accent)}
+.kv-cmt{display:flex;flex-direction:column;gap:5px;margin-top:12px;font-size:12px;font-weight:700;color:var(--kv-muted)}
+.kv-cmt>span{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.kv-cmt-n{font-style:normal;font-size:11px;font-weight:600;opacity:.8}
+.kv-cmt textarea{background:var(--kv-field);border:1px solid var(--kv-line);color:var(--kv-text);border-radius:10px;padding:10px 12px;font-family:inherit;font-size:13px;resize:vertical;min-height:52px;width:100%}
+.kv-cmt textarea:focus{outline:none;border-color:var(--kv-accent)}
 .kvp-revbtns{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .kvp-review{background:var(--kv-accent);color:var(--kv-accent-ink);border:none;border-radius:9px;padding:7px 11px;font-weight:800;font-size:11.5px;cursor:pointer;font-family:inherit}
 .kvp-clear{background:none;border:1px solid var(--kv-line);color:var(--kv-muted);border-radius:11px;padding:11px;font-size:12.5px;cursor:pointer;font-family:inherit}
@@ -2718,12 +2935,11 @@ body.kv-noscroll{overflow:hidden}
     opts.render();
     renderInfo();
     if (hooks.cart) hooks.cart();
-    // гейт, cookie и попап подписки только на сайте: в мини-аппе Telegram лишние
-    if (!opts.app) {
-      ensureGate();
-      ensureCookie();
-      if (localStorage.getItem('kv_age')) maybeSubscribe();
-    }
+    // первый запуск (18+ и выбор города) проходят и сайт, и мини-апп;
+    // cookie-баннер с попапом подписки остаются только на сайте
+    firstRun(() => {
+      if (!opts.app) { ensureCookie(); maybeSubscribe(); }
+    });
     track('view');
   }
 
@@ -2732,7 +2948,8 @@ body.kv-noscroll{overflow:hidden}
     isNew, match, find, price, plural, fmtDate, photo, detailsHTML, openCart, checkout,
     cartCount, cartTotal, toast, autoHideHeader, sortItems,
     starsHTML, badgesHTML, filterPass, searchSuggest, track,
-    openProduct, openProfile, isFav, toggleFav, tasteOf, flavorDesc,
+    openProduct, openProfile, openFavs, isFav, toggleFav, removeFav, favs, tasteOf, flavorDesc,
+    openManager, openChannel, managerLink, cityLink, bulkOrder,
     setProfileName, refreshProfile, forgetUserState,
     get db() { return db; }, get lang() { return lang; }, get city() { return city; },
     manager: MANAGER

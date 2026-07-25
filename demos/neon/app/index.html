@@ -26,7 +26,6 @@ button{font-family:inherit}
 .cat-ico img{width:100%;height:100%;object-fit:cover;transform:scale(1.7);transform-origin:50% 38%}
 .top h1{font-family:Unbounded;font-size:17px;font-weight:900}
 .top h1 em{font-style:normal;color:var(--acid)}
-.top .upd{font-size:11.5px;color:var(--mut)}
 #lang{position:relative;margin-left:auto}
 #lang .kv-city{width:auto;padding:8px 12px;font-size:12px}
 #lang .kv-city-menu{left:auto;right:0;min-width:150px}
@@ -110,7 +109,6 @@ button{font-family:inherit}
   <div class="cat-ico"><img id="logoImg" src="../../../data/photos/cat.png" alt="" onerror="this.style.display='none'"></div>
   <div>
     <h1>KATO<em>VAPE</em></h1>
-    <div class="upd" id="upd"></div>
   </div>
   <div id="lang"></div>
   <div id="profile"></div>
@@ -128,9 +126,9 @@ button{font-family:inherit}
 <div id="list"></div>
 <button class="cta" id="cta"></button>
 
-<script src="../../../shared/config.js?v=9"></script>
-<script src="../../../shared/core.js?v=34"></script>
-<script src="../../../shared/auth.js?v=19"></script>
+<script src="../../../shared/config.js?v=10"></script>
+<script src="../../../shared/core.js?v=35"></script>
+<script src="../../../shared/auth.js?v=20"></script>
 <script src="../../../shared/pay.js?v=1"></script>
 <script>
 let cat = 'all', q = '';
@@ -144,14 +142,11 @@ if (inTg) {
   // внутри телеги нижнюю кнопку рисует сам клиент
   document.getElementById('cta').style.display = 'none';
   document.body.style.paddingBottom = '20px';
-  tg.MainButton.onClick(() => {
-    if (KV.cartCount()) KV.openCart(); else tg.openTelegramLink(KV.manager);
-  });
+  tg.MainButton.onClick(() => { if (KV.cartCount()) KV.openCart(); });
 }
 
 function render() {
   const db = KV.db;
-  upd.textContent = KV.t('updated') + ' ' + KV.fmtDate(db.updated);
   document.getElementById('q').placeholder = KV.t('search');
   document.getElementById('logoImg').src = KV.cityLogo();
 
@@ -208,13 +203,14 @@ function cartHook() {
   const cta = document.getElementById('cta');
   if (inTg) {
     tg.MainButton.setParams({
-      text: n ? KV.t('cart') + ' (' + n + ') · ' + KV.cartTotal() + ' zł' : KV.t('write'),
+      text: KV.t('cart') + ' (' + n + ') · ' + KV.cartTotal() + ' zł',
       color: '#c8ff2e', text_color: '#0a0a10'
     });
-    tg.MainButton.show();
+    if (n) tg.MainButton.show(); else tg.MainButton.hide();
   } else {
-    cta.textContent = n ? KV.t('cart') + ' (' + n + ') · ' + KV.cartTotal() + ' zł' : KV.t('write');
-    cta.onclick = () => { if (KV.cartCount()) KV.openCart(); else window.open(KV.manager, '_blank'); };
+    cta.style.display = n ? '' : 'none';
+    cta.textContent = KV.t('cart') + ' (' + n + ') · ' + KV.cartTotal() + ' zł';
+    cta.onclick = () => KV.openCart();
   }
 }
 
