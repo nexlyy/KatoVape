@@ -1,70 +1,61 @@
-# KatoVape: деплой бота + мини-приложения + админки на VPS
+# KatoVape: как всё развёрнуто и как обновлять
 
-Ставим рядом с MCR Planet, ничего его не трогая: отдельная папка `/opt/katovape`,
-отдельный systemd-сервис `katovape-api`, отдельный поддомен, свой порт (8790).
-На VPS системный Node 20 (для mcr-bot) не меняем — KatoVape крутится на изолированном
-Node 22 в `/opt/katovape/node`.
+Три части живут раздельно:
 
-## Что нужно заранее
-1. **Токен бота** от @BotFather.
-2. **Поддомен**, указывающий A-записью на IP этого VPS (напр. `shop.mcrplanet.com`).
-3. Домен бота в @BotFather (`/setdomain` → тот же поддомен) — для кнопки «Войти через Telegram» на сайте.
+| Часть | Где | Чем обновляется |
+|---|---|---|
+| Витрина, мини-апп, админка | GitHub Pages (`nexlyy.github.io/KatoVape`) | `git push` в `main` |
+| База, вход, оплата | Supabase (проект `vffqnydxofvunwausakv`) | миграции в SQL Editor + `supabase functions deploy` |
+| Бот | VPS `mcr`, `/opt/katovape`, systemd `katovape-api` | rsync/scp + `systemctl restart` |
 
-## 1. Залить код (с локальной машины)
+Проект MCR Planet на том же сервере не затрагивается: своя папка, свой сервис, свой
+изолированный Node 22 в `/opt/katovape/node` (системный Node 20 для mcr-bot не трогаем).
+
+## Обновить бота
 ```
-rsync -az --delete server/  mcr:/opt/katovape/server/
-rsync -az --delete shared/ demos/ data/ index.html README.md  mcr:/opt/katovape/site/
-rsync -az deploy/          mcr:/opt/katovape/server/deploy/
+scp server/bot.mjs server/tg.mjs server/i18n.mjs mcr:/opt/katovape/server/
+ssh mcr "systemctl restart katovape-api"
 ```
-(БД `/opt/katovape/data/katovape.db` rsync не трогает — она вне выгружаемых папок.)
+Проверка: `ssh mcr "journalctl -u katovape-api -n 20 --no-pager"` — ожидаем
+`стартовал`, `menuButton: ok`, `бот: long polling`.
 
-## 2. Прод-конфиг фронта
-На VPS перезаписать `/opt/katovape/site/shared/config.js` копией `deploy/config.prod.example.js`,
-подставив свой поддомен и имя бота:
-```
-scp deploy/config.prod.example.js mcr:/opt/katovape/site/shared/config.js
-```
-Второй копии настроек тут намеренно нет: список полей (ссылки городов `CITY_LINKS`, выключатель
-оплаты `PAYMENTS_CARD_OFF`, `ADMIN_URL`) живёт только в `config.prod.example.js`, иначе при
-каждом обновлении пришлось бы править два места и одно из них отставало бы.
-(Витрина на localhost-хосте пускает вход только локально; на реальном домене — против этого API. Логика уже в auth.js.)
+`.env` (`/opt/katovape/.env`, права 600) и папка `data/` при этом не трогаются. В `.env` лежат
+`TELEGRAM_BOT_TOKEN`, `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, `MINIAPP_URL`, `KV_MANAGER_IDS`,
+`KV_ADMIN_URL`.
 
-## 3. Настройка на сервере
-```
-ssh mcr
-cp /opt/katovape/server/deploy/.env.example /opt/katovape/.env && chmod 600 /opt/katovape/.env
-nano /opt/katovape/.env          # токен, PUBLIC_URL=https://SUBDOMAIN/api, MINIAPP_URL=https://SUBDOMAIN/demos/hub/
-bash /opt/katovape/server/deploy/setup.sh    # ставит Node 22, systemd-сервис
-```
+## Обновить витрину и админку
+`git push` в `main` — Pages пересобирается сам. Настройки фронта лежат в `shared/config.js`
+(единственная копия): ссылки городов `CITY_LINKS`, выключатель оплаты `PAYMENTS_CARD_OFF`,
+`ADMIN_URL`, ключи Supabase (публичные) и имя бота.
 
-## 4. nginx + TLS
+Важно: браузеры кешируют скрипты по строке `?v=` в подключении. Поменяли `shared/*.js` —
+поднимите номер версии во всех восьми демо (`demos/*/site|app/index.html`), иначе у людей
+останется старый файл.
+
+## Применить миграции базы
+Автоматического `db push` тут нет (проект не слинкован с CLI), миграции применяются вручную:
+Supabase → SQL Editor → New query → вставить файл целиком → Run. Порядок по номерам,
+все миграции идемпотентны (повторный запуск безопасен).
+
+Применены: `0001`–`0016`.
+Ждут применения: `0017_city_roles.sql`, `0018_comments.sql`, `0019_reservation_city_policy.sql`.
+
+После `0017` менеджеры получают доступ только к своему городу, поэтому применять его нужно
+вместе с `0019` — иначе останется старая политика на брони из `0003`, и статусы чужого города
+всё ещё будут доступны на запись.
+
+## Обновить функции оплаты
+Из корня проекта:
 ```
-sed 's/SUBDOMAIN/shop.mcrplanet.com/g' /opt/katovape/server/deploy/nginx-katovape.conf \
-  > /etc/nginx/sites-available/katovape
-ln -sf /etc/nginx/sites-available/katovape /etc/nginx/sites-enabled/katovape
-nginx -t && systemctl reload nginx
-certbot --nginx -d shop.mcrplanet.com
+supabase functions deploy create-payment  --no-verify-jwt --project-ref vffqnydxofvunwausakv
+supabase functions deploy create-checkout --no-verify-jwt --project-ref vffqnydxofvunwausakv
+supabase functions deploy stripe-webhook  --no-verify-jwt --project-ref vffqnydxofvunwausakv
+supabase functions deploy telegram-auth   --no-verify-jwt --project-ref vffqnydxofvunwausakv
 ```
-
-## 5. Проверка
-- `curl https://SUBDOMAIN/api/health` → `{"ok":true,"bot":true,...}`
-- В логах сервиса `journalctl -u katovape-api -f` должно быть `setWebhook: ok`, `menuButton: ok`.
-- В боте `/start` → приходит кнопка «Открыть магазин».
-- Админка: `https://SUBDOMAIN/demos/admin/` → вход через Telegram (только для id из KV_ADMIN_IDS).
-
-## Обновление кода потом
-Повторить шаг 1 (rsync) и `systemctl restart katovape-api`. БД и `.env` не затираются.
-
-## Что делает система
-- **Мини-апп в боте**: кнопка-меню открывает витрину (initData → авто-вход, подпись проверяется бот-токеном).
-- **Бронь**: на витрине жмёшь БРОНЬ у товара «нет в наличии» → запись в БД. После синка Google Sheets бот сам пишет тебе, когда позиция появилась.
-- **Рассылка**: из админки текст уходит всем, кто нажал /start.
-- **Заказы**: оформление сохраняется в БД, видно в админке (клиент, ник, телефон, состав, сумма, доставка).
-- **Спрос**: счётчики просмотров/броней/заказов в админке.
-- **Stripe**: место под оплату заготовлено (заказы со статусами) — подключается отдельно.
+Подробности по ключам и вебхуку — в `deploy/PAYMENTS_SETUP.md`.
 
 ## Безопасность
-- Токен бота и `.env` только на сервере (600), в git нет.
-- `/auth/telegram` в проде проверяет подпись бот-токеном (widget=SHA256, initData=HMAC).
-- Админ-эндпоинты закрыты проверкой telegram_id по KV_ADMIN_IDS.
-- Пароли — scrypt+соль; сессии — случайные токены.
+- Токен бота и service-ключ только в `.env` на сервере (600) и в секретах Supabase, в git их нет.
+- Подпись Telegram проверяется бот-токеном на сервере (widget = SHA256, initData = HMAC).
+- Доступ в админку — таблицы `admins` / `admin_users`; раздел «Доступ» открыт только владельцу.
+- Менеджер видит и правит только свой город: это закреплено политиками RLS, а не только интерфейсом.

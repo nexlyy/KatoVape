@@ -59,7 +59,7 @@ supabase functions deploy stripe-webhook  --no-verify-jwt
 
 ## 5. Включить оплату на фронте
 
-В `shared/config.js` (или в проде — в скопированном `config.prod.js`):
+В `shared/config.js` (единственная копия настроек фронта):
 
 ```js
 PAYMENTS: true,
