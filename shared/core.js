@@ -363,7 +363,7 @@ window.KV = (function () {
     if (!(cfg.SUPABASE_URL && cfg.SUPABASE_ANON_KEY) || cfg.BACKEND !== 'supabase') return null;
     try {
       const res = await fetch(cfg.SUPABASE_URL.replace(/\/$/, '') + '/rest/v1/products?city=eq.' +
-        encodeURIComponent(city) + '&select=id,flavor,price,qty', {
+        encodeURIComponent(city) + '&select=id,flavor,price,qty,tiers', {
         headers: { apikey: cfg.SUPABASE_ANON_KEY }, cache: 'no-store'
       });
       if (!res.ok) return null;
@@ -392,6 +392,9 @@ window.KV = (function () {
       }
       const pr = rs.find(x => x.price != null);
       if (pr) it.price = pr.price;
+      // оптовые ступени из облака (правятся в админке) поверх файла
+      const trw = rs.find(x => x.tiers && x.tiers.length);
+      if (trw) it.tiers = trw.tiers;
     }));
   }
 

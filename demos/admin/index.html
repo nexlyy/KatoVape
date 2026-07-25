@@ -155,7 +155,7 @@ td .sub{display:block;color:var(--muted);font-size:11.5px;margin-top:2px}
 .item-top{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .item-top input{width:auto}
 .i-name{flex:2;min-width:150px}.i-brand{flex:1;min-width:110px}.i-cat{flex:1;min-width:115px}
-.i-nic{width:100px}.i-price{width:92px}
+.i-nic{width:100px}.i-price{width:92px}.i-tier{width:58px}
 .item-id{font-size:11.5px;color:var(--muted);margin:7px 0 2px;font-variant-numeric:tabular-nums}
 .flavs{display:flex;flex-direction:column}
 .flav{display:flex;align-items:center;gap:10px;padding:7px 0;border-top:1px solid var(--line)}
@@ -642,6 +642,15 @@ let groups = [], cityNow = 'katowice';
 // Изменения считаем сравнением полей с тем, что пришло из базы. Прежний список
 // «грязных» строк врал: правка одного товара помечала все его вкусы, а возврат
 // значения обратно флаг не снимал, и сохранение всё равно считало заново.
+// оптовые ступени: цена за штуку при 3/5/10 шт (q=1 — базовая цена товара)
+function tierP(tiers, q) { const t = (tiers || []).find(x => +x.q === q); return t && t.p != null ? t.p : ''; }
+function buildTiers(base, t3, t5, t10) {
+  const arr = [];
+  const b = base == null ? null : Number(base);
+  if (b != null && Number.isFinite(b)) arr.push({ q: 1, p: b });
+  [[3, t3], [5, t5], [10, t10]].forEach(([q, v]) => { if (v !== '' && Number.isFinite(Number(v))) arr.push({ q, p: Number(v) }); });
+  return arr.length > 1 ? arr : null;   // только база или пусто — ступеней нет
+}
 function changedItems() {
   const m = document.getElementById('main'); if (!m) return [];
   const out = [];
@@ -651,8 +660,10 @@ function changedItems() {
     const name = gv('name'), brand = gv('brand'), category = gv('category'), nic = gv('nic');
     const priceRaw = gv('price');
     const price = priceRaw === '' ? null : Number(priceRaw);
+    const tiers = buildTiers(price, gv('t3'), gv('t5'), gv('t10'));
+    const tiersChanged = JSON.stringify(tiers) !== JSON.stringify(g.head.tiers || null);
     const headChanged = name !== (g.head.name || '') || brand !== (g.head.brand || '')
-      || category !== (g.head.category || '') || nic !== (g.head.nic || '') || price !== g.head.price;
+      || category !== (g.head.category || '') || nic !== (g.head.nic || '') || price !== g.head.price || tiersChanged;
     const rows = [];
     g.items.forEach((r, ri) => {
       const row = card.querySelector('.flav[data-f="' + gi + ':' + ri + '"]'); if (!row) return;
@@ -662,7 +673,7 @@ function changedItems() {
       if (headChanged || qty !== r.qty) rows.push({ r, qty });
     });
     card.classList.toggle('dirty', headChanged);
-    if (rows.length) out.push({ g, name, brand, category, nic, price, rows, bad: priceRaw !== '' && !Number.isFinite(price) });
+    if (rows.length) out.push({ g, name, brand, category, nic, price, tiers, rows, bad: priceRaw !== '' && !Number.isFinite(price) });
   });
   return out;
 }
@@ -699,6 +710,9 @@ async function renderProducts(m) {
         <input class="i-cat" data-p="category" value="${esc(g.head.category || '')}" placeholder="Категория">
         <input class="i-nic" data-p="nic" value="${esc(g.head.nic || '')}" placeholder="Крепость">
         <input class="i-price" data-p="price" value="${g.head.price == null ? '' : g.head.price}" placeholder="Цена zł" inputmode="numeric">
+        <input class="i-tier" data-p="t3" value="${tierP(g.head.tiers, 3)}" placeholder="3шт" inputmode="numeric" title="Цена за штуку при 3 шт">
+        <input class="i-tier" data-p="t5" value="${tierP(g.head.tiers, 5)}" placeholder="5шт" inputmode="numeric" title="Цена за штуку при 5 шт">
+        <input class="i-tier" data-p="t10" value="${tierP(g.head.tiers, 10)}" placeholder="10шт" inputmode="numeric" title="Цена за штуку при 10 шт">
         <button class="btn sm danger" data-delp="${gi}">Удалить товар</button>
       </div>
       <div class="item-id">${esc(g.id)}</div>
@@ -809,7 +823,7 @@ async function saveProducts() {
   changed.forEach(x => x.rows.forEach(({ r, qty }) => out.push({
     id: r.id, city: r.city, flavor: r.flavor, name: x.name || r.id,
     brand: x.brand || null, category: x.category || null, nic: x.nic || null,
-    price: x.price, qty: Number.isFinite(qty) ? qty : 0, updated_at: new Date().toISOString()
+    price: x.price, tiers: x.tiers, qty: Number.isFinite(qty) ? qty : 0, updated_at: new Date().toISOString()
   })));
   if (!out.length) { clearDirty(); return toast('Изменений нет'); }
   btn.disabled = true; btn.textContent = 'Сохраняем…';
