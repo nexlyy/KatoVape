@@ -1945,6 +1945,36 @@ window.KV = (function () {
     localStorage.setItem('kv_orders', JSON.stringify(log.slice(0, 20)));
   }
   const PROF_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>';
+  // открыть чат менеджера / канал (в мини-аппе — нативно, на сайте — новая вкладка)
+  function openTg(url) {
+    const tg = window.Telegram && window.Telegram.WebApp;
+    if (tg && tg.initData) tg.openTelegramLink(url); else window.open(url, '_blank');
+  }
+  function openManager() { openTg(MANAGER); }
+  function openChannel() {
+    const cfg = window.KV_CONFIG || {};
+    openTg(cfg.TG_CHANNEL || 'https://t.me/c/2500101660');   // канал KatoVape (id -1002500101660)
+  }
+  // кнопки в шапке мини-аппа: избранное, связь с менеджером, канал Telegram
+  const HX_ICON = {
+    fav: '<svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-4.5-9.5-8.5C1 9 3 6 6 6c2 0 3 1 4 2 1-1 2-2 4-2 3 0 5 3 3.5 6.5C19 16.5 12 21 12 21z"/></svg>',
+    mgr: '<svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
+    tg: '<svg viewBox="0 0 24 24" width="19" height="19" fill="currentColor"><path d="M21.9 4.3 2.5 11.8c-.9.4-.9 1.2 0 1.5l4.9 1.5 1.9 5.9c.2.5.6.6 1 .3l2.7-2 4.8 3.5c.5.4 1.2.1 1.4-.5l3.4-16c.2-.9-.5-1.5-1.6-1.2z"/></svg>'
+  };
+  function mountHeaderExtras() {
+    const prof = document.getElementById('profile');
+    if (!prof || document.getElementById('kv-hx')) return;
+    const wrap = document.createElement('div');
+    wrap.id = 'kv-hx'; wrap.className = 'kv-hx';
+    wrap.innerHTML =
+      '<button class="kv-hx-b" id="kv-hx-fav" type="button" aria-label="' + t('myFavs') + '">' + HX_ICON.fav + '</button>' +
+      '<button class="kv-hx-b" id="kv-hx-mgr" type="button" aria-label="' + t('write') + '">' + HX_ICON.mgr + '</button>' +
+      '<button class="kv-hx-b" id="kv-hx-tg" type="button" aria-label="Telegram">' + HX_ICON.tg + '</button>';
+    prof.parentNode.insertBefore(wrap, prof);
+    document.getElementById('kv-hx-fav').onclick = openProfile;
+    document.getElementById('kv-hx-mgr').onclick = openManager;
+    document.getElementById('kv-hx-tg').onclick = openChannel;
+  }
   function profileBtn(el) {
     el.innerHTML = '<button class="kv-prof" aria-label="' + t('profile') + '">' + PROF_ICON + '</button>';
     el.querySelector('button').onclick = openProfile;
@@ -2084,7 +2114,14 @@ window.KV = (function () {
       ordInner = cOrders.length
         ? cOrders.slice(0, 6).map(o => '<div class="kvp-ord"><div class="kvp-ord-h"><span>' +
             fmtDate(new Date(o.created_at).getTime()) + ' · <i class="kvp-st kvp-st-' + o.status + '">' + stLabel(o.status) + '</i></span><b>' + o.sum + ' zł</b></div>' +
-            '<p>' + esc((o.items || []).map(i => typeof i === 'string' ? i : i.name + (i.flavor ? ' ' + i.flavor : '') + ' ×' + i.n).join(', ')) + '</p></div>').join('')
+            '<p>' + esc((o.items || []).map(i => typeof i === 'string' ? i : i.name + (i.flavor ? ' ' + flavorName(i.flavor) : '') + ' ×' + i.n).join(', ')) + '</p>' +
+            // выдан — на каждый купленный товар кнопка отзыва (открывает карточку с нужным вкусом)
+            (o.status === 'done'
+              ? '<div class="kvp-revbtns">' + (o.items || []).filter(i => i && i.id).map(i =>
+                  '<button class="kvp-review" data-review="' + esc(i.id) + '|' + esc(i.flavor || '') + '">' +
+                  t('reviewAdd') + (i.flavor ? ' · ' + esc(flavorName(i.flavor)) : '') + '</button>').join('') + '</div>'
+              : '') +
+            '</div>').join('')
         : '<p class="kvp-empty">' + t('noOrders') + '</p>';
     } else {
       const orders = orderLog();
@@ -2123,6 +2160,19 @@ window.KV = (function () {
     if (d && !d.hidden) loadCloudProfile();
   }
   let profileEdit = false;   // режим правки данных получателя
+  // открыть карточку товара сразу с нужным вкусом и формой отзыва (кнопка на выданном заказе)
+  function openReviewFor(id, flName) {
+    const item = find(id); if (!item) return;
+    openProduct(id);
+    if (item.flavors && item.flavors.length && flName) {
+      const idx = item.flavors.findIndex(f => f.name === flName);
+      if (idx >= 0) { modal.fl = idx; modal.flPicked = true; }
+    }
+    if (!modal.rate) modal.rate = 5;
+    renderModal();
+    const rf = document.querySelector('#kvm .kvm-revform') || document.querySelector('#kvm .kvm-reviews');
+    if (rf) rf.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
   function onProfileClick(e) {
     const d = e.currentTarget;
     if (e.target === d || e.target.closest('.kvp-x')) { closeProfile(); return; }
@@ -2139,6 +2189,8 @@ window.KV = (function () {
     if (e.target.closest('.kvp-ct-apply')) { applyProfileContact(d); return; }
     const rc = e.target.closest('[data-res-cancel]');
     if (rc) { cancelReservation(+rc.dataset.resCancel); return; }
+    const rev = e.target.closest('[data-review]');
+    if (rev) { const [id, fl] = rev.dataset.review.split('|'); closeProfile(); openReviewFor(id, fl); return; }
     const goto = e.target.closest('[data-goto]');
     if (goto) { closeProfile(); openProduct(goto.dataset.goto); return; }
     if (e.target.closest('.kvp-repeat')) { closeProfile(); repeatOrder(); return; }
@@ -2225,6 +2277,12 @@ window.KV = (function () {
     if (document.getElementById('kv-shared')) return;
     const css = `
 :root{--kv-radius:14px}
+/* шторка языков/города в мини-аппе: якорим меню к своей кнопке и поднимаем над шапкой */
+#lang,#city{position:relative}
+.kv-city-menu{z-index:200}
+.kv-hx{display:inline-flex;gap:3px;align-items:center}
+.kv-hx-b{display:grid;place-items:center;width:34px;height:34px;border:none;background:none;color:var(--kv-text,currentColor);border-radius:50%;cursor:pointer;padding:0;opacity:.85}
+.kv-hx-b:hover{opacity:1;background:var(--kv-surface,rgba(127,127,127,.12))}
 .kv-stars{display:inline-flex;align-items:center;gap:1px;font-size:12px}
 .kv-star{color:var(--kv-line)}.kv-star.on{color:#ffb020}
 .kv-stars i{font-style:normal;color:var(--kv-muted);font-size:11px;margin-left:5px}
@@ -2435,6 +2493,8 @@ body.kv-noscroll{overflow:hidden}
 .kvp-ord-h b{color:var(--kv-accent-2,var(--kv-accent))}
 .kvp-ord p{color:var(--kv-muted);margin-top:3px}
 .kvp-repeat{width:100%;background:var(--kv-surface);border:1px solid var(--kv-line);color:var(--kv-text);border-radius:11px;padding:11px;font-weight:700;font-size:12.5px;cursor:pointer;font-family:inherit;margin-top:2px}
+.kvp-revbtns{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.kvp-review{background:var(--kv-accent);color:var(--kv-accent-ink);border:none;border-radius:9px;padding:7px 11px;font-weight:800;font-size:11.5px;cursor:pointer;font-family:inherit}
 .kvp-clear{background:none;border:1px solid var(--kv-line);color:var(--kv-muted);border-radius:11px;padding:11px;font-size:12.5px;cursor:pointer;font-family:inherit}
 .kvd-deliv{border:1px solid var(--kv-line);border-radius:12px;padding:12px 13px}
 .kvd-deliv>b{font-size:12px;text-transform:uppercase;letter-spacing:.4px;color:var(--kv-muted);display:block;margin-bottom:9px}
@@ -2600,6 +2660,7 @@ body.kv-noscroll{overflow:hidden}
     if (ls) langSwitch(ls);
     const pf = document.getElementById('profile');
     if (pf) profileBtn(pf);
+    if (isApp) mountHeaderExtras();          // избранное/менеджер/канал в шапке мини-аппа
     const fp = document.getElementById('filters');
     if (fp) filterPanel(fp);
     opts.render();

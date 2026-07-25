@@ -19,6 +19,8 @@ window.KV_CONFIG = {
   PAYMENTS_CURRENCY: 'pln',
 
   TELEGRAM_BOT: 'KatoVape_bot',   // username бота: бронь диплинком, вход в мини-аппе, кнопка "Открыть в Telegram"
+  TG_CHANNEL: 'https://t.me/c/2500101660',   // канал KatoVape (id -1002500101660); заменить на @-ссылку когда будет
+
   ADMIN_IDS: [5301671230],
   ADMIN_URL: 'https://nexlyy.github.io/KatoVape/demos/admin/?v=2',   // куда ведёт кнопка "В админку" для админов
 
