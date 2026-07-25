@@ -165,7 +165,10 @@ async function handleUpdate(u) {
 
 async function handleCallback(q) {
   const f = q.from || {};
-  await tgCall('answerCallbackQuery', { callback_query_id: q.id }).catch(() => {});
+  const data0 = q.data || '';
+  // Экраны заказов отвечают на кнопку сами, с текстом результата. Отвечать тут заранее
+  // нельзя: второй ответ Telegram уже игнорирует, и менеджер не увидит, что статус сменился.
+  if (!data0.startsWith('o:')) await answerCallback(q.id).catch(() => {});
   const chat = q.message && q.message.chat && q.message.chat.id; if (!chat) return;
   await rememberUser(f).catch(() => {});   // строка bot_users должна существовать до PATCH
   const st = await botUser(f.id);
@@ -195,11 +198,13 @@ async function handleCallback(q) {
     const mid = q.message && q.message.message_id;
     const [, kind, a, b, c] = data.split(':');
     if (kind === 'list') {
+      await answerCallback(q.id).catch(() => {});
       const scr = await ordersScreen(f.id, Number(a) || 0, b || 'active');
       await editMessage(chat, mid, scr.text, { reply_markup: scr.markup });
       return;
     }
     if (kind === 'card') {
+      await answerCallback(q.id).catch(() => {});
       const scr = await orderCard(f.id, a, b || 'active');
       await editMessage(chat, mid, scr.text, { reply_markup: scr.markup });
       return;
