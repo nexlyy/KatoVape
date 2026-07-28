@@ -195,47 +195,51 @@ td .sub{display:block;color:var(--muted);font-size:11.5px;margin-top:2px}
 .bcpreview{display:block;max-width:220px;max-height:150px;object-fit:cover;border:1px solid var(--line);border-radius:var(--r);margin-top:10px}
 .bcpreview[hidden]{display:none}
 
-/* ================= телефон: свой формат панели, а не сжатый десктоп =================
-   Экран узкий, работают стоя и одной рукой: навигация уезжает вниз крупными кнопками,
-   таблицы становятся карточками, поля и кнопки — не меньше 44px по высоте. */
-@media(max-width:700px){
-  body{padding-bottom:calc(64px + env(safe-area-inset-bottom))}
-  .shell{grid-template-columns:1fr}
-  .side{position:fixed;left:0;right:0;bottom:0;top:auto;height:auto;z-index:var(--z-nav);
-    border:none;border-top:1px solid var(--line);background:var(--surface);
-    padding-bottom:env(safe-area-inset-bottom);box-shadow:0 -10px 30px -20px #000}
-  .brand{display:none}
-  .nav{flex-direction:row;padding:6px;gap:2px;overflow-x:auto;scroll-snap-type:x proximity;
-    scrollbar-width:none;-webkit-overflow-scrolling:touch}
-  .nav::-webkit-scrollbar{display:none}
-  /* ширину задаём явно: базовое width:100% растягивало кнопку на весь экран */
-  .nav button{width:auto;flex:0 0 auto;scroll-snap-align:start;
-    flex-direction:column;gap:3px;align-items:center;justify-content:center;
-    min-width:66px;min-height:52px;padding:6px 8px;font-size:10.5px;font-weight:600;text-align:center;
-    border-radius:12px;line-height:1.15;white-space:nowrap}
-  .nav button.on{background:var(--accent-dim)}
-  .nav .count{position:absolute;transform:translate(18px,-16px);margin:0;font-size:10px;padding:0 5px}
-  .nav button{position:relative}
-  .who{display:none}
-  .admlang{position:fixed;top:10px;right:12px;z-index:calc(var(--z-nav) + 1);padding:0;width:auto;gap:2px}
-  .admlang button{min-width:38px;height:30px;background:var(--surface);backdrop-filter:blur(6px)}
+/* ================= телефон: свой формат панели =================
+   Разделы прячем за бургер, шапка липкая сверху, таблицы становятся карточками.
+   Всё, что нажимают пальцем, не ниже 44px. */
+.mtop{display:none}
+.mscrim{display:none}
 
-  .main{padding:14px 12px 24px}
-  .head h1{font-size:19px}
+@media(max-width:700px){
+  .mtop{position:sticky;top:0;z-index:calc(var(--z-nav) + 2);display:flex;align-items:center;gap:10px;
+    padding:10px 12px;background:var(--surface);border-bottom:1px solid var(--line)}
+  .mburger{display:grid;place-items:center;width:42px;height:42px;flex:0 0 auto;
+    border:1px solid var(--line);border-radius:11px;color:var(--ink);background:var(--surface-2)}
+  .mtitle{flex:1;min-width:0;font-size:15px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .mlang{display:flex;gap:4px;padding:0;width:auto;flex:0 0 auto}
+  .mlang button{min-width:40px;height:34px;border-radius:9px}
+
+  .mscrim{display:block;position:fixed;inset:0;z-index:var(--z-nav);background:rgba(0,0,0,.5)}
+  .mscrim[hidden]{display:none}
+
+  .shell{grid-template-columns:1fr}
+  /* меню-ящик выезжает слева и закрывается по выбору раздела или тапу по затемнению */
+  .side{position:fixed;top:0;bottom:0;left:0;width:min(78vw,300px);height:100dvh;z-index:calc(var(--z-nav) + 1);
+    border-right:1px solid var(--line);background:var(--surface);
+    transform:translateX(-102%);transition:transform var(--t);overflow-y:auto}
+  body.menu-open .side{transform:none}
+  .brand{padding:16px 16px 12px}
+  .nav{flex-direction:column;padding:6px 10px;gap:2px;flex:1;overflow:visible}
+  .nav button{width:100%;flex-direction:row;justify-content:flex-start;gap:10px;
+    min-height:46px;padding:10px 12px;font-size:14px;border-radius:10px}
+  .nav .count{margin-left:auto}
+  .side .admlang{display:none}      /* язык живёт в верхней шапке */
+  .who{display:flex}
+
+  .main{padding:14px 12px 96px}
+  .head h1{font-size:18px}
   .head p{font-size:12.5px;line-height:1.45}
-  .summary{gap:8px 18px;padding:10px 0 14px;margin-bottom:14px}
-  .summary div{gap:6px}
-  .panel{border-radius:14px}
-  .panel-head{padding:12px}
-  .panel-body{padding:12px}
+  .summary{gap:6px 16px;padding:10px 0 12px;margin-bottom:12px}
+  .panel-head,.panel-body{padding:12px}
   .tools{gap:8px}
   .tools input,.tools select,.tools textarea{width:100%;min-height:44px}
   .tools .btn{flex:1 0 46%;justify-content:center;min-height:44px}
   .btn{min-height:40px}
   .btn.sm{min-height:36px;padding:8px 12px;font-size:12.5px}
-  input,select,textarea{font-size:16px;min-height:44px}  /* 16px не даёт iOS зумить поле */
+  input,select,textarea{font-size:16px;min-height:44px}   /* 16px не даёт iOS зумить поле */
 
-  /* таблица → карточки, подпись столбца слева от значения */
+  /* таблица в узком экране читается только карточками */
   table,thead,tbody,tr,th,td{display:block}
   thead{display:none}
   .scroll{overflow:visible}
@@ -245,10 +249,9 @@ td .sub{display:block;color:var(--muted);font-size:11.5px;margin-top:2px}
   td::before{content:attr(data-l);flex:0 0 38%;max-width:38%;color:var(--muted);font-size:10.5px;
     text-transform:uppercase;letter-spacing:.04em;font-weight:700;padding-top:3px}
   td:empty{display:none}
-  td .tools{width:100%;justify-content:stretch}
+  td .tools{width:100%}
   td .btn.sm{flex:1}
 
-  /* ассортимент: поля товара в две колонки, вкус — крупной строкой */
   .item{padding:12px}
   .item-top{display:grid;grid-template-columns:1fr 1fr;gap:8px}
   .item-top input{width:100%}
@@ -257,18 +260,16 @@ td .sub{display:block;color:var(--muted);font-size:11.5px;margin-top:2px}
   .item-top .btn.danger{justify-content:center}
   .flav{gap:8px;padding:10px 0}
   .flav input{width:72px}
-  .add-flav{gap:8px}
   .add-flav input{flex:1 0 100%}
   .add-flav .btn{flex:1}
-
-  /* промокоды: форма в одну колонку, чтобы попадать пальцем */
   .pform{grid-template-columns:1fr;gap:12px}
 
-  .savebar{padding:10px 12px calc(10px + env(safe-area-inset-bottom));bottom:calc(64px + env(safe-area-inset-bottom));gap:8px}
+  /* полоса сохранения: у неё своя строка кнопок, поверх контента, но не поверх меню */
+  .savebar{bottom:0;padding:10px 12px calc(10px + env(safe-area-inset-bottom));gap:8px;z-index:var(--z-bar)}
   .savebar b{width:100%;font-size:12.5px}
   .savebar span{display:none}
   .savebar .btn{flex:1;justify-content:center}
-  .toast{bottom:calc(130px + env(safe-area-inset-bottom))}
+  .toast{bottom:104px}
 }
 
 .toast{position:fixed;left:50%;bottom:88px;transform:translate(-50%,14px);z-index:var(--z-toast);
@@ -284,7 +285,7 @@ td .sub{display:block;color:var(--muted);font-size:11.5px;margin-top:2px}
 <div class="toast" id="toast"></div>
 
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
-<script src="../../shared/config.js?v=12"></script>
+<script src="../../shared/config.js?v=13"></script>
 <script type="module">
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
@@ -612,10 +613,26 @@ const TABS = () => [
   ['access', L('Доступ'), null]
 ];
 
+function closeMenu() {
+  document.body.classList.remove('menu-open');
+  const sc = document.getElementById('mscrim'); if (sc) sc.hidden = true;
+}
+
 function shell() {
   const name = (profile && (profile.display_name || profile.username)) || L('менеджер');
   const av = profile && profile.avatar;
+  const curTab = TABS().find(([k]) => k === tab);
   app.innerHTML = `
+    <div class="mtop">
+      <button class="mburger" id="mburger" aria-label="menu">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+      </button>
+      <b class="mtitle">${curTab ? curTab[1] : 'KatoVape'}</b>
+      <div class="admlang mlang">
+        ${[['ru', 'RU'], ['uk', 'UA']].map(([l, lb]) => `<button data-lang="${l}" class="${l === admLang ? 'on' : ''}">${lb}</button>`).join('')}
+      </div>
+    </div>
+    <div class="mscrim" id="mscrim" hidden></div>
     <div class="shell">
       <aside class="side">
         <div class="brand"><img src="../../data/photos/cat.png" alt=""><div>
@@ -648,14 +665,23 @@ function shell() {
     </div>`;
   document.getElementById('nav').onclick = e => {
     const b = e.target.closest('[data-t]');
-    if (!b || b.dataset.t === tab) return;
+    if (!b || b.dataset.t === tab) { closeMenu(); return; }
     if (hasChanges() && !confirm(L('Есть несохранённые изменения в ассортименте. Уйти и потерять их?'))) return;
+    closeMenu();
     clearDirty(); tab = b.dataset.t; shell();
   };
-  document.querySelector('.admlang').onclick = e => {
+  // на телефоне разделы прячутся за бургер: экран узкий, список длинный
+  const burger = document.getElementById('mburger');
+  const scrim = document.getElementById('mscrim');
+  if (burger) burger.onclick = () => {
+    const open = document.body.classList.toggle('menu-open');
+    scrim.hidden = !open;
+  };
+  if (scrim) scrim.onclick = closeMenu;
+  document.querySelectorAll('.admlang').forEach(el => el.onclick = e => {
     const b = e.target.closest('[data-lang]');
     if (b) setAdmLang(b.dataset.lang);
-  };
+  });
   document.getElementById('logout').onclick = async () => { await sb.auth.signOut(); me = null; authView(); };
   document.getElementById('sb-reset').onclick = () => { clearDirty(); render(); };
   document.getElementById('sb-apply').onclick = saveProducts;
@@ -977,9 +1003,9 @@ async function renderPromo(m) {
 
   const add = document.getElementById('pc_add');
   if (add) add.onclick = async () => {
-    const code = (document.getElementById('pc_code').value || '').trim().toUpperCase();
+    const code = (document.getElementById('pc_code').value || '').trim();
     const value = Number((document.getElementById('pc_value').value || '').replace(',', '.'));
-    if (!/^[A-Z0-9_-]{3,24}$/.test(code)) return toast(L('Код: латиница, цифры, 3–24 символа'), true);
+    if (!/^[A-Za-z0-9_-]{3,24}$/.test(code)) return toast(L('Код: латиница, цифры, 3–24 символа'), true);
     if (!Number.isFinite(value) || value <= 0) return toast(L('Размер скидки указан неверно'), true);
     const num = id => { const v = (document.getElementById(id).value || '').trim(); return v === '' ? null : Number(v); };
     const day = (id, end) => {

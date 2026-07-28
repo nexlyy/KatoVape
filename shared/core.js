@@ -1493,7 +1493,7 @@ window.KV = (function () {
     return (content.promos || []).find(p => p.code.toUpperCase() === String(code).trim().toUpperCase());
   }
   async function applyPromo(code) {
-    const raw = String(code || '').trim().toUpperCase();
+    const raw = String(code || '').trim();   // регистр важен: KATOVAPE и katovape — разные коды
     if (!raw) { appliedPromo = null; localStorage.removeItem('kv_promo'); return { ok: false, reason: 'not_found' }; }
     if (window.KVAuth && KVAuth.promoCheck && KVAuth.cloudOn && KVAuth.cloudOn()) {
       const cats = [...new Set(cartLines().map(l => l.item._cat).filter(Boolean))];
