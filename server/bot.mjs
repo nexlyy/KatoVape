@@ -563,9 +563,14 @@ async function doBroadcasts() {
     await sbUpdate('broadcasts', 'id=eq.' + b.id, { status: 'sending' }).catch(() => {});
     // шлём всем, кто запускал бота: отписки нет, флаг opted_in не учитываем
     const users = await sbSelect('bot_users', 'select=telegram_id').catch(() => []);
-    let sent = 0, failed = 0;
+    let sent = 0, failed = 0, photoWarned = false;
     for (const u of users || []) {
-      const r = b.photo ? await sendPhoto(u.telegram_id, b.photo, b.text) : await sendMessage(u.telegram_id, b.text);
+      // фото Telegram иногда отклоняет (мелкая или битая картинка) — тогда шлём хотя бы текст
+      let r = b.photo ? await sendPhoto(u.telegram_id, b.photo, b.text) : null;
+      if (!r || !r.ok) {
+        if (b.photo && r && !r.ok && !photoWarned) { photoWarned = true; console.error('рассылка: фото отклонено -', r.description || r.error); }
+        r = await sendMessage(u.telegram_id, b.text);
+      }
       if (r && r.ok) sent++; else failed++;   // 403 (заблокировал бота) просто считаем в failed
       await sleep(60);
     }
