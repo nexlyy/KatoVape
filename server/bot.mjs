@@ -558,7 +558,8 @@ async function notifyPaid() {
 }
 
 async function doBroadcasts() {
-  const list = await sbSelect('broadcasts', 'status=eq.pending&select=id,text&order=id.asc').catch(() => []);
+  // photo обязателен в выборке: без него бот не узнает о картинке и отправит только текст
+  const list = await sbSelect('broadcasts', 'status=eq.pending&select=id,text,photo&order=id.asc').catch(() => []);
   for (const b of list || []) {
     await sbUpdate('broadcasts', 'id=eq.' + b.id, { status: 'sending' }).catch(() => {});
     // шлём всем, кто запускал бота: отписки нет, флаг opted_in не учитываем
