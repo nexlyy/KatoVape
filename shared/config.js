@@ -23,13 +23,15 @@ window.KV_CONFIG = {
 
   TELEGRAM_BOT: 'KatoVape_bot',   // username бота: бронь диплинком, вход в мини-аппе, кнопка "Открыть в Telegram"
 
-  // Ссылки по городам. Кнопка Telegram и связь с менеджером берут их отсюда, поэтому
-  // поменять чат или добавить город можно правкой одного этого блока, без правок кода.
+  // Ссылки по городам — единственное место, где они живут. Кнопка канала, связь с
+  // менеджером, попап подписки и подвал берут их отсюда через KV.cityLink(), поэтому
+  // добавить город или сменить чат можно правкой одного этого блока, без правок кода.
   // Пустой channel = ссылки ещё нет: кнопка скажет об этом и предложит менеджера.
+  // У каждого города свой менеджер: заказ должен попасть тому, кто выдаёт товар на месте.
   CITY_LINKS: {
-    katowice: { channel: '', manager: 'https://t.me/KatoManager' },
-    gliwice:  { channel: 'https://t.me/+P-8bC9IvIn01YmQy', manager: 'https://t.me/KatoManager' },
-    warszawa: { channel: 'https://t.me/+iV43ZajefN0yMjEy', manager: 'https://t.me/KatoManager' }
+    katowice: { channel: 'https://t.me/+Dx0xgIyr4XkwOWEy', manager: 'https://t.me/KatoManager' },
+    gliwice:  { channel: 'https://t.me/+P-8bC9IvIn01YmQy', manager: 'https://t.me/KatoManagerGliwice' },
+    warszawa: { channel: 'https://t.me/+iV43ZajefN0yMjEy', manager: 'https://t.me/KatoManagerWarszawa' }
   },
 
   ADMIN_IDS: [5301671230],

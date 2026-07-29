@@ -329,7 +329,6 @@ window.KV = (function () {
   let lang = detectLang();
   let cart = {};
   let hooks = { render: null, cart: null };
-  let meta = {};                     // доп-данные по товарам (рейтинги, бейджи, отзывы)
   let content = {};                  // тексты разделов, промо, самовывоз
   let appliedPromo = null;           // применённый промокод {code, type, value}
   let filters = { brand: '', maxPrice: 0 };
@@ -516,10 +515,22 @@ window.KV = (function () {
     return isNew(item) ? 'new' : 'in';
   }
 
-  // порядок показа: новинки, потом в наличии, закончившиеся в конце
+  // Порядок показа: хиты, новинки, остальное в наличии, закончившиеся в конце.
+  // Хит поднимается наверх, но только пока он есть в наличии: пустой прилавок первым
+  // в каталоге хуже, чем хит на второй строке.
+  function sortRank(item) {
+    const st = status(item);
+    if (st === 'out') return 3;
+    if (item.hit) return 0;
+    return st === 'new' ? 1 : 2;
+  }
+  // Сортировка предсказуемая: при равном ранге сохраняется порядок каталога. Индекс в
+  // сравнении держим явно, чтобы порядок не зависел от стабильности sort в движке.
   function sortItems(items) {
-    const w = { new: 0, in: 1, out: 2 };
-    return items.slice().sort((a, b) => w[status(a)] - w[status(b)]);
+    return items
+      .map((it, i) => ({ it, i }))
+      .sort((a, b) => sortRank(a.it) - sortRank(b.it) || a.i - b.i)
+      .map(x => x.it);
   }
 
   function match(item, q) {
@@ -538,14 +549,35 @@ window.KV = (function () {
   function price(item) { return item.price ? item.price + ' zł' : ''; }
 
   // оптовые цены: item.tiers = [{q:1,p:50},{q:3,p:45},{q:5,p:40}].
-  // цена за штуку падает с количеством в одной позиции.
+  // Цена за штуку падает с количеством, набранным по всей модели: вкусы считаются вместе,
+  // потому что опт у поставщика тоже на модель. 3 Strawberry + 2 Mango + 5 Cola — это
+  // десять штук одной модели и десятая цена, а не три отдельные позиции по одной штуке.
   function priceTiers(item) { return item.tiers && item.tiers.length ? item.tiers : null; }
+  // Признак, по которому позиции складываются в одну оптовую группу. Сейчас это модель:
+  // разные вкусы одного товара — одна группа, разные товары — разные. Понадобится считать
+  // опт по бренду или категории — меняется только эта строка, остальной расчёт не трогаем.
+  function tierGroupOf(item) { return item.id; }
   function tierPrice(item, n) {
     const ts = priceTiers(item);
     if (!ts) return item.price || 0;
     let p = ts[0].p;
     for (const t of ts) if (n >= t.q) p = t.p;
     return p;
+  }
+  // сколько штук набрано в каждой оптовой группе — по этому числу и берётся ступень
+  function tierQtyByGroup() {
+    const acc = {};
+    for (const key in cart) {
+      const item = find(key.split('::')[0]); if (!item) continue;
+      const g = tierGroupOf(item);
+      acc[g] = (acc[g] || 0) + cart[key];
+    }
+    return acc;
+  }
+  // цена за штуку для модели с учётом того, что уже лежит в корзине (extra — сколько добавляем)
+  function unitWithCart(item, extra) {
+    const have = tierQtyByGroup()[tierGroupOf(item)] || 0;
+    return tierPrice(item, have + (extra || 0));
   }
 
   function plural(n, one, few, many) {
@@ -583,7 +615,7 @@ window.KV = (function () {
       rows = '<div class="kvf-list">' + item.flavors.map((f, i) => {
         const have = f.qty > 0;
         return '<div class="kvf-row' + (have ? '' : ' off') + '">' +
-          '<span class="kvf-name">' + flavorName(f) + '</span>' +
+          '<span class="kvf-name">' + esc(flavorName(f)) + '</span>' +
           '<span class="kvf-qty">' + (have ? t('left', f.qty) : t('qtyNone')) + '</span>' +
           (have ? '<button class="kvf-add" data-add="' + item.id + '" data-fl="' + i + '">' + t('add') + '</button>' : '') +
           '</div>';
@@ -635,12 +667,16 @@ window.KV = (function () {
   }
   function cartCount() { return Object.values(cart).reduce((s, n) => s + n, 0); }
   function cartLines() {
+    // ступень берём по сумме всей модели, поэтому количества сначала складываем,
+    // и только потом считаем строки: вкус, добавленный последним, снижает цену и остальным
+    const groups = tierQtyByGroup();
     const lines = [];
     for (const key in cart) {
       const [id, fl] = key.split('::');
       const item = find(id); if (!item) continue;
       const flavor = fl !== '' && item.flavors ? item.flavors[+fl] : null;
-      lines.push({ key, item, flavor, n: cart[key], sum: tierPrice(item, cart[key]) * cart[key] });
+      const unit = tierPrice(item, groups[tierGroupOf(item)]);
+      lines.push({ key, item, flavor, n: cart[key], unit, sum: unit * cart[key] });
     }
     return lines;
   }
@@ -784,6 +820,18 @@ window.KV = (function () {
     confirmEdit = contactProblems(ct, inpost).length > 0;
     ensureConfirm(); renderConfirm();
     document.getElementById('kvc').hidden = false; document.body.classList.add('kv-noscroll');
+    // Условия кода (минимальная сумма, категория, срок) проверяются на сервере в момент
+    // ввода. Пока человек добирал корзину, они могли перестать выполняться, а перед оплатой
+    // сумму всё равно посчитает сервер — поэтому перепроверяем код и показываем итог честно.
+    recheckPromo();
+  }
+  async function recheckPromo() {
+    if (!appliedPromo || !(window.KVAuth && KVAuth.promoCheck && KVAuth.cloudOn && KVAuth.cloudOn())) return;
+    const res = await applyPromo(appliedPromo.code);
+    if (!res.ok) toast(t('promoWhy_' + (res.reason || 'not_found')));
+    drawDrawer();
+    const d = document.getElementById('kvc');
+    if (d && !d.hidden) renderConfirm();
   }
   function closeConfirm() {
     const d = document.getElementById('kvc'); if (d) d.hidden = true;
@@ -931,12 +979,18 @@ window.KV = (function () {
     const box = document.getElementById('kvc-pay');
     if (!box || box.dataset.on) return;
     box.dataset.on = '1';   // один монтаж на показ окна, повтор при перерисовке не нужен
-    KVPay.mount(box, orderData(), {
+    // Оплата тут всегда карточная, а сервер всегда добавляет к ней свои 10%. Если человек
+    // оставил выбранным «наличными», payTotal() ниже карточной суммы, и в кошельке была бы
+    // одна цена, а в списании другая. Поэтому в оплату уходит именно карточный итог.
+    const pay = Object.assign(orderData(), { pay_way: 'card', sum: cardTotal(), amount: cardTotal() * 100 });
+    KVPay.mount(box, pay, {
       onSuccess: finishOrder,
       // Пока онлайн-оплата не запущена, Stripe возвращает технические коды. Показывать их
       // покупателю бессмысленно: даём понятный текст и путь к менеджеру города.
       onError: code => {
-        if (code === 'out_of_stock') { toast(t('orderFail')); return; }
+        // остаток разошёлся или промокод не удалось проверить: сумму пересчитает сервер,
+        // человеку показываем обычную ошибку заказа, а не технический код Stripe
+        if (code === 'out_of_stock' || code === 'promo') { toast(t('orderFail')); return; }
         // при отключённой карте чат менеджера открывает сам pay.js, внутри клика:
         // из таймера браузер посчитал бы это всплывающим окном и заблокировал
         toast(t('payOff'));
@@ -1210,7 +1264,10 @@ window.KV = (function () {
     const lines = cartLines();
     d.querySelector('.kvd-items').innerHTML = lines.length
       ? lines.map(l => '<div class="kvd-row">' +
-          '<span class="kvd-name">' + l.item.name + (l.flavor ? '<small>' + flavorName(l.flavor) + '</small>' : '') + '</span>' +
+          // цену за штуку показываем при количестве больше одного: так видно, что опт
+          // посчитан по всей модели, и сумма строки перестаёт выглядеть случайной
+          '<span class="kvd-name">' + esc(l.item.name) + (l.flavor ? '<small>' + esc(flavorName(l.flavor)) + '</small>' : '') +
+            (l.n > 1 ? '<small>' + l.n + ' × ' + l.unit + ' zł</small>' : '') + '</span>' +
           '<span class="kvd-ctr"><button data-minus="' + l.key + '">&minus;</button><b>' + l.n + '</b><button data-plus="' + l.key + '">+</button></span>' +
           '<span class="kvd-sum">' + l.sum + ' zł</span></div>').join('')
       : '<p class="kvd-empty">' + t('cartEmpty') + '</p>';
@@ -1377,13 +1434,26 @@ window.KV = (function () {
       ' <em>' + '★'.repeat(rv.stars || 5) + '</em></span>' + esc(rv.body || '') + '</div>').join('') + '</div>';
   }
 
-  // ==== бейджи (10): хит / выбор менеджера / осталось мало ====
+  // ==== ярлыки товара (10) ====
+  // Реестр ярлыков: у каждого свой ключ, оформление, место в ряду и источник. Источник —
+  // единственное место, где решается, показывать ярлык или нет: «Хит» ставит менеджер в
+  // панели (products.hit), «мало осталось» считается из остатка. Раньше ярлыки приходили
+  // ещё и из data/meta.json — оттуда брался невидимый в панели «хит» у HQD, а после
+  // включения галочки он же рисовался вторым. Теперь источник один на ярлык, поэтому
+  // дубль невозможен по построению.
+  // Новый ярлык («Акция», «Новинка») = одна запись в этом списке, рендер и сортировка
+  // подхватят его сами.
+  const BADGES = [
+    { key: 'hit', cls: 'hit', rank: 0, label: () => t('hitBadge'), on: it => !!it.hit },
+    { key: 'few', cls: 'few', rank: 1, label: () => ui('lastFew'), on: it => { const q = qty(it); return q > 0 && q <= 3; } }
+  ];
+  // ярлыки товара в постоянном порядке — общий ответ для сайта, мини-аппа и карточки
+  function badgesOf(item) {
+    return BADGES.filter(b => b.on(item)).sort((a, b) => a.rank - b.rank);
+  }
   function badgesHTML(item) {
-    const m = meta[item.id], out = [];
-    if (item.hit) out.push('<span class="kv-badge hit">' + t('hitBadge') + '</span>');
-    if (m && m.badges) m.badges.forEach(b => out.push('<span class="kv-badge ' + b + '">' + ui(b) + '</span>'));
-    const q = qty(item);
-    if (q > 0 && q <= 3) out.push('<span class="kv-badge few">' + ui('lastFew') + '</span>');
+    const out = badgesOf(item).map(b =>
+      '<span class="kv-badge ' + b.cls + '">' + esc(b.label()) + '</span>');
     return out.length ? '<div class="kv-badges">' + out.join('') + '</div>' : '';
   }
 
@@ -1439,7 +1509,7 @@ window.KV = (function () {
     return '<div class="kv-rel"><b>' + ui('related') + '</b><div class="kv-rel-row">' +
       rel.map(x => '<button class="kv-rel-i" data-goto="' + x.id + '">' +
         '<img src="' + ROOT + 'data/photos/' + x.id + '.jpg" alt="" loading="lazy" onerror="this.style.visibility=\'hidden\'">' +
-        '<span>' + x.name + '</span><b>' + price(x) + '</b></button>').join('') + '</div></div>';
+        '<span>' + esc(x.name) + '</span><b>' + price(x) + '</b></button>').join('') + '</div></div>';
   }
 
   // ==== бренд и фильтры (11) ====
@@ -1531,11 +1601,17 @@ window.KV = (function () {
     toast(n >= r.need ? loc(r.done) : loc(r.progress).replace('{n}', n).replace('{need}', r.need));
     drawDrawer();
   }
+  // Скидку пересчитываем от текущей корзины. Держать число, посчитанное при вводе кода,
+  // нельзя: корзину после этого меняют, а процент обязан идти следом — иначе на витрине
+  // одна сумма, а сервер перед оплатой считает другую. Формула та же, что в promo_check.
   function discount() {
     const sub = cartTotal();
     let d = 0;
-    if (appliedPromo) d += appliedPromo.discount != null ? appliedPromo.discount
-      : (appliedPromo.type === 'percent' ? Math.round(sub * appliedPromo.value / 100) : appliedPromo.value);
+    if (appliedPromo) {
+      const v = Number(appliedPromo.value);
+      d += appliedPromo.type === 'percent' && Number.isFinite(v) ? Math.round(sub * v / 100)
+        : (appliedPromo.discount != null ? appliedPromo.discount : v || 0);
+    }
     return Math.min(d, sub);
   }
   function grandTotal() { return Math.max(cartTotal() - discount(), 0) + deliveryFee(); }
@@ -1707,10 +1783,13 @@ window.KV = (function () {
     if (localStorage.getItem('kv_subbed') || !content.subscribe) return;
     if (localStorage.getItem('kv_age') == null) return;   // не поверх гейта
     const s = content.subscribe;
+    // Ведём в канал выбранного города: попап обещает поступления и акции, а они городские.
+    // content.subscribe.url остаётся запасом, если у города канала ещё нет.
+    const url = cityLink('channel') || s.url;
     const el = document.createElement('div');
     el.className = 'kv-sub';
     el.innerHTML = '<div class="kv-sub-box"><b>' + loc(s.title) + '</b><p>' + loc(s.text) + '</p>' +
-      '<a class="kv-sub-go" href="' + s.url + '" target="_blank" rel="noopener">' + loc(s.btn) + '</a>' +
+      '<a class="kv-sub-go" href="' + esc(url) + '" target="_blank" rel="noopener">' + loc(s.btn) + '</a>' +
       '<button class="kv-sub-later">' + loc(s.later) + '</button></div>';
     document.body.appendChild(el);
     const close = () => { localStorage.setItem('kv_subbed', '1'); el.remove(); };
@@ -1945,7 +2024,7 @@ window.KV = (function () {
       '<div class="kvm-head">' +
       '<div class="kvm-hmain">' +
         '<span class="kvm-cat">' + (catObj ? catName(catObj) : '') + '</span>' +
-        '<h3 class="kvm-name">' + item.name + '</h3>' +
+        '<h3 class="kvm-name">' + esc(item.name) + '</h3>' +
         badgesHTML(item) +
         '<div class="kvm-hrow"><span class="kvm-price">' + (price(item) || '') + '</span>' + (r ? starsRow(r) : '') + '</div>' +
       '</div>' +
@@ -1961,7 +2040,7 @@ window.KV = (function () {
       '<div class="kvm-fpick' + (modal.flOpen ? ' open' : '') + '">' +
         '<button class="kvm-fsel" type="button" data-fl-toggle="1">' +
           '<span class="kvm-fsel-bar"' + (fl ? ' style="background:' + flavorGrad(fl.name) + '"' : '') + '></span>' +
-          '<span class="kvm-fsel-n">' + (modal.flPicked && fl ? flavorName(fl) : t('pickFlavor')) + '</span>' +
+          '<span class="kvm-fsel-n">' + esc(modal.flPicked && fl ? flavorName(fl) : t('pickFlavor')) + '</span>' +
           '<span class="kvm-fsel-ch" aria-hidden="true">▼</span>' +
         '</button>' +
         '<div class="kvm-flavs">' + item.flavors.map((f, i) => {
@@ -1970,7 +2049,7 @@ window.KV = (function () {
           return '<button class="kvm-flav' + (i === modal.fl ? ' sel' : '') + (have ? '' : ' off') + '" data-fl-sel="' + i + '"' +
             ' style="--fl:' + c[0] + ';--fl2:' + c[1] + '"' + (have ? '' : ' disabled') + '>' +
             '<span class="kvm-flav-bar" style="background:' + flavorGrad(f.name) + '"></span>' +
-            '<span class="kvm-flav-n">' + flavorName(f) + '</span>' +
+            '<span class="kvm-flav-n">' + esc(flavorName(f)) + '</span>' +
             '<span class="kvm-flav-q">' + (have ? f.qty + ' ' + t('pcs') : t('qtyNone')) + '</span>' +
           '</button>';
         }).join('') + '</div>' +
@@ -1995,13 +2074,15 @@ window.KV = (function () {
       '<div class="kvm-pick"><span class="kvm-pick-lbl">' + t('selected') + '</span>' +
         '<div class="kvm-pick-card' + (fl && fl.qty > 0 ? '' : ' off') + '">' +
           '<span class="kvm-pick-bar"' + (fl ? ' style="background:' + flavorGrad(fl.name) + '"' : '') + '></span>' +
-          '<span class="kvm-pick-name">' + (fl ? flavorName(fl) : t('pickFlavor')) + '</span>' +
+          '<span class="kvm-pick-name">' + esc(fl ? flavorName(fl) : t('pickFlavor')) + '</span>' +
           (fl ? '<span class="kvm-pick-q">' + (fl.qty > 0 ? t('left', fl.qty) : t('qtyNone')) + '</span>' : '') +
         '</div></div>' : '';
 
     // Оптовые цены и выбор количества. Ступени приходят из админки (products.tiers), поэтому
-    // набор кнопок любой: 3/5/10 или другой. Цена за штуку пересчитывается по выбранному
-    // количеству, в корзину уходит именно оно.
+    // набор кнопок любой: 3/5/10 или другой.
+    // Цены на кнопках — те, что человек реально получит: к добавляемому количеству
+    // прибавляется уже набранное по этой модели. Иначе, положив 8 штук другого вкуса,
+    // он видел бы на «1 шт» розничную цену, а в корзине — оптовую.
     const canAdd = hasFl ? !!(fl && fl.qty > 0) : qty(item) > 0;
     const stock = hasFl ? (fl ? fl.qty : 0) : qty(item);
     const tiers = priceTiers(item);
@@ -2009,11 +2090,11 @@ window.KV = (function () {
     if (!steps.length || steps[0] !== 1) steps.unshift(1);
     if (!modal.qty || !steps.includes(modal.qty)) modal.qty = 1;
     const pickQty = Math.min(modal.qty, Math.max(stock, 1));
-    const unit = tierPrice(item, pickQty) || item.price || 0;
+    const unit = unitWithCart(item, pickQty) || item.price || 0;
     const tiersHTML = tiers
       ? '<div class="kvm-tiers"><span class="kvm-tiers-t">' + t('qtyPick') + '</span>' +
         steps.map(q => {
-          const p = tierPrice(item, q) || item.price || 0;
+          const p = unitWithCart(item, q) || item.price || 0;
           const off = q > stock;
           return '<button class="kvm-tier' + (q === pickQty ? ' sel' : '') + (off ? ' off' : '') + '" type="button"' +
             (off ? ' disabled' : '') + ' data-qty="' + q + '">' +
@@ -2071,7 +2152,7 @@ window.KV = (function () {
       '<button class="kvm-rstar' + (i <= (modal.rate || 0) ? ' on' : '') + '" data-star="' + i + '" type="button">★</button>').join('');
     const canRev = canReviewNow(item.id, flavorKey);
     const revForm = canRev
-      ? '<div class="kvm-revform"><b>' + t('reviewAdd') + (fl ? ' · ' + flavorName(fl) : '') + '</b>' +
+      ? '<div class="kvm-revform"><b>' + t('reviewAdd') + (fl ? ' · ' + esc(flavorName(fl)) : '') + '</b>' +
         '<div class="kvm-rrate"><span>' + t('reviewYourRate') + '</span><div class="kvm-rstars">' + starPick + '</div></div>' +
         '<textarea class="kvm-rev-text" placeholder="' + t('reviewText') + '" rows="2">' + esc(modal.text || '') + '</textarea>' +
         '<button class="kvm-rev-send" type="button">' + t('reviewSend') + '</button>' +
@@ -2203,6 +2284,11 @@ window.KV = (function () {
   }
   function managerLink() { return cityLink('manager') || MANAGER; }
   function openManager() { openTg(managerLink()); }
+  // @username менеджера города — для подписей в вёрстке, чтобы страницы не хранили его сами
+  function managerName() {
+    const m = String(managerLink()).match(/t\.me\/@?([A-Za-z0-9_]+)/);
+    return m ? '@' + m[1] : '';
+  }
   function openChannel() {
     const url = cityLink('channel');
     // для города ссылку ещё не дали — честно говорим об этом и не открываем чужой чат
@@ -2386,7 +2472,7 @@ window.KV = (function () {
         ? '<div class="kvp-favs">' + favList.map(it =>
             '<button class="kvp-fav" data-goto="' + it.id + '">' +
               '<img src="' + ROOT + 'data/photos/' + it.id + '.jpg" alt="" loading="lazy" onerror="this.style.visibility=\'hidden\'">' +
-              '<span>' + it.name + '</span><em>' + price(it) + '</em></button>').join('') + '</div>'
+              '<span>' + esc(it.name) + '</span><em>' + price(it) + '</em></button>').join('') + '</div>'
         : '<p class="kvp-empty">' + t('noFavs') + '</p>') + '</div>';
 
     // мои отзывы: полное название вкуса, звёзды и текст
@@ -2986,11 +3072,13 @@ body.kv-noscroll{overflow:hidden}
     injectCSS();
     if (!localStorage.getItem('kv_me')) localStorage.setItem('kv_me', Math.random().toString(36).slice(2, 8));
     try {
-      const [prod, m, c] = await Promise.all([
-        loadJSON('data/products.json'), loadJSON('data/meta.json'), loadJSON('data/content.json')
+      // data/meta.json больше не грузим: ярлыки задаются в панели управления, а других
+      // данных в нём не осталось — лишний запрос на старте
+      const [prod, c] = await Promise.all([
+        loadJSON('data/products.json'), loadJSON('data/content.json')
       ]);
       if (!prod || !prod.categories) throw new Error('no products');
-      master = prod; meta = m || {}; content = c || {};
+      master = prod; content = c || {};
     } catch (e) {
       if (opts.fail) opts.fail();
       return;
@@ -3043,7 +3131,7 @@ body.kv-noscroll{overflow:hidden}
     cartCount, cartTotal, toast, autoHideHeader, sortItems,
     starsHTML, badgesHTML, filterPass, searchSuggest, track,
     openProduct, openProfile, openFavs, isFav, toggleFav, removeFav, favs, tasteOf, flavorDesc,
-    openManager, openChannel, managerLink, cityLink, bulkOrder,
+    openManager, openChannel, managerLink, managerName, cityLink, bulkOrder,
     setProfileName, refreshProfile, forgetUserState,
     get db() { return db; }, get lang() { return lang; }, get city() { return city; },
     manager: MANAGER

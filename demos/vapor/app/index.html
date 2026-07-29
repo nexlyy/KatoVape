@@ -153,9 +153,9 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--mint);outline-o
 <div id="app"></div>
 <button class="cta" id="cta"></button>
 
-<script src="../../../shared/config.js?v=11"></script>
-<script src="../../../shared/core.js?v=40"></script>
-<script src="../../../shared/auth.js?v=21"></script>
+<script src="../../../shared/config.js?v=14"></script>
+<script src="../../../shared/core.js?v=41"></script>
+<script src="../../../shared/auth.js?v=22"></script>
 <script src="../../../shared/pay.js?v=3"></script>
 <script>
 // живой дым: дрейфующее fBm-поле шума (тайлящаяся текстура печётся один раз).
@@ -335,6 +335,8 @@ function App(){
                   <img src={'../../../data/photos/'+i.id+'.jpg'} alt="" loading="lazy" onError={e=>e.target.remove()}/></div>
                 <div className="rmain">
                   <div className="rname">{i.name}</div>
+                  {/* ярлыки те же и в том же порядке, что на сайте: разметку даёт KV.badgesHTML */}
+                  <span dangerouslySetInnerHTML={{__html:KV.badgesHTML(i)}}/>
                   <div className="rsub"><b>{KV.price(i)}</b>{i.tiers?<span className="from"> {({ru:'от',uk:'від',pl:'od'}[KV.lang])} {i.tiers[i.tiers.length-1].p} zł</span>:null}
                     {st!=='out'?' · '+KV.qty(i)+' '+KV.t('pcs'):' · '+KV.t('out')}{st==='new'?' · '+KV.t('new'):''}</div>
                 </div>
