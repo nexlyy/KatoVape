@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KatoVape · как работать в панели</title>
+<link rel="icon" type="image/png" href="../../data/photos/cat.png">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* Оформление повторяет панель управления: менеджер открывает гайд из той же кнопки
+   и не должен чувствовать, что попал на чужой сайт. */
+:root{
+  --bg:#0b0f14; --surface:#121821; --surface-2:#171f29; --field:#0e141b;
+  --line:#212b36; --line-2:#2e3b48;
+  --ink:#e9eff4; --ink-2:#b3c0cc; --muted:#7f8d9a;
+  --accent:#5ff3d0; --accent-ink:#04120e; --accent-dim:rgba(95,243,208,.13);
+  --ok:#4ade80; --warn:#f5b83d; --danger:#fb7185; --info:#67d9f5;
+  --r:10px; --r-lg:14px;
+  --t:170ms cubic-bezier(.22,.61,.36,1);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
+body{background:var(--bg);color:var(--ink);font-family:'Hanken Grotesk',system-ui,sans-serif;
+  font-size:15px;line-height:1.62;-webkit-font-smoothing:antialiased}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
+
+.wrap{max-width:1080px;margin:0 auto;padding:0 20px 80px;display:grid;grid-template-columns:212px 1fr;gap:36px}
+header{border-bottom:1px solid var(--line);background:linear-gradient(180deg,#101822,transparent);margin-bottom:28px}
+.hin{max-width:1080px;margin:0 auto;padding:26px 20px 22px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.hin img{width:42px;height:42px;border-radius:11px;object-fit:cover}
+.hin h1{font-size:21px;font-weight:700;letter-spacing:-.01em}
+.hin p{color:var(--muted);font-size:13.5px}
+.hin .back{margin-left:auto;display:inline-flex;align-items:center;gap:7px;background:var(--surface-2);
+  border:1px solid var(--line-2);border-radius:var(--r);padding:9px 14px;font-weight:600;font-size:13px;color:var(--ink)}
+.hin .back:hover{background:#1d2733;text-decoration:none}
+
+nav{position:sticky;top:20px;align-self:start;font-size:13.5px}
+nav b{display:block;text-transform:uppercase;letter-spacing:.06em;font-size:11px;color:var(--muted);margin:0 0 10px 12px}
+nav a{display:block;padding:7px 12px;border-radius:8px;color:var(--ink-2);border-left:2px solid transparent}
+nav a:hover{background:var(--surface);color:var(--ink);text-decoration:none}
+
+section{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:22px 24px;margin-bottom:16px}
+section h2{font-size:17px;font-weight:700;letter-spacing:-.01em;margin-bottom:4px;scroll-margin-top:20px}
+section h2 + .lead{color:var(--muted);font-size:13.5px;margin-bottom:16px}
+section h3{font-size:14.5px;font-weight:600;margin:20px 0 7px;color:var(--ink)}
+section p{margin-bottom:11px;color:var(--ink-2)}
+section p:last-child{margin-bottom:0}
+ol,ul{margin:0 0 12px 20px;color:var(--ink-2)}
+li{margin-bottom:6px}
+li:last-child{margin-bottom:0}
+strong{color:var(--ink);font-weight:600}
+code{background:var(--field);border:1px solid var(--line);border-radius:6px;padding:1px 6px;
+  font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;color:var(--accent)}
+
+.pill{display:inline-block;font-size:11.5px;font-weight:600;border-radius:99px;padding:2px 9px;
+  background:var(--surface-2);color:var(--ink-2);border:1px solid var(--line-2);white-space:nowrap}
+.pill.ok{background:rgba(74,222,128,.13);color:var(--ok);border-color:transparent}
+.pill.new{background:var(--accent-dim);color:var(--accent);border-color:transparent}
+.pill.warn{background:rgba(245,184,61,.13);color:var(--warn);border-color:transparent}
+.pill.bad{background:rgba(251,113,133,.13);color:var(--danger);border-color:transparent}
+
+.note{border-left:2px solid var(--line-2);background:var(--surface-2);border-radius:0 var(--r) var(--r) 0;
+  padding:13px 16px;margin:14px 0;font-size:13.5px;color:var(--ink-2)}
+.note.warn{border-left-color:var(--warn)}
+.note.bad{border-left-color:var(--danger)}
+.note.tip{border-left-color:var(--accent)}
+.note b{color:var(--ink)}
+
+.tbl{width:100%;border-collapse:collapse;margin:12px 0;font-size:13.5px}
+.tbl th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);
+  font-weight:600;padding:8px 12px;border-bottom:1px solid var(--line)}
+.tbl td{padding:9px 12px;border-bottom:1px solid var(--line);color:var(--ink-2);vertical-align:top}
+.tbl tr:last-child td{border-bottom:none}
+.tbl td:first-child{color:var(--ink);font-weight:500;white-space:nowrap}
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+
+.steps{counter-reset:s;list-style:none;margin-left:0}
+.steps li{counter-increment:s;position:relative;padding-left:34px;margin-bottom:11px}
+.steps li::before{content:counter(s);position:absolute;left:0;top:1px;width:23px;height:23px;border-radius:7px;
+  background:var(--accent-dim);color:var(--accent);font-size:12px;font-weight:700;
+  display:grid;place-items:center}
+
+footer{max-width:1080px;margin:0 auto;padding:0 20px 40px;color:var(--muted);font-size:12.5px}
+
+@media (max-width:820px){
+  .wrap{grid-template-columns:1fr;gap:0}
+  nav{position:static;margin-bottom:18px;display:flex;flex-wrap:wrap;gap:6px}
+  nav b{display:none}
+  nav a{border:1px solid var(--line);border-radius:99px;padding:6px 13px;font-size:12.5px;border-left-width:1px}
+  section{padding:18px 16px}
+  .hin{padding:20px 16px 18px}
+  .wrap{padding:0 16px 60px}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hin">
+    <img src="../../data/photos/cat.png" alt="">
+    <div>
+      <h1>Как работать в панели</h1>
+      <p>Короткая инструкция для менеджеров KatoVape</p>
+    </div>
+    <a class="back" href="./">← В панель</a>
+  </div>
+</header>
+
+<div class="wrap">
+  <nav>
+    <b>Разделы</b>
+    <a href="#start">С чего начать</a>
+    <a href="#orders">Заказы</a>
+    <a href="#res">Бронь</a>
+    <a href="#products">Ассортимент</a>
+    <a href="#hit">Ярлык «Хит»</a>
+    <a href="#promo">Промокоды</a>
+    <a href="#broadcast">Рассылка</a>
+    <a href="#customers">Клиенты и спрос</a>
+    <a href="#access">Доступ</a>
+    <a href="#bot">Бот в телефоне</a>
+    <a href="#trouble">Если что-то не так</a>
+  </nav>
+
+  <main>
+
+    <section id="start">
+      <h2>С чего начать</h2>
+      <p class="lead">Вход, город и что видно на главной.</p>
+      <p>Панель открывается по ссылке, которую вам дал владелец, или кнопкой <strong>Открыть панель управления</strong> в боте по команде <code>/admin</code>. Войти можно двумя способами: логином и паролем магазина или через Telegram — если доступ выдан на ваш Telegram ID, кнопка входа появится сама.</p>
+      <p>Наверху всегда видны четыре цифры: новых заказов, заказов всего, активных броней и сколько человек ждут поступления. Цифра подсвечивается, когда там есть что разобрать.</p>
+      <div class="note tip">
+        <b>Про город.</b> Если ваша роль — менеджер, панель работает только с вашим городом. Чужие заказы, брони и товары вам просто не показываются, а уведомления в боте приходят только по вашему городу. Переключатель городов вы не увидите — это нормально.
+      </div>
+    </section>
+
+    <section id="orders">
+      <h2>Заказы</h2>
+      <p class="lead">Главный раздел. Сюда попадает всё, что человек оформил в магазине.</p>
+      <p>Каждый заказ проходит четыре состояния. Меняйте статус кнопками в карточке — клиенту в Telegram автоматически уходит сообщение, отдельно писать не нужно.</p>
+      <div class="scroll">
+        <table class="tbl">
+          <tr><th>Статус</th><th>Когда ставить</th><th>Что получит клиент</th></tr>
+          <tr><td><span class="pill new">новый</span></td><td>Ставится сам при оформлении</td><td>«Заказ принят»</td></tr>
+          <tr><td><span class="pill">подтверждён</span></td><td>Товар есть, вы взяли заказ в работу</td><td>«Собираем, сообщим, когда забрать»</td></tr>
+          <tr><td><span class="pill ok">выдан</span></td><td>Товар отдан, деньги получены</td><td>Благодарность и кнопка «Оставить отзыв»</td></tr>
+          <tr><td><span class="pill bad">отменён</span></td><td>Клиент передумал или товара нет</td><td>«Заказ отменён, свяжитесь с менеджером»</td></tr>
+        </table>
+      </div>
+      <h3>Как читать карточку</h3>
+      <p>В карточке видно состав с вкусами и количеством, итоговую сумму, способ получения (самовывоз, InPost или курьер), комментарий клиента и его контакты. Отдельной строкой — оплата: <strong>оплачено онлайн</strong> означает, что деньги уже пришли, <strong>оплата при выдаче</strong> — деньги берёте вы.</p>
+      <div class="note warn">
+        <b>Сначала смотрите на оплату, потом отдавайте товар.</b> Если стоит «оплата при выдаче», сумму берёте на месте. Если «оплачено онлайн» — деньги уже у магазина, брать повторно не нужно.
+      </div>
+      <h3>То же самое в боте</h3>
+      <p>Не обязательно открывать панель: напишите боту <code>/orders</code>. Придёт список кнопками, по нажатию — карточка заказа и те же кнопки статусов. Удобно, когда вы за прилавком и панель открывать некогда.</p>
+    </section>
+
+    <section id="res">
+      <h2>Бронь</h2>
+      <p class="lead">Два разных случая в одном разделе.</p>
+      <ul>
+        <li><strong>Бронь</strong> — человек отложил товар на конкретный день и час. Остаток списывается сразу, чтобы позицию не продали дважды.</li>
+        <li><strong>Заявка на поступление</strong> — товара нет, человек просит сообщить, когда появится. В списке помечена словом «заявка», даты у неё нет.</li>
+      </ul>
+      <p>По умолчанию показываются только активные. Кнопка <strong>· Показать все ·</strong> открывает историю вместе с заявками.</p>
+      <p>Когда человек забрал бронь, отметьте <strong>Выдана</strong>. Если не пришёл или передумал — <strong>Отменить</strong>, и остаток вернётся в наличие автоматически.</p>
+      <div class="note tip">
+        <b>Напоминания приходят сами.</b> Утром в день выдачи клиент получает напоминание, а вы — сообщение за час до назначенного времени. Брони с прошедшей датой бот сам помечает просроченными.
+      </div>
+      <p>В боте тот же экран по команде <code>/reserves</code> (или короткой <code>/res</code>).</p>
+    </section>
+
+    <section id="products">
+      <h2>Ассортимент</h2>
+      <p class="lead">Цены, остатки, вкусы и оптовые ступени.</p>
+      <p>Товары сгруппированы по моделям, внутри каждой — строки вкусов с остатками. Правьте прямо в полях: изменённые строки подсвечиваются, а внизу появляется панель с кнопкой <strong>Применить</strong>. Пока вы её не нажали, ничего не сохранено — при попытке закрыть вкладку браузер предупредит.</p>
+      <h3>Оптовые цены</h3>
+      <p>Рядом с обычной ценой три поля: <strong>3шт</strong>, <strong>5шт</strong>, <strong>10шт</strong>. Это цена <em>за штуку</em>, когда человек берёт столько же или больше. Заполнять все три не обязательно — пустое поле означает «ступени нет».</p>
+      <div class="note tip">
+        <b>Опт считается по модели, а не по вкусу.</b> Три Strawberry, два Mango и пять Cola — это десять штук одной модели, и вся корзина пойдёт по цене десятки. Товары разных моделей между собой не складываются.
+      </div>
+      <h3>Вкусы</h3>
+      <p>Кнопка <strong>Добавить вкус</strong> заводит новую строку у той же модели — название и остаток. Новый вкус наследует цену, ступени и ярлык товара. Удалять можно отдельный вкус или товар целиком.</p>
+      <div class="note warn">
+        <b>Остаток — то, что реально лежит на полке.</b> Витрина показывает эти цифры живьём: поставили ноль — товар уходит в «нет в наличии» и появляется кнопка «Сообщить о поступлении». Поставили 1–3 — на карточке загорается «осталось мало».
+      </div>
+    </section>
+
+    <section id="hit">
+      <h2>Ярлык «Хит»</h2>
+      <p class="lead">Как поднять товар наверх каталога.</p>
+      <ol class="steps">
+        <li>Откройте <strong>Ассортимент</strong> и найдите нужный товар.</li>
+        <li>Поставьте галочку <strong>Хит</strong> в строке товара (справа от полей опта).</li>
+        <li>Нажмите <strong>Применить</strong> внизу.</li>
+      </ol>
+      <p>После этого товар получает оранжевый ярлык <span class="pill warn">ХИТ</span> и встаёт первым в каталоге — и на сайте, и в мини-приложении, и в поиске, и в блоке похожих товаров. Снять ярлык — снять галочку и снова нажать «Применить».</p>
+      <div class="note">
+        Если хитов несколько, между собой они идут в обычном порядке каталога — тот же самый при каждом открытии страницы. Товар, которого нет в наличии, наверх не поднимается, даже если ярлык стоит: сначала верните остаток.
+      </div>
+      <p>Ярлык <span class="pill">осталось мало</span> ставить не нужно — он появляется сам, когда остаток падает до трёх штук, и пропадает, когда вы пополняете склад.</p>
+    </section>
+
+    <section id="promo">
+      <h2>Промокоды</h2>
+      <p class="lead">Скидка, которую человек вводит в корзине.</p>
+      <p>Код заводится формой внизу раздела. Поля по порядку:</p>
+      <div class="scroll">
+        <table class="tbl">
+          <tr><th>Поле</th><th>Что означает</th></tr>
+          <tr><td>Код</td><td>Латиница и цифры, 3–24 символа. <strong>Регистр важен</strong>: <code>LATO10</code> и <code>lato10</code> — разные коды</td></tr>
+          <tr><td>Тип и размер</td><td>Процент от суммы товаров или фиксированная скидка в злотых</td></tr>
+          <tr><td>Город</td><td>Пусто — работает везде, иначе только в выбранном городе</td></tr>
+          <tr><td>Категория</td><td>Пусто — на весь ассортимент, иначе только если в корзине есть эта категория</td></tr>
+          <tr><td>Минимальная сумма</td><td>Ниже этой суммы код не сработает</td></tr>
+          <tr><td>Лимит всего</td><td>Сколько раз кодом вообще можно воспользоваться. Пусто — без ограничений</td></tr>
+          <tr><td>Раз на человека</td><td>Обычно 1. Считается по аккаунту покупателя</td></tr>
+          <tr><td>Действует с / до</td><td>Можно завести код заранее и он включится сам</td></tr>
+        </table>
+      </div>
+      <p>Процент считается от суммы товаров, доставка в скидку не входит, и скидка не может превысить саму корзину. Код можно временно выключить, не удаляя, — переключателем в списке.</p>
+      <div class="note bad">
+        <b>Скидку считает сервер, а не браузер покупателя.</b> Подобрать чужой код или подкрутить процент со стороны клиента нельзя. Поэтому же список кодов виден только в панели.
+      </div>
+    </section>
+
+    <section id="broadcast">
+      <h2>Рассылка</h2>
+      <p class="lead">Сообщение всем, кто запускал бота.</p>
+      <ol class="steps">
+        <li>Напишите текст.</li>
+        <li>Выберите в поле <strong>Кому</strong> город или «всем городам». Менеджеру доступен только свой город.</li>
+        <li>При желании прикрепите фото — оно сожмётся автоматически.</li>
+        <li>Нажмите кнопку отправки: на ней написано, скольким людям уйдёт сообщение.</li>
+      </ol>
+      <p>Рассылка встаёт в очередь, её разбирает бот — это занимает до минуты. Итог («доставлено / не дошло») появится сам, и рассылка попадёт в историю ниже.</p>
+      <div class="note warn">
+        <b>Отменить отправленное нельзя.</b> Перечитайте текст перед нажатием. Те, кто заблокировал бота, попадут в «не дошло» — это нормально и не ошибка.
+      </div>
+      <p>Город берётся из анкеты, которую человек заполнял в боте. Кто бота не запускал, рассылку не получит — писать в личку вручную панель не умеет.</p>
+    </section>
+
+    <section id="customers">
+      <h2>Клиенты и спрос</h2>
+      <p class="lead">Два справочных раздела.</p>
+      <p><strong>Клиенты</strong> — все, кто завёл аккаунт: имя, контакты, привязанный Telegram, дата регистрации. Раздел только для чтения, править контакты человека отсюда нельзя.</p>
+      <p><strong>Спрос</strong> — счётчик: что чаще открывают в карточках и что бронируют. Полезно перед закупкой: позиция с большим числом просмотров и броней при нулевом остатке — первый кандидат в заказ поставщику.</p>
+    </section>
+
+    <section id="access">
+      <h2>Доступ</h2>
+      <p class="lead">Раздел видит только владелец.</p>
+      <div class="scroll">
+        <table class="tbl">
+          <tr><th>Роль</th><th>Что может</th></tr>
+          <tr><td><span class="pill ok">Владелец</span></td><td>Всё, включая выдачу и отзыв доступа. Видит все города</td></tr>
+          <tr><td><span class="pill ok">Разработчик</span></td><td>Всё, кроме раздела «Доступ». Видит все города</td></tr>
+          <tr><td><span class="pill">Менеджер</span></td><td>Только свой город: его заказы, брони, ассортимент и рассылки</td></tr>
+        </table>
+      </div>
+      <p>Выдать доступ можно двумя путями. <strong>По логину</strong> — если человек уже завёл аккаунт с паролем. <strong>По Telegram ID</strong> — заранее: доступ включится сам, когда человек первый раз откроет магазин через бота. Повторная выдача тому же человеку просто меняет роль и город.</p>
+      <p>Кнопка <strong>Забрать</strong> отзывает доступ немедленно.</p>
+    </section>
+
+    <section id="bot">
+      <h2>Бот в телефоне</h2>
+      <p class="lead">Что можно сделать, не открывая панель.</p>
+      <div class="scroll">
+        <table class="tbl">
+          <tr><th>Команда</th><th>Что показывает</th></tr>
+          <tr><td><code>/orders</code></td><td>Активные заказы списком, карточка и смена статуса</td></tr>
+          <tr><td><code>/reserves</code></td><td>Активные брони, отметка «выдана» и отмена</td></tr>
+          <tr><td><code>/admin</code></td><td>Кнопка, открывающая панель управления</td></tr>
+        </table>
+      </div>
+      <p>Бот сам присылает уведомление о каждом новом заказе по вашему городу и напоминает о брони за час до назначенного времени. Ассортимент из бота не правится — только через панель.</p>
+    </section>
+
+    <section id="trouble">
+      <h2>Если что-то не так</h2>
+
+      <h3>Не сохраняются изменения в ассортименте</h3>
+      <p>Проверьте, что нажали <strong>Применить</strong> внизу экрана: подсветка строки означает только «изменено», но ещё не сохранено. Если появилось сообщение про поле, которого не знает база, — это техническая заминка на стороне сервера, передайте текст разработчику.</p>
+
+      <h3>Ярлык «Хит» пропал сам</h3>
+      <p>Скорее всего, между вашей правкой и проверкой прошла выгрузка ассортимента из таблицы. Поставьте галочку заново и сообщите разработчику, если повторится.</p>
+
+      <h3>Клиент говорит, что цена в корзине другая</h3>
+      <p>Витрина берёт цены и остатки из панели живьём, но у человека могла быть открыта старая вкладка. Попросите обновить страницу. Если расходится и после этого — проверьте, не стоит ли у товара оптовая ступень, которую вы недавно меняли.</p>
+
+      <h3>Не приходят уведомления о заказах</h3>
+      <p>Уведомления приходят только по вашему городу и только в тот Telegram, на который выдан доступ. Проверьте, что не заблокировали бота и хотя бы раз нажали в нём «Старт».</p>
+
+      <h3>Панель выглядит старой после обновления</h3>
+      <p>Обновите страницу с очисткой кеша: <code>Ctrl + F5</code> на компьютере, а в Telegram — закрыть и открыть мини-приложение заново.</p>
+
+      <div class="note">
+        Чего в панели нет: возврата денег, редактирования уже оформленного заказа и переписки с клиентом. Всё это — вручную, через чат менеджера города.
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<footer>KatoVape · инструкция для менеджеров</footer>
+
+</body>
+</html>

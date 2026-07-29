@@ -102,6 +102,10 @@ select:focus{outline:none;border-color:var(--accent)}
 .who-name{flex:1;min-width:0}
 .who-name b{display:block;font-size:12.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .who-name span{font-size:11px;color:var(--muted)}
+/* ссылка на инструкцию: тише разделов, но всегда на виду в боковой колонке */
+.guide-link{display:block;margin:6px 10px 10px;padding:8px 11px;border-radius:9px;font-size:12.5px;
+  color:var(--muted);border:1px dashed var(--line-2);transition:color var(--t),border-color var(--t)}
+.guide-link:hover{color:var(--accent);border-color:var(--accent)}
 .admlang{display:flex;gap:4px;padding:0 14px 10px}
 .admlang button{flex:1;border:1px solid var(--line);border-radius:8px;padding:5px 0;font-size:11.5px;font-weight:700;color:var(--muted)}
 .admlang button.on{border-color:var(--accent);color:var(--accent);background:var(--accent-dim)}
@@ -285,7 +289,7 @@ td .sub{display:block;color:var(--muted);font-size:11.5px;margin-top:2px}
 <div class="toast" id="toast"></div>
 
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
-<script src="../../shared/config.js?v=13"></script>
+<script src="../../shared/config.js?v=14"></script>
 <script type="module">
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
@@ -644,6 +648,7 @@ function shell() {
               ${n ? `<i class="count">${n}</i>` : ''}</button>`;
           }).join('')}
         </nav>
+        <a class="guide-link" href="./guide.html" target="_blank" rel="noopener">${L('Как работать в панели')}</a>
         <div class="admlang">
           ${[['ru', 'RU'], ['uk', 'UA']].map(([l, lb]) => `<button data-lang="${l}" class="${l === admLang ? 'on' : ''}">${lb}</button>`).join('')}
         </div>
@@ -843,16 +848,28 @@ async function renderDemand(m) {
 }
 
 async function renderBroadcast(m) {
-  const { count } = await sb.from('bot_users').select('telegram_id', { count: 'exact', head: true }).eq('opted_in', true);
+  // Менеджеру города доступен только его город: политика базы не пропустит рассылку
+  // с другим городом (и с пустым тоже). Владелец и разработчик могут выбрать «все города».
+  if (myCity() && bcCity !== myCity()) bcCity = myCity();
+  // Считаем ровно ту аудиторию, которой бот отправит: он шлёт всем, кто писал ему,
+  // флаг opted_in не смотрит, а город берёт из рассылки.
+  let q = sb.from('bot_users').select('telegram_id', { count: 'exact', head: true });
+  if (bcCity) q = q.eq('city', bcCity);
+  const { count } = await q;
   const { data: last } = await sb.from('broadcasts').select('*').order('id', { ascending: false }).limit(5);
   const bcPill = s => s === 'done' ? '<span class="pill ok">' + L('разослана') + '</span>'
     : s === 'sending' ? '<span class="pill live">' + L('отправляем') + '</span>'
     : '<span class="pill new">' + L('в очереди') + '</span>';
   const hist = (last || []).map(b => [`<span class="num">#${b.id}</span>`, esc((b.text || '').slice(0, 60)),
+    b.city ? esc(CITY_LABEL[b.city] || b.city) : '<span class="sub">' + L('все') + '</span>',
     bcPill(b.status),
     `<span class="num">${b.sent || 0} / ${b.failed || 0}</span>`, `<span class="num">${b.sent_at ? fdate(b.sent_at) : '—'}</span>`]);
   swap(m, panel(L('Новая рассылка'), `<div class="panel-body">
       <textarea id="bctext" rows="4" placeholder="${L('Что написать подписчикам бота')}"></textarea>
+      <label class="f" style="max-width:260px">${L('Кому')}<select id="bccity">
+        ${myCity() ? '' : `<option value="" ${bcCity ? '' : 'selected'}>${L('всем городам')}</option>`}
+        ${citiesAllowed().map(c => `<option value="${c}" ${c === bcCity ? 'selected' : ''}>${CITY_LABEL[c]}</option>`).join('')}
+      </select></label>
       <div class="bcphoto">
         <label class="btn" for="bcfile">${L('Прикрепить фото')}</label>
         <input type="file" id="bcfile" accept="image/*" hidden>
@@ -864,9 +881,13 @@ async function renderBroadcast(m) {
         <button class="btn primary" id="bcsend" ${count ? '' : 'disabled'}>Отправить ${count || 0} подписчикам</button>
         <span class="hint" style="margin:0" id="bcres"></span>
       </div>
-      <p class="hint">Получают только те, кто писал боту. Кому не доставилось, того бот сам исключит из списка.
-      ${count ? '' : L('Сейчас подписчиков нет: попросите людей открыть бота и нажать «Старт».')}</p>
-    </div>`) + (hist.length ? panel(L('Последние рассылки'), table(['#', L('Текст'), L('Статус'), L('Ушло / ошибок'), L('Когда')], hist)) : ''));
+      <p class="hint">Получают только те, кто писал боту${bcCity ? L(' и выбрал этот город в боте') : ''}. Кому не доставилось, того бот сам исключит из списка.
+      ${count ? '' : L('Подходящих подписчиков нет: попросите людей открыть бота и нажать «Старт».')}</p>
+    </div>`) + (hist.length ? panel(L('Последние рассылки'), table(['#', L('Текст'), L('Город'), L('Статус'), L('Ушло / ошибок'), L('Когда')], hist)) : ''));
+
+  // выбор города меняет и аудиторию, и число на кнопке — перерисовываем экран
+  const bcc = document.getElementById('bccity');
+  if (bcc) bcc.onchange = () => { bcCity = bcc.value; render(); };
 
   // фото сжимаем до 1280px: Telegram всё равно ужмёт, а хранить гигантские data:URL незачем
   const file = document.getElementById('bcfile');
@@ -902,7 +923,8 @@ async function renderBroadcast(m) {
     const text = document.getElementById('bctext').value.trim();
     if (!text) return toast(L('Сначала напишите текст'), true);
     send.disabled = true; send.textContent = L('Ставим в очередь…');
-    const { data, error } = await sb.from('broadcasts').insert({ text, author: me.id, photo: bcPhoto || null }).select().single();
+    const { data, error } = await sb.from('broadcasts')
+      .insert({ text, author: me.id, photo: bcPhoto || null, city: bcCity || null }).select().single();
     if (error) { send.disabled = false; send.textContent = L('Отправить'); return toast(error.message, true); }
     document.getElementById('bcres').textContent = L('В очереди, бот разошлёт за минуту…');
     bcPhoto = null;
@@ -1121,6 +1143,7 @@ function grantErr(error) {
 
 /* ================= ассортимент ================= */
 let bcPhoto = null;   // картинка рассылки, data:URL
+let bcCity = '';      // город рассылки, пусто = всем городам
 let groups = [], cityNow = 'katowice';
 
 // Изменения считаем сравнением полей с тем, что пришло из базы. Прежний список
@@ -1135,6 +1158,17 @@ function tiersKey(tiers) {
   if (!tiers || !tiers.length) return '';
   return [...tiers].map(x => Number(x.q) + ':' + Number(x.p))
     .sort((a, b) => parseInt(a) - parseInt(b)).join('|');
+}
+// Понятный текст вместо сырого ответа PostgREST. Чаще всего это не ошибка данных:
+// после миграции, добавившей колонку, у API какое-то время живёт старый кеш схемы, и
+// сохранение «Хита» падает, хотя в базе всё на месте.
+function productsErr(error) {
+  const m = String((error && error.message) || '');
+  if ((error && error.code === 'PGRST204') || /schema cache/i.test(m))
+    return L('База ещё не знает про это поле. Примените миграции и обновите схему API (Supabase → Settings → API → Reload schema), потом повторите.');
+  if (/row-level security|permission denied/i.test(m))
+    return L('Нет прав на этот товар: проверьте город, закреплённый за вашей ролью.');
+  return m || L('Не удалось сохранить');
 }
 function buildTiers(base, t3, t5, t10) {
   const arr = [];
@@ -1192,6 +1226,17 @@ async function renderProducts(m) {
   rows.forEach(r => {
     if (!byId[r.id]) { byId[r.id] = { id: r.id, head: r, items: [] }; groups.push(byId[r.id]); }
     byId[r.id].items.push(r);
+  });
+  // Ярлык и оптовые ступени — свойства товара, а не отдельного вкуса: в базе они
+  // продублированы по строкам. Если вкус завели отдельно (кнопкой «Добавить вкус» или
+  // выгрузкой), его строка приходит без них, и первая строка группы врёт — галочка
+  // «Хит» показывалась снятой у товара, где ярлык стоит. Считаем как витрина: хит есть,
+  // если он есть хотя бы у одной строки.
+  groups.forEach(g => {
+    g.head = Object.assign({}, g.head, {
+      hit: g.items.some(r => r.hit),
+      tiers: (g.items.find(r => r.tiers && r.tiers.length) || {}).tiers || null
+    });
   });
   // менеджеру показываем только его город, владельцу и разработчику — все
   const cities = citiesAllowed();
@@ -1287,9 +1332,11 @@ function bindProducts(m) {
     const h = g.head;
     const { error } = await sb.from('products').upsert([{
       id: g.id, city: cityNow, flavor: fl, name: h.name, brand: h.brand, category: h.category,
-      nic: h.nic, price: h.price, qty: +qv || 0, updated_at: new Date().toISOString()
+      // новый вкус наследует ярлык и ступени товара, иначе строки одного товара разъедутся
+      nic: h.nic, price: h.price, tiers: h.tiers || null, hit: !!h.hit,
+      qty: +qv || 0, updated_at: new Date().toISOString()
     }], { onConflict: 'id,city,flavor' });
-    if (error) return toast(error.message, true);
+    if (error) return toast(productsErr(error), true);
     toast(L('Вкус добавлен')); clearDirty(); render();
   });
   const add = document.getElementById('np_add');
@@ -1327,7 +1374,7 @@ async function saveProducts() {
   btn.disabled = true; btn.textContent = L('Сохраняем…');
   const { error } = await sb.from('products').upsert(out, { onConflict: 'id,city,flavor' });
   btn.disabled = false; btn.textContent = L('Применить');
-  if (error) return toast(error.message, true);
+  if (error) return toast(productsErr(error), true);
   toast(L('Сохранено: ') + out.length);
   clearDirty();
   render();
