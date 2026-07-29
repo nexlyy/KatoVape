@@ -1,0 +1,12 @@
+{
+  "name": "katovape",
+  "private": true,
+  "type": "module",
+  "description": "Витрина KatoVape: сайт, мини-апп Telegram, панель управления, бот",
+  "scripts": {
+    "test": "node --test \"test/**/*.test.mjs\""
+  },
+  "engines": {
+    "node": ">=22.18"
+  }
+}

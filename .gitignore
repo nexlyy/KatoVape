@@ -1,3 +1,5 @@
+node_modules/
+
 # демо-бэкенд: локальная БД и зависимости не коммитим
 server/*.db
 server/*.db-journal
