@@ -5,40 +5,13 @@
 // подтверждает не фронт, а webhook (stripe-webhook), потому что фронту верить нельзя.
 import { cors, json } from "../_shared/cors.ts";
 import { priceCart, type Env } from "../_shared/pricing.ts";
+import { rest, userFromToken } from "../_shared/rest.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-const ANON = Deno.env.get("SUPABASE_ANON_KEY")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const STRIPE_SECRET = Deno.env.get("STRIPE_SECRET_KEY") || "";
 const CATALOG_BASE = (Deno.env.get("CATALOG_BASE") || "").replace(/\/$/, "");
 const env: Env = { SUPABASE_URL, SERVICE_KEY, CATALOG_BASE };
-
-// кто оформляет заказ: достаём пользователя по его access-токену (тот же, что у supabase-js)
-async function userFromToken(auth: string | null): Promise<string | null> {
-  const token = (auth || "").replace(/^Bearer\s+/i, "");
-  if (!token) return null;
-  const res = await fetch(SUPABASE_URL.replace(/\/$/, "") + "/auth/v1/user", {
-    headers: { apikey: ANON, Authorization: "Bearer " + token },
-  });
-  if (!res.ok) return null;
-  const u = await res.json().catch(() => null);
-  return (u && u.id) || null;
-}
-
-// вставка/правка через PostgREST под service_role (мимо RLS: сумму уже проверил сервер)
-async function rest(method: string, path: string, body?: unknown, prefer = "return=representation") {
-  const res = await fetch(SUPABASE_URL.replace(/\/$/, "") + "/rest/v1/" + path, {
-    method,
-    headers: {
-      apikey: SERVICE_KEY, Authorization: "Bearer " + SERVICE_KEY,
-      "Content-Type": "application/json", Prefer: prefer,
-    },
-    body: body ? JSON.stringify(body) : undefined,
-  });
-  const txt = await res.text();
-  if (!res.ok) throw new Error("rest " + res.status + " " + txt.slice(0, 200));
-  try { return txt ? JSON.parse(txt) : null; } catch { return null; }
-}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
@@ -69,7 +42,9 @@ Deno.serve(async (req) => {
       user_id: userId, city: b.city || "katowice",
       items: Array.isArray(b.items) ? b.items : [], sum: priced.total_zl,
       delivery: b.delivery || "pickup", address: b.address || null,
-      contact: ct, status: "new",
+      // комментарий и способ оплаты идут в заказ так же, как при оплате наличными:
+      // иначе менеджер видит карточный заказ как «при выдаче» и без просьбы покупателя
+      contact: ct, comment: b.comment || null, pay_way: "card", status: "new",
       payment_status: "pending", payment_provider: "stripe",
       amount: priced.amount, currency: priced.currency,
     });

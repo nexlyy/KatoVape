@@ -734,12 +734,17 @@ window.KVAuth = (function () {
   }
 
   // ---- заказ: состав структурой + снимок контактов, статус ведёт менеджер ----
+  // Сумму считает edge-функция create-order по своему каталогу: цену из браузера в заказ
+  // не пускаем, иначе её можно прислать любую. Прямая вставка осталась запасом на время,
+  // пока функция не задеплоена; после миграции 0026 вставка с клиента запрещена правами.
   async function apiOrder(data) {
     if (!user) return false;
     if (LOCAL()) {
       try { await lapi('/orders', { method: 'POST', body: JSON.stringify(data) }); return true; }
       catch (e) { return false; }
     }
+    const viaFn = await orderViaFunction(data);
+    if (viaFn !== 'no_function') return viaFn;
     try {
       const c = await client();
       const { error } = await c.from('orders').insert({
@@ -749,6 +754,27 @@ window.KVAuth = (function () {
       });
       return !error;
     } catch (e) { return false; }
+  }
+  // true/false — функция ответила; 'no_function' — её ещё нет, решает вызывающий
+  async function orderViaFunction(data) {
+    if (!CFG.FUNCTIONS_URL) return 'no_function';
+    const tg = window.Telegram && window.Telegram.WebApp;
+    const body = Object.assign({}, data);
+    if (tg && tg.initData) body.initData = tg.initData;
+    let res;
+    try {
+      const token = await accessToken();
+      res = await fetch(CFG.FUNCTIONS_URL.replace(/\/$/, '') + '/create-order', {
+        method: 'POST',
+        headers: Object.assign(
+          { 'Content-Type': 'application/json', apikey: CFG.SUPABASE_ANON_KEY },
+          token ? { Authorization: 'Bearer ' + token } : {}
+        ),
+        body: JSON.stringify(body)
+      });
+    } catch (e) { return false; }
+    if (res.status === 404) return 'no_function';
+    return res.ok;
   }
   async function apiMyOrders() {
     if (!user || !cloudOn()) return null;

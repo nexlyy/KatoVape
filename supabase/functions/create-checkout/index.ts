@@ -6,6 +6,8 @@
 // сумму считает сервер, факт оплаты подтверждает webhook (checkout.session.completed).
 import { cors, json } from "../_shared/cors.ts";
 import { priceCart, type Env } from "../_shared/pricing.ts";
+import { verifyInitData } from "../_shared/telegram.ts";
+import { rest, profileIdByTelegram } from "../_shared/rest.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -15,49 +17,6 @@ const CATALOG_BASE = (Deno.env.get("CATALOG_BASE") || "").replace(/\/$/, "");
 // куда Stripe вернёт после оплаты; по умолчанию — назад к боту
 const RETURN_URL = Deno.env.get("PAY_RETURN_URL") || CATALOG_BASE || "https://t.me";
 const env: Env = { SUPABASE_URL, SERVICE_KEY, CATALOG_BASE };
-
-const encTE = new TextEncoder();
-function safeEqual(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
-  let r = 0;
-  for (let i = 0; i < a.length; i++) r |= a.charCodeAt(i) ^ b.charCodeAt(i);
-  return r === 0;
-}
-async function hmac(keyBytes: Uint8Array, msg: string): Promise<Uint8Array> {
-  const key = await crypto.subtle.importKey("raw", keyBytes, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
-  return new Uint8Array(await crypto.subtle.sign("HMAC", key, encTE.encode(msg)));
-}
-const toHex = (b: Uint8Array) => Array.from(b).map((x) => x.toString(16).padStart(2, "0")).join("");
-
-// та же проверка, что в telegram-auth: secret = HMAC("WebAppData", token)
-async function verifyInitData(initData: string, token: string): Promise<number | null> {
-  const params = new URLSearchParams(initData);
-  const hash = params.get("hash") || "";
-  const secret = await hmac(encTE.encode("WebAppData"), token);
-  const check = (skip: string[]) =>
-    [...params.entries()].filter(([k]) => !skip.includes(k)).sort(([a], [b]) => (a < b ? -1 : 1))
-      .map(([k, v]) => `${k}=${v}`).join("\n");
-  let ok = safeEqual(toHex(await hmac(secret, check(["hash"]))), hash);
-  if (!ok && params.has("signature")) ok = safeEqual(toHex(await hmac(secret, check(["hash", "signature"]))), hash);
-  if (!ok) return null;
-  if (Number(params.get("auth_date") || 0) < Math.floor(Date.now() / 1000) - 86400) return null;
-  const u = JSON.parse(params.get("user") || "{}");
-  return u && u.id ? Number(u.id) : null;
-}
-
-async function rest(method: string, path: string, body?: unknown, prefer = "return=representation") {
-  const res = await fetch(SUPABASE_URL.replace(/\/$/, "") + "/rest/v1/" + path, {
-    method,
-    headers: {
-      apikey: SERVICE_KEY, Authorization: "Bearer " + SERVICE_KEY,
-      "Content-Type": "application/json", Prefer: prefer,
-    },
-    body: body ? JSON.stringify(body) : undefined,
-  });
-  const txt = await res.text();
-  if (!res.ok) throw new Error("rest " + res.status + " " + txt.slice(0, 200));
-  try { return txt ? JSON.parse(txt) : null; } catch { return null; }
-}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
@@ -79,11 +38,7 @@ Deno.serve(async (req) => {
   priced.total_zl = Math.round(priced.total_zl * 1.1);
 
   // заказ к тому же аккаунту, что и на сайте (по telegram_id), чтобы отзывы потом привязались
-  let userId: string | null = null;
-  try {
-    const p = await rest("GET", "profiles?telegram_id=eq." + tgId + "&select=id&limit=1", undefined, "count=none");
-    userId = Array.isArray(p) && p[0] ? p[0].id : null;
-  } catch { userId = null; }
+  const userId = await profileIdByTelegram(tgId);
 
   let order;
   try {
@@ -91,7 +46,9 @@ Deno.serve(async (req) => {
       user_id: userId, telegram_id: tgId, city: b.city || "katowice",
       items: Array.isArray(b.items) ? b.items : [], sum: priced.total_zl,
       delivery: b.delivery || "pickup", address: b.address || null,
-      contact: b.contact || {}, status: "new",
+      // комментарий и способ оплаты идут в заказ так же, как при оплате наличными:
+      // иначе менеджер видит карточный заказ как «при выдаче» и без просьбы покупателя
+      contact: b.contact || {}, comment: b.comment || null, pay_way: "card", status: "new",
       payment_status: "pending", payment_provider: "stripe",
       amount: priced.amount, currency: priced.currency,
     });
