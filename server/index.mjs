@@ -84,7 +84,17 @@ function upsertTgUser(tgu) {
 // ---- http ----
 const CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, content-type', 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS' };
 const send = (res, code, obj) => res.writeHead(code, { ...CORS, 'Content-Type': 'application/json' }).end(JSON.stringify(obj));
-function readBody(req) { return new Promise(r => { let d = ''; req.on('data', c => { d += c; if (d.length > 2e7) req.destroy(); }); req.on('end', () => { try { r(d ? JSON.parse(d) : {}); } catch { r({}); } }); }); }
+// обрыв на слишком большом теле должен разрешить промис: иначе запрос висел бы без ответа
+function readBody(req) {
+  return new Promise(r => {
+    let d = '', done = false;
+    const fin = v => { if (!done) { done = true; r(v); } };
+    req.on('data', c => { d += c; if (d.length > 2e7) { req.destroy(); fin({}); } });
+    req.on('end', () => { try { fin(d ? JSON.parse(d) : {}); } catch { fin({}); } });
+    req.on('error', () => fin({}));
+    req.on('aborted', () => fin({}));
+  });
+}
 
 async function route(req, res) {
   const url = new URL(req.url, 'http://x'), path = url.pathname, M = req.method;

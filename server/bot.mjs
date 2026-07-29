@@ -126,7 +126,7 @@ async function handleUpdate(u) {
   if (!(m.chat && m.chat.type === 'private')) return;   // только личные чаты
   const f = m.from || {};
   await rememberUser(f).catch(() => {});
-  const st = await botUser(f.id);
+  let st = await botUser(f.id);
   const lang = pickLang((st && st.lang) || f.language_code);
 
   if (m.contact) { await onContact(m, st, lang).catch(() => {}); return; }
@@ -151,6 +151,12 @@ async function handleUpdate(u) {
     return;
   }
   // заказы менеджера: список кнопками, карточка и смена статуса прямо в боте
+  if (text === '/reserves' || text === '/res') {
+    if (!(await isManager(f.id))) return;
+    const scr = await resScreen(f.id, 0, 'active');
+    await sendMessage(m.chat.id, scr.text, { reply_markup: scr.markup });
+    return;
+  }
   if (text === '/orders') {
     if (!(await isManager(f.id))) return;
     const scr = await ordersScreen(f.id, 0, 'active');
@@ -166,9 +172,9 @@ async function handleUpdate(u) {
 async function handleCallback(q) {
   const f = q.from || {};
   const data0 = q.data || '';
-  // Экраны заказов отвечают на кнопку сами, с текстом результата. Отвечать тут заранее
-  // нельзя: второй ответ Telegram уже игнорирует, и менеджер не увидит, что статус сменился.
-  if (!data0.startsWith('o:')) await answerCallback(q.id).catch(() => {});
+  // Экраны заказов и броней отвечают на кнопку сами, с текстом результата. Отвечать тут
+  // заранее нельзя: второй ответ Telegram уже игнорирует, и менеджер не увидит, что статус сменился.
+  if (!data0.startsWith('o:') && !data0.startsWith('r:')) await answerCallback(q.id).catch(() => {});
   const chat = q.message && q.message.chat && q.message.chat.id; if (!chat) return;
   await rememberUser(f).catch(() => {});   // строка bot_users должна существовать до PATCH
   const st = await botUser(f.id);
@@ -213,6 +219,32 @@ async function handleCallback(q) {
       const note = await setOrderStatus(f.id, a, b, c || 'active');
       await answerCallback(q.id, note);
       const scr = await orderCard(f.id, a, c || 'active');
+      await editMessage(chat, mid, scr.text, { reply_markup: scr.markup });
+      return;
+    }
+  }
+
+  // ---- экраны броней ----
+  if (data.startsWith('r:')) {
+    if (!(await isManager(f.id))) { await answerCallback(q.id, 'Нет доступа', true); return; }
+    const mid = q.message && q.message.message_id;
+    const [, kind, a, b, c] = data.split(':');
+    if (kind === 'list') {
+      await answerCallback(q.id).catch(() => {});
+      const scr = await resScreen(f.id, Number(a) || 0, b || 'active');
+      await editMessage(chat, mid, scr.text, { reply_markup: scr.markup });
+      return;
+    }
+    if (kind === 'card') {
+      await answerCallback(q.id).catch(() => {});
+      const scr = await resCard(f.id, a, b || 'active');
+      await editMessage(chat, mid, scr.text, { reply_markup: scr.markup });
+      return;
+    }
+    if (kind === 'set') {
+      const note = await setResStatus(f.id, a, b, c || 'active');
+      await answerCallback(q.id, note);
+      const scr = await resCard(f.id, a, c || 'active');
       await editMessage(chat, mid, scr.text, { reply_markup: scr.markup });
       return;
     }
@@ -425,6 +457,84 @@ async function setOrderStatus(tgId, id, status, mode) {
   } catch (e) { return 'Не удалось изменить статус.'; }
 }
 
+// ---- брони в боте: тот же вид, что у заказов ----
+const RES_ST = { active: 'активна', notified: 'напомнили', done: 'выдана', cancelled: 'отменена', expired: 'просрочена', waiting: 'ждёт поступления' };
+
+async function resScreen(tgId, page = 0, mode = 'active') {
+  const onlyCity = await cityFilterFor(tgId);
+  // active — то, что реально ждёт менеджера; all — вся история, включая заявки на поступление
+  const filter = mode === 'all' ? '' : '&kind=eq.reserve&status=in.(active,notified)';
+  const rows = await sbSelect('reservations',
+    'select=id,city,product_name,product_id,flavor,qty,kind,status,reserve_date,reserve_time,telegram_id,created_at' + filter +
+    (onlyCity ? '&city=eq.' + enc(onlyCity) : '') +
+    '&order=id.desc&limit=' + (ORDER_PAGE + 1) + '&offset=' + (page * ORDER_PAGE)).catch(() => []);
+  const list = (rows || []).slice(0, ORDER_PAGE);
+  const hasMore = (rows || []).length > ORDER_PAGE;
+  const swap = [{ text: mode === 'all' ? '· Только активные ·' : '· Показать все ·', callback_data: 'r:list:0:' + (mode === 'all' ? 'active' : 'all') }];
+
+  if (!list.length) {
+    return { text: page ? 'Больше броней нет.' : (mode === 'all' ? 'Броней пока нет.' : 'Активных броней нет.'),
+      markup: { inline_keyboard: [swap] } };
+  }
+  const kb = list.map(r => [{
+    text: '№' + r.id + ' · ' + String(r.product_name || r.product_id).slice(0, 22) +
+      (r.reserve_date ? ' · ' + fmtDMY(r.reserve_date) + (r.reserve_time ? ' ' + r.reserve_time : '') : ' · заявка'),
+    callback_data: 'r:card:' + r.id + ':' + mode
+  }]);
+  const nav = [];
+  if (page > 0) nav.push({ text: '‹ Назад', callback_data: 'r:list:' + (page - 1) + ':' + mode });
+  if (hasMore) nav.push({ text: 'Дальше ›', callback_data: 'r:list:' + (page + 1) + ':' + mode });
+  if (nav.length) kb.push(nav);
+  kb.push(swap);
+  return { text: '<b>' + (mode === 'all' ? 'Все брони и заявки' : 'Активные брони') + '</b>' +
+    (onlyCity ? ' · ' + esc(onlyCity) : '') + '\nВыберите бронь, чтобы посмотреть и отметить выдачу.',
+    markup: { inline_keyboard: kb } };
+}
+
+async function resCard(tgId, id, mode = 'active') {
+  const onlyCity = await cityFilterFor(tgId);
+  const rows = await sbSelect('reservations', 'id=eq.' + Number(id) +
+    '&select=id,city,product_name,product_id,flavor,qty,kind,status,reserve_date,reserve_time,comment,created_at,telegram_id,profiles(telegram_username,username,phone)').catch(() => []);
+  const r = rows && rows[0];
+  const back = [{ text: '‹ К списку', callback_data: 'r:list:0:' + mode }];
+  if (!r) return { text: 'Бронь не найдена.', markup: { inline_keyboard: [back] } };
+  if (onlyCity && r.city !== onlyCity) return { text: 'Эта бронь относится к другому городу.', markup: { inline_keyboard: [back] } };
+
+  const p = r.profiles || {};
+  const who = p.telegram_username ? '@' + p.telegram_username : (p.username || (r.telegram_id ? 'tg id ' + r.telegram_id : ''));
+  const text = '<b>Бронь №' + r.id + '</b> · ' + esc(r.city) + '\n' +
+    esc(r.product_name || r.product_id) + (r.flavor ? ', ' + esc(r.flavor) : '') + ' × ' + (r.qty || 1) + '\n' +
+    'Статус: <b>' + (RES_ST[r.status] || r.status) + '</b>' +
+    (r.kind === 'notify' ? ' (заявка на поступление)' : '') + '\n' +
+    (r.reserve_date ? 'Выдача: ' + fmtDMY(r.reserve_date) + (r.reserve_time ? ' в ' + esc(r.reserve_time) : '') + '\n' : '') +
+    'Оформлена: ' + fmtDMY(r.created_at) +
+    (r.comment ? '\nКомментарий: ' + esc(r.comment) : '') +
+    // телефон без имени тоже должен идти под заголовком «Клиент», иначе он повисает строкой ниже
+    (who || p.phone ? '\n\nКлиент: ' + esc([who, p.phone].filter(Boolean).join(', ')) : '');
+
+  const acts = [];
+  if (r.kind === 'reserve' && (r.status === 'active' || r.status === 'notified')) {
+    acts.push({ text: 'Выдана', callback_data: 'r:set:' + r.id + ':done:' + mode });
+    acts.push({ text: 'Отменить', callback_data: 'r:set:' + r.id + ':cancelled:' + mode });
+  }
+  const kb = acts.length ? [acts, back] : [back];
+  return { text, markup: { inline_keyboard: kb } };
+}
+
+async function setResStatus(tgId, id, status, mode) {
+  const onlyCity = await cityFilterFor(tgId);
+  const rows = await sbSelect('reservations', 'id=eq.' + Number(id) + '&select=id,city,status,kind').catch(() => []);
+  const r = rows && rows[0];
+  if (!r) return 'Бронь не найдена.';
+  if (onlyCity && r.city !== onlyCity) return 'Это бронь другого города.';
+  if (!['done', 'cancelled'].includes(status)) return 'Неизвестный статус.';
+  try {
+    // остаток вернёт триггер reservation_stock, если бронь отменяют
+    await sbUpdate('reservations', 'id=eq.' + Number(id), { status });
+    return 'Бронь №' + id + ': ' + (RES_ST[status] || status);
+  } catch (e) { return 'Не удалось изменить статус.'; }
+}
+
 async function tgLoop() {
   await deleteWebhook().catch(() => {});
   let offset = 0;
@@ -516,8 +626,12 @@ async function notifyOrders() {
 }
 
 async function notifyOrderStatus() {
+  // PostgREST не умеет сравнивать колонку с колонкой, поэтому отсеять уже оповещённые
+  // фильтром нельзя. Без ограничения выборка растёт вместе с историей и джоба каждые
+  // 10 секунд тянет весь архив заказов — берём только свежий хвост.
   const list = await sbSelect('orders',
-    'status=in.(confirmed,done,cancelled)&select=id,status,client_notified_status,profiles(telegram_id)').catch(() => []);
+    'status=in.(confirmed,done,cancelled)&select=id,status,client_notified_status,profiles(telegram_id)' +
+    '&order=id.desc&limit=200').catch(() => []);
   for (const o of list || []) {
     if (o.client_notified_status === o.status) continue;
     const tg = o.profiles && o.profiles.telegram_id;
@@ -559,11 +673,13 @@ async function notifyPaid() {
 
 async function doBroadcasts() {
   // photo обязателен в выборке: без него бот не узнает о картинке и отправит только текст
-  const list = await sbSelect('broadcasts', 'status=eq.pending&select=id,text,photo&order=id.asc').catch(() => []);
+  const list = await sbSelect('broadcasts', 'status=eq.pending&select=id,text,photo,city&order=id.asc').catch(() => []);
   for (const b of list || []) {
     await sbUpdate('broadcasts', 'id=eq.' + b.id, { status: 'sending' }).catch(() => {});
-    // шлём всем, кто запускал бота: отписки нет, флаг opted_in не учитываем
-    const users = await sbSelect('bot_users', 'select=telegram_id').catch(() => []);
+    // шлём всем, кто запускал бота: отписки нет, флаг opted_in не учитываем.
+    // Если у рассылки задан город — только клиентам этого города (город из онбординга).
+    const users = await sbSelect('bot_users',
+      'select=telegram_id' + (b.city ? '&city=eq.' + enc(b.city) : '')).catch(() => []);
     let sent = 0, failed = 0, photoWarned = false;
     for (const u of users || []) {
       // фото Telegram иногда отклоняет (мелкая или битая картинка) — тогда шлём хотя бы текст
@@ -596,7 +712,26 @@ async function syncSheets() {
     const row = rows[r], g = k => c[k] >= 0 ? (row[c[k]] || '').trim() : '', id = g('id'); if (!id) continue;
     batch.push({ id, city: g('city') || 'katowice', category: g('category'), name: g('name'), brand: g('brand'), flavor: g('flavor'), price: Number(g('price')) || null, qty: Number(g('qty')) || 0, nic: g('nic'), updated_at: new Date().toISOString() });
   }
-  if (batch.length) await sbUpsert('products', batch, 'id,city,flavor');
+  if (batch.length) {
+    // Ярлык «Хит» и оптовые ступени задаются в панели, в таблице их нет. Upsert переписывает
+    // строку целиком, и без этого шага каждый синк сбрасывал бы hit в false, а tiers в null:
+    // менеджер ставил галочку, а она пропадала сама после ближайшей выгрузки.
+    const keep = await sbSelect('products', 'select=id,city,hit,tiers&limit=10000').catch(() => null);
+    if (keep) {
+      const own = {};
+      for (const r of keep) {
+        const k = r.id + '::' + r.city;
+        const o = own[k] || (own[k] = { hit: false, tiers: null });
+        if (r.hit) o.hit = true;
+        if (r.tiers && r.tiers.length) o.tiers = r.tiers;
+      }
+      for (const b of batch) {
+        const o = own[b.id + '::' + b.city];
+        if (o) { b.hit = o.hit; b.tiers = o.tiers; }
+      }
+    }
+    await sbUpsert('products', batch, 'id,city,flavor');
+  }
   return batch.length;
 }
 async function notifyRestocks() {
