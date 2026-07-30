@@ -82,7 +82,9 @@ export interface Env {
 // с тем, что человек видел перед оплатой.
 // Лимит «на человека» тут не проверяется: под service_role auth.uid() пуст, его считает
 // promo_use после заказа.
-async function promoDiscount(env: Env, code: string, city: string, sum: number, cats: string[]): Promise<number> {
+async function promoDiscount(
+  env: Env, code: string, city: string, sum: number, cats: string[],
+): Promise<{ discount: number; stackable: boolean }> {
   const res = await fetch(env.SUPABASE_URL.replace(/\/$/, "") + "/rest/v1/rpc/promo_check", {
     method: "POST",
     headers: {
@@ -94,7 +96,10 @@ async function promoDiscount(env: Env, code: string, city: string, sum: number, 
   if (!res.ok) throw new Error("promo_check " + res.status);
   const data = await res.json();
   const r = Array.isArray(data) ? data[0] : data;
-  return r && r.ok ? Number(r.discount) || 0 : 0;
+  return {
+    discount: r && r.ok ? Number(r.discount) || 0 : 0,
+    stackable: !r || r.stackable !== false,
+  };
 }
 
 // Кодов может быть несколько, и каждый считается от исходной суммы товаров, а не от
@@ -109,13 +114,16 @@ async function discountFor(
   const applied: string[] = [];
   let disc = 0;
   for (const raw of codes) {
-    let d = 0;
+    let r;
     try {
-      d = await promoDiscount(env, raw, city, sum, cats);
+      r = await promoDiscount(env, raw, city, sum, cats);
     } catch (_e) {
       throw Object.assign(new Error("promo"), { code: "promo" });
     }
-    if (d > 0) { disc += d; applied.push(raw); }
+    // код с stackable=false действует только в одиночку. Витрина такую пару не даст
+    // собрать, но запрос мог прийти и мимо неё — тогда просто не применяем его.
+    if (!r.stackable && codes.length > 1) continue;
+    if (r.discount > 0) { disc += r.discount; applied.push(raw); }
   }
   return { discount: Math.min(Math.max(disc, 0), sum), applied };
 }

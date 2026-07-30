@@ -1025,6 +1025,10 @@ async function renderPromo(m) {
         <label class="f">${L('Раз на человека')}<input id="pc_per" inputmode="numeric" value="1"></label>
         <label class="f">${L('Действует с')}<input id="pc_from" type="date"></label>
         <label class="f">${L('Действует до')}<input id="pc_to" type="date"></label>
+        <label class="f">${L('Складывать с другими')}<select id="pc_stack">
+          <option value="1">${L('да')}</option>
+          <option value="0">${L('нет, только отдельно')}</option>
+        </select></label>
         <label class="f pform-wide">${L('Заметка')}<input id="pc_note" placeholder="${L('для чего этот код')}"></label>
       </div>
       <div class="tools" style="margin-top:12px"><button class="btn primary" id="pc_add">${L('Создать промокод')}</button></div>
@@ -1047,6 +1051,7 @@ async function renderPromo(m) {
       code, kind: document.getElementById('pc_kind').value, value,
       city: document.getElementById('pc_city').value || null,
       category: document.getElementById('pc_cat').value || null,
+      stackable: document.getElementById('pc_stack').value === '1',
       min_sum: num('pc_min') || 0, max_uses: num('pc_max'), per_user: num('pc_per') ?? 1,
       starts_at: day('pc_from'), expires_at: day('pc_to', true),
       note: (document.getElementById('pc_note').value || '').trim() || null

@@ -154,6 +154,20 @@ test('повторы и мусор в списке кодов отсеивают
   promos = {};
 });
 
+test('код без права складываться работает только в одиночку', async () => {
+  promos = {
+    MINUS20: { ok: true, discount: 20, stackable: false, reason: null },
+    PROC10: { ok: true, discount: 35, stackable: true, reason: null }
+  };
+  const cart = { items: [line('model-a', 'Strawberry', 10)] };
+  assert.equal(await sum({ ...cart, promo: 'MINUS20' }), 330, 'в одиночку должен работать');
+  // в паре с процентным фикс не применяется, остаётся только процент
+  const p = await priceCart(env, { ...cart, promo: ['MINUS20', 'PROC10'] });
+  assert.deepEqual(p.promo, ['PROC10']);
+  assert.equal(p.discount, 35);
+  promos = {};
+});
+
 test('общая скидка не превышает корзину', async () => {
   promos = {
     BIG1: { ok: true, discount: 300, reason: null },

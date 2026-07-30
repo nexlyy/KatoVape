@@ -129,6 +129,7 @@ window.KV = (function () {
       promoWhy_min_sum: 'Сумма заказа слишком мала для этого промокода', promoWhy_limit: 'Промокод уже исчерпан',
       promoWhy_used_by_you: 'Вы уже использовали этот промокод',
       promoWhy_already: 'Этот код уже применён', remove: 'Убрать', hitBadge: 'Хит',
+      promoWhy_no_stack: 'Этот код не складывается с другими', reviewEdit: 'Изменить отзыв',
       payWay: 'Способ оплаты', payCash: 'Наличными', payCard: 'Картой', payCardNote: '+10% к сумме', payFail: 'Оплата не прошла, попробуйте ещё раз',
       checkData: 'Проверьте данные:', fioPh: 'Фамилия и имя',
       errFio: 'Укажите фамилию и имя', errPhone2: 'Телефон в формате +48 600 000 000',
@@ -189,6 +190,7 @@ window.KV = (function () {
       promoWhy_min_sum: 'Сума замовлення замала для цього промокоду', promoWhy_limit: 'Промокод вичерпано',
       promoWhy_used_by_you: 'Ви вже використали цей промокод',
       promoWhy_already: 'Цей код уже застосовано', remove: 'Прибрати', hitBadge: 'Хіт',
+      promoWhy_no_stack: 'Цей код не складається з іншими', reviewEdit: 'Змінити відгук',
       payWay: 'Спосіб оплати', payCash: 'Готівкою', payCard: 'Карткою', payCardNote: '+10% до суми', payFail: 'Оплата не пройшла, спробуйте ще раз',
       checkData: 'Перевірте дані:', fioPh: 'Прізвище та ім’я',
       errFio: 'Вкажіть прізвище та ім’я', errPhone2: 'Телефон у форматі +48 600 000 000',
@@ -249,6 +251,7 @@ window.KV = (function () {
       promoWhy_min_sum: 'Zbyt mała kwota zamówienia dla tego kodu', promoWhy_limit: 'Kod został wyczerpany',
       promoWhy_used_by_you: 'Ten kod już został przez Ciebie użyty',
       promoWhy_already: 'Ten kod jest już zastosowany', remove: 'Usuń', hitBadge: 'Hit',
+      promoWhy_no_stack: 'Tego kodu nie można łączyć z innymi', reviewEdit: 'Zmień opinię',
       payWay: 'Sposób płatności', payCash: 'Gotówką', payCard: 'Kartą', payCardNote: '+10% do sumy', payFail: 'Płatność nie przeszła, spróbuj ponownie',
       checkData: 'Sprawdź dane:', fioPh: 'Imię i nazwisko',
       errFio: 'Podaj imię i nazwisko', errPhone2: 'Telefon w formacie +48 600 000 000',
@@ -1655,7 +1658,12 @@ window.KV = (function () {
       const cats = [...new Set(cartLines().map(l => l.item._cat).filter(Boolean))];
       const res = await KVAuth.promoCheck(raw, city, cartTotal(), cats);
       if (res && res.ok) {
-        appliedPromos.push({ code: raw, type: res.kind === 'percent' ? 'percent' : 'fixed', value: res.value, discount: res.discount });
+        // код с stackable=false работает только в одиночку: так фиксированная скидка
+        // не суммируется с процентной, если магазин этого не хочет
+        const stack = res.stackable !== false;
+        const blocked = !stack ? appliedPromos.length > 0 : appliedPromos.some(p => p.stackable === false);
+        if (blocked) return { ok: false, reason: 'no_stack' };
+        appliedPromos.push({ code: raw, type: res.kind === 'percent' ? 'percent' : 'fixed', value: res.value, discount: res.discount, stackable: stack });
         savePromos();
         return { ok: true };
       }
@@ -2041,6 +2049,21 @@ window.KV = (function () {
     if (!reviewables) return false;
     return reviewables.some(r => r.product_id === id && (r.flavor || '') === (flName || ''));
   }
+  // Вкусы этой модели, которые человек реально получал в заказе. Форма отзыва работает
+  // по этому списку, а не по вкусу, открытому в карточке: покупатель брал Mint, листал
+  // Watermelon — и магазин отказывал в отзыве на то, что у него на руках.
+  function reviewableFlavors(id) {
+    if (!reviewables) return [];
+    return [...new Set(reviewables.filter(r => r.product_id === id).map(r => r.flavor || ''))];
+  }
+  // какой вкус оценивается сейчас: выбранный в карточке, если он куплен, иначе первый купленный
+  function reviewFlavor(id, viewing) {
+    const list = reviewableFlavors(id);
+    if (!list.length) return null;
+    if (modal && modal.revFl != null && list.includes(modal.revFl)) return modal.revFl;
+    if (list.includes(viewing || '')) return viewing || '';
+    return list[0];
+  }
   async function loadReviews() {
     if (!(window.KVAuth && KVAuth.apiAllReviews)) { cloudRevs = {}; return; }
     const list = await KVAuth.apiAllReviews();
@@ -2253,9 +2276,20 @@ window.KV = (function () {
       : '<p class="kvm-norevs">' + t('noRevsYet') + '</p>';
     const starPick = [1, 2, 3, 4, 5].map(i =>
       '<button class="kvm-rstar' + (i <= (modal.rate || 0) ? ' on' : '') + '" data-star="' + i + '" type="button">★</button>').join('');
-    const canRev = canReviewNow(item.id, flavorKey);
-    const revForm = canRev
-      ? '<div class="kvm-revform"><b>' + t('reviewAdd') + (fl ? ' · ' + esc(flavorName(fl)) : '') + '</b>' +
+    // Оценивать можно любой полученный вкус этой модели, независимо от того, какой
+    // сейчас открыт в карточке. Когда куплено несколько — даём выбрать в самой форме.
+    const revFlavors = reviewableFlavors(item.id);
+    const revFl = reviewFlavor(item.id, flavorKey);
+    const flTitle = n => n ? esc(flavorName({ name: n })) : esc(item.name);
+    const revPick = revFlavors.length > 1
+      ? '<div class="kvm-revpick">' + revFlavors.map(n =>
+          '<button class="kvm-revpick-b' + (n === revFl ? ' sel' : '') + '" data-rev-fl="' + esc(n) + '" type="button">' +
+          flTitle(n) + '</button>').join('') + '</div>'
+      : '';
+    const mine = myRevs.find(r => r.product_id === item.id && (r.flavor || '') === (revFl || ''));
+    const revForm = revFl !== null
+      ? '<div class="kvm-revform"><b>' + t(mine ? 'reviewEdit' : 'reviewAdd') +
+          (revFl ? ' · ' + flTitle(revFl) : '') + '</b>' + revPick +
         '<div class="kvm-rrate"><span>' + t('reviewYourRate') + '</span><div class="kvm-rstars">' + starPick + '</div></div>' +
         '<textarea class="kvm-rev-text" placeholder="' + t('reviewText') + '" rows="2">' + esc(modal.text || '') + '</textarea>' +
         '<button class="kvm-rev-send" type="button">' + t('reviewSend') + '</button>' +
@@ -2277,6 +2311,8 @@ window.KV = (function () {
     if (e.target === d || e.target.closest('.kvm-x')) { closeProduct(); return; }
     const ftog = e.target.closest('[data-fl-toggle]');
     if (ftog) { e.stopPropagation(); modal.flOpen = !modal.flOpen; renderModal(); return; }
+    const revPick = e.target.closest('[data-rev-fl]');
+    if (revPick) { modal.revFl = revPick.dataset.revFl; modal.rate = 0; modal.text = ''; renderModal(); return; }
     const sel = e.target.closest('[data-fl-sel]');
     // до первого выбора в закрытой строке стоит «Выберите вкус», после — сам вкус
     if (sel) { modal.fl = +sel.dataset.flSel; modal.flPicked = true; modal.flOpen = false; renderModal(); return; }
@@ -2334,12 +2370,15 @@ window.KV = (function () {
   // отправка отзыва: он привязан к выбранному вкусу и уходит в облако
   async function sendReview() {
     const item = find(modal.id); if (!item) return;
-    const fl = item.flavors && modal.fl >= 0 ? item.flavors[modal.fl] : null;
     if (!(window.KVAuth && KVAuth.apiReview)) return;
+    // отзыв уходит на тот вкус, который выбран в самой форме, а не на открытый в карточке
+    const viewing = item.flavors && modal.fl >= 0 ? item.flavors[modal.fl].name : '';
+    const revFl = reviewFlavor(item.id, viewing);
+    if (revFl === null) { toast(t('revNeedBuy')); return; }
     const r = await KVAuth.apiReview({
       product_id: item.id,
-      flavor: fl ? fl.name : '',
-      product_name: item.name + (fl ? ' ' + fl.name : ''),
+      flavor: revFl,
+      product_name: item.name + (revFl ? ' ' + revFl : ''),
       author: profileName || t('you'),
       stars: modal.rate || 5,
       body: modal.text.trim()
@@ -2881,6 +2920,10 @@ window.KV = (function () {
 .kvd-promo input{flex:1;min-width:0;background:var(--kv-field);border:1px solid var(--kv-line);color:var(--kv-text);border-radius:10px;padding:9px 12px;font-family:inherit;font-size:13px}
 .kvd-promo button{background:var(--kv-surface);border:1px solid var(--kv-line);color:var(--kv-text);border-radius:10px;padding:0 14px;font-weight:700;font-size:12.5px;cursor:pointer;font-family:inherit}
 /* применённые промокоды: чип на код, крестик снимает его отдельно */
+.kvm-revpick{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 2px}
+.kvm-revpick-b{background:var(--kv-field);border:1px solid var(--kv-line);color:var(--kv-muted);border-radius:99px;
+  padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit}
+.kvm-revpick-b.sel{border-color:var(--kv-accent);color:var(--kv-accent-2,var(--kv-accent))}
 .kvd-promos{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .kvd-promo-chip{display:inline-flex;align-items:center;gap:6px;background:var(--kv-surface2,var(--kv-surface));
   border:1px solid var(--kv-line);border-radius:99px;padding:5px 6px 5px 11px;font-size:12px;font-weight:700;color:var(--kv-text)}
