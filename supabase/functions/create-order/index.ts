@@ -78,7 +78,8 @@ Deno.serve(async (req) => {
       user_id: userId, telegram_id: tgId,
       city, items: Array.isArray(b.items) ? b.items : [],
       sum: priced.total_zl,
-      delivery, address: str(b.address, 200) || null,
+      // самовывоз — без адреса, что бы ни прислал клиент
+      delivery, address: delivery === "pickup" ? null : (str(b.address, 200) || null),
       contact, comment: str(b.comment, 500) || null,
       pay_way: "cash", status: "new",
       // оплата при выдаче: денег ещё нет, менеджеру заказ показывает джоба бота

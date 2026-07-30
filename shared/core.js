@@ -967,7 +967,9 @@ window.KV = (function () {
     return {
       city, sum: payTotal(), amount: payTotal() * 100, pay_way: payWay,
       delivery: cur.method, promo: appliedPromo ? appliedPromo.code : '',
-      address: inpost ? normPaczko(ct.paczkomat) : (cur.addr || ''),
+      // у самовывоза адреса нет. Раньше сюда попадал cur.addr, оставшийся от прошлого
+      // выбора курьера, и менеджер видел «pickup, Sucha 7b» — будто это доставка
+      address: cur.method === 'pickup' ? '' : (inpost ? normPaczko(ct.paczkomat) : (cur.addr || '')),
       contact: { name: ct.name.trim(), phone: normPhonePl(ct.phone), email: ct.email.trim(),
         paczkomat: inpost ? normPaczko(ct.paczkomat) : '' },
       comment: (orderComment || '').slice(0, COMMENT_MAX) || null,

@@ -377,6 +377,9 @@ async function isManager(tgId) {
 // Менеджер города видит только свой город, владелец и разработчик — все.
 const ORDER_PAGE = 6;
 const ST_LABEL = { new: 'новый', confirmed: 'подтверждён', done: 'выдан', cancelled: 'отменён' };
+// в сообщениях менеджеру способ получения писался кодом из базы («pickup»), а не по-русски
+const DELIV_LABEL = { pickup: 'самовывоз', inpost: 'InPost', courier: 'курьер' };
+const delivLine = o => (DELIV_LABEL[o.delivery] || o.delivery || '') + (o.address ? ', ' + o.address : '');
 const PAY_LABEL = { paid: 'оплачен', pending: 'ждёт оплаты', unpaid: 'при выдаче', failed: 'оплата не прошла' };
 
 async function cityFilterFor(tgId) {
@@ -436,7 +439,7 @@ async function orderCard(tgId, id, mode = 'active') {
     'Статус: <b>' + (ST_LABEL[o.status] || o.status) + '</b> · ' + (PAY_LABEL[o.payment_status] || o.payment_status) + '\n' +
     'Оформлен: ' + fmtDMY(o.created_at) + '\n\n' + esc(items) +
     '\n\nИтого: <b>' + (o.sum || 0) + ' zł</b>' +
-    '\nПолучение: ' + esc((o.delivery || '') + (o.address ? ', ' + o.address : '')) +
+    '\nПолучение: ' + esc(delivLine(o)) +
     (o.comment ? '\nКомментарий: ' + esc(o.comment) : '') +
     (c.name || c.phone ? '\n\nКлиент: ' + esc([c.name, c.phone, c.email].filter(Boolean).join(', ')) : '');
 
@@ -620,7 +623,7 @@ async function notifyOrders() {
     const p = o.profiles || {};
     const who = [c.name, c.phone, c.email].filter(Boolean).join('\n');
     const tgLine = p.telegram_username ? '@' + p.telegram_username : (p.telegram_id ? 'tg id ' + p.telegram_id : (p.username || ''));
-    const deliv = (o.delivery || '') + (o.address ? ', ' + o.address : '');
+    const deliv = delivLine(o);
     const payLine = o.payment_status === 'paid'
       ? '\nОплачено онлайн (' + esc(o.payment_provider || 'stripe') + ')'
       : '\nОплата при выдаче';
