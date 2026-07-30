@@ -26,6 +26,9 @@ async function sb(method, path, body, extra) {
 const sbSelect = (t, q) => sb('GET', t + (q ? '?' + q : ''));
 const sbInsert = (t, row) => sb('POST', t, row, { Prefer: 'return=representation' });
 const sbUpdate = (t, q, patch) => sb('PATCH', t + '?' + q, patch, { Prefer: 'return=minimal' });
+// то же, но возвращает изменённые строки: по ним видно, досталась задача нам или её
+// уже забрал другой процесс
+const sbClaim = (t, q, patch) => sb('PATCH', t + '?' + q, patch, { Prefer: 'return=representation' });
 const sbUpsert = (t, rows, onConflict) => sb('POST', t + (onConflict ? '?on_conflict=' + onConflict : ''), rows, { Prefer: 'resolution=merge-duplicates,return=minimal' });
 const sbRpc = (fn, args) => sb('POST', 'rpc/' + fn, args || {});
 
@@ -675,7 +678,10 @@ async function doBroadcasts() {
   // photo обязателен в выборке: без него бот не узнает о картинке и отправит только текст
   const list = await sbSelect('broadcasts', 'status=eq.pending&select=id,text,photo,city&order=id.asc').catch(() => []);
   for (const b of list || []) {
-    await sbUpdate('broadcasts', 'id=eq.' + b.id, { status: 'sending' }).catch(() => {});
+    // Забираем рассылку условием status=pending. Безусловный PATCH означал, что два
+    // запущенных бота (перезапуск, второй сервер) оба считали её своей и слали дважды.
+    const claimed = await sbClaim('broadcasts', 'id=eq.' + b.id + '&status=eq.pending', { status: 'sending' }).catch(() => null);
+    if (!claimed || !claimed.length) continue;   // уже забрал кто-то другой
     // шлём всем, кто запускал бота: отписки нет, флаг opted_in не учитываем.
     // Если у рассылки задан город — только клиентам этого города (город из онбординга).
     const users = await sbSelect('bot_users',
