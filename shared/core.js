@@ -135,6 +135,7 @@ window.KV = (function () {
       savedOk: 'Сохранено', needLogin: 'Войдите, чтобы оформить заказ',
       orderDone: 'Заказ оформлен! Менеджер получил уведомление и свяжется с вами.',
       orderFail: 'Не получилось отправить заказ, попробуйте ещё раз',
+      stockChanged: 'Остатки изменились, корзину обновили',
       resTitle: 'Дата и время брони', resNote: 'Бронь держим до конца выбранного дня. Утром в день выдачи напомним в Telegram.',
       resOk: 'Забронировать', resDone: 'Бронь принята', resFail: 'Не получилось оформить бронь',
       resTimeLabel: 'Время самовывоза',
@@ -193,6 +194,7 @@ window.KV = (function () {
       savedOk: 'Збережено', needLogin: 'Увійдіть, щоб оформити замовлення',
       orderDone: 'Замовлення оформлено! Менеджер отримав сповіщення і зв’яжеться з вами.',
       orderFail: 'Не вдалося надіслати замовлення, спробуйте ще раз',
+      stockChanged: 'Залишки змінилися, кошик оновлено',
       resTitle: 'Дата і час броні', resNote: 'Бронь тримаємо до кінця обраного дня. Вранці в день видачі нагадаємо в Telegram.',
       resOk: 'Забронювати', resDone: 'Бронь прийнято', resFail: 'Не вдалося оформити бронь',
       resTimeLabel: 'Час самовивозу',
@@ -251,6 +253,7 @@ window.KV = (function () {
       savedOk: 'Zapisano', needLogin: 'Zaloguj się, aby złożyć zamówienie',
       orderDone: 'Zamówienie złożone! Manager dostał powiadomienie i odezwie się.',
       orderFail: 'Nie udało się wysłać zamówienia, spróbuj ponownie',
+      stockChanged: 'Stany się zmieniły, koszyk zaktualizowany',
       resTitle: 'Data i godzina rezerwacji', resNote: 'Rezerwację trzymamy do końca wybranego dnia. Rano w dniu odbioru przypomnimy w Telegramie.',
       resOk: 'Zarezerwuj', resDone: 'Rezerwacja przyjęta', resFail: 'Nie udało się zarezerwować',
       resTimeLabel: 'Godzina odbioru',
@@ -351,6 +354,10 @@ window.KV = (function () {
   // способ оплаты выбирается в окне заказа: наличными при выдаче или картой (+10%)
   let payWay = localStorage.getItem('kv_payway') === 'card' ? 'card' : 'cash';
   const payTotal = () => (payWay === 'card' ? cardTotal() : grandTotal());
+  // Платёж начат и ждёт ответа. Пока флаг поднят, окно заказа не перерисовывается:
+  // перерисовка сносит форму Stripe вместе с начатым платежом, человек видит пустое место,
+  // жмёт ещё раз — и в базе остаётся второй заказ в pending.
+  let payBusy = false;
 
   // локализованное значение: объект {ru,uk,pl} -> строка текущего языка
   function loc(o) { return o ? (o[lang] || o.ru || '') : ''; }
@@ -389,8 +396,10 @@ window.KV = (function () {
   // тянем их файлом. Каждый файл самодостаточный, мержить не нужно.
   async function loadCity(id) {
     const c = cities.find(x => x.id === id) || cities[0];
-    let data = master;
-    if (!c.main) data = await (await fetch(ROOT + c.file, { cache: 'no-store' })).json();
+    // Главный город лежит в master, и applyStock писал облачные остатки прямо в него:
+    // при возврате в город поверх изменённого каталога ложились новые данные, а вкусы,
+    // добавленные из облака, накапливались дублями. Работаем с копией, master не трогаем.
+    let data = c.main ? structuredClone(master) : await (await fetch(ROOT + c.file, { cache: 'no-store' })).json();
     db = data;
     db.categories.forEach(cc => cc.items.forEach(it => { it._cat = cc.id; }));
     city = c.id;
@@ -820,10 +829,29 @@ window.KV = (function () {
     confirmEdit = contactProblems(ct, inpost).length > 0;
     ensureConfirm(); renderConfirm();
     document.getElementById('kvc').hidden = false; document.body.classList.add('kv-noscroll');
-    // Условия кода (минимальная сумма, категория, срок) проверяются на сервере в момент
-    // ввода. Пока человек добирал корзину, они могли перестать выполняться, а перед оплатой
-    // сумму всё равно посчитает сервер — поэтому перепроверяем код и показываем итог честно.
-    recheckPromo();
+    // Перед оформлением сверяемся с базой: сначала остатки, потом промокод (его условия
+    // зависят от суммы корзины). Обе проверки сервер повторит при оформлении, но узнать
+    // об отказе лучше здесь, а не после ввода данных и нажатия «оплатить».
+    recheckStock().then(recheckPromo);
+  }
+  // Остатки могли разойтись, пока корзина лежала открытой: кто-то забрал последнюю штуку.
+  // Тянем свежие цифры и подрезаем корзину до того, что реально есть.
+  async function recheckStock() {
+    const rows = await cloudStock().catch(() => null);
+    if (!rows) return;
+    applyStock(rows);
+    let touched = false;
+    for (const key in cart) {
+      const av = availFor(key);
+      if (av <= 0) { delete cart[key]; touched = true; }
+      else if (cart[key] > av) { cart[key] = av; touched = true; }
+    }
+    if (!touched) return;
+    saveCart();
+    toast(t('stockChanged'));
+    if (!cartCount()) { closeConfirm(); return; }
+    const d = document.getElementById('kvc');
+    if (d && !d.hidden) renderConfirm();
   }
   async function recheckPromo() {
     if (!appliedPromo || !(window.KVAuth && KVAuth.promoCheck && KVAuth.cloudOn && KVAuth.cloudOn())) return;
@@ -840,6 +868,7 @@ window.KV = (function () {
   }
   function renderConfirm() {
     const d = document.getElementById('kvc'); if (!d) return;
+    if (payBusy) return;   // платёж в работе — форму оплаты трогать нельзя
     const ct = contactOf();
     const cur = currentDelivery();
     const inpost = cur.method === 'inpost';
@@ -944,6 +973,11 @@ window.KV = (function () {
     track('checkout', { total: grandTotal(), delivery: currentDelivery().method });
     cart = {};
     orderComment = '';
+    // Код засчитываем здесь, а не в оформлении наличными: карточный заказ приходит сюда
+    // же через onSuccess, и раньше его промокод мимо счётчика проходил — лимиты «всего»
+    // и «на человека» для оплаты картой не считались вовсе.
+    const used = appliedPromo && appliedPromo.code;
+    if (used && window.KVAuth && KVAuth.promoUse) KVAuth.promoUse(used).catch(() => {});
     // промокод одноразовый: после заказа снимаем его, чтобы он не тянулся в следующий
     appliedPromo = null;
     localStorage.removeItem('kv_promo');
@@ -969,9 +1003,7 @@ window.KV = (function () {
     const ok = await KVAuth.apiOrder(orderData());
     if (btn) { btn.disabled = false; if (btn.dataset.txt) btn.textContent = btn.dataset.txt; }
     if (!ok) { toast(t('orderFail')); return; }
-    // код засчитываем только на состоявшийся заказ, иначе лимит съедался бы примеркой
-    if (appliedPromo && window.KVAuth && KVAuth.promoUse) KVAuth.promoUse(appliedPromo.code).catch(() => {});
-    finishOrder();
+    finishOrder();   // промокод засчитывается там, общим путём для наличных и карты
   }
   // онлайн-оплата: монтируем кнопки Stripe (сайт) или инвойс Telegram (мини-апп) в окно
   function startPay() {
@@ -984,10 +1016,12 @@ window.KV = (function () {
     // одна цена, а в списании другая. Поэтому в оплату уходит именно карточный итог.
     const pay = Object.assign(orderData(), { pay_way: 'card', sum: cardTotal(), amount: cardTotal() * 100 });
     KVPay.mount(box, pay, {
-      onSuccess: finishOrder,
+      onStart: () => { payBusy = true; },
+      onSuccess: () => { payBusy = false; finishOrder(); },
       // Пока онлайн-оплата не запущена, Stripe возвращает технические коды. Показывать их
       // покупателю бессмысленно: даём понятный текст и путь к менеджеру города.
       onError: code => {
+        payBusy = false;
         // остаток разошёлся или промокод не удалось проверить: сумму пересчитает сервер,
         // человеку показываем обычную ошибку заказа, а не технический код Stripe
         if (code === 'out_of_stock' || code === 'promo') { toast(t('orderFail')); return; }
@@ -996,7 +1030,7 @@ window.KV = (function () {
         toast(t('payOff'));
         if (code !== 'card_off') setTimeout(openManager, 900);
       },
-      onCancel: () => {}
+      onCancel: () => { payBusy = false; }
     });
   }
 

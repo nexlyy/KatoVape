@@ -55,6 +55,8 @@ window.KVPay = (function () {
     const ece = elements.create('expressCheckout');
     ece.mount(box);
     ece.on('confirm', async () => {
+      // с этого момента платёж пошёл: окно заказа не должно перерисовываться под нами
+      cb.onStart && cb.onStart();
       const sub = await elements.submit();
       if (sub.error) { cb.onError(sub.error.message); return; }
       let out;
@@ -85,6 +87,7 @@ window.KVPay = (function () {
     btn.onclick = async () => {
       if (btn.disabled) return;
       btn.disabled = true;
+      cb.onStart && cb.onStart();
       let out;
       try {
         out = await api('/create-checkout', Object.assign({ initData: tgApp().initData }, data));
@@ -98,18 +101,27 @@ window.KVPay = (function () {
     box.appendChild(note);
   }
   // опрашиваем свой заказ (RLS пускает своё) до 2 минут: paid -> успех, failed -> ошибка
+  // Опрос останавливается сам, если окно оплаты закрыли: раньше интервал продолжал
+  // ходить в базу каждые три секунды даже после ухода с экрана.
+  let pollTimer = null;
+  function stopPoll() { if (pollTimer) { clearInterval(pollTimer); pollTimer = null; } }
   async function pollOrder(orderId, cb, onStop) {
+    stopPoll();
     const token = window.KVAuth && KVAuth.accessToken ? await KVAuth.accessToken() : null;
     const url = CFG.SUPABASE_URL.replace(/\/$/, '') + '/rest/v1/orders?id=eq.' + orderId + '&select=payment_status';
+    const box = document.getElementById('kvc-pay');
     let tries = 0;
-    const timer = setInterval(async () => {
-      if (++tries > 40) { clearInterval(timer); onStop && onStop(); cb.onCancel && cb.onCancel(); return; }
+    const done = (fn, arg) => { stopPoll(); onStop && onStop(); fn && fn(arg); };
+    pollTimer = setInterval(async () => {
+      // окно заказа закрыли или перерисовали — опрашивать больше некому
+      if (box && !box.isConnected) { done(cb.onCancel); return; }
+      if (++tries > 40) { done(cb.onCancel); return; }
       try {
         const res = await fetch(url, { headers: Object.assign({ apikey: CFG.SUPABASE_ANON_KEY }, token ? { Authorization: 'Bearer ' + token } : {}) });
         const rows = await res.json().catch(() => []);
         const st = rows && rows[0] && rows[0].payment_status;
-        if (st === 'paid') { clearInterval(timer); onStop && onStop(); cb.onSuccess(); }
-        else if (st === 'failed') { clearInterval(timer); onStop && onStop(); cb.onError('failed'); }
+        if (st === 'paid') done(cb.onSuccess);
+        else if (st === 'failed') done(cb.onError, 'failed');
       } catch (e) {}
     }, 3000);
   }
