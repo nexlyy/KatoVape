@@ -2,10 +2,9 @@
 // (доступ к данным ограничен политиками RLS, а не секретностью ключа).
 // Секретный ключ Supabase и токен бота сюда НЕ кладём — они только на сервере бота.
 window.KV_CONFIG = {
-  // BACKEND: 'supabase' — боевой контур (аккаунты, бронь, заказы, админка в Supabase).
-  //          'local' — локальный демо-бэкенд из server/ (node server/index.mjs) для разработки.
+  // Аккаунты, бронь, заказы и панель живут в Supabase. Флаг оставлен как выключатель
+  // облака: без него витрина работает как витрина по файлам из data/, без входа и заказов.
   BACKEND: 'supabase',
-  LOCAL_API: 'http://127.0.0.1:8790',
 
   SUPABASE_URL: 'https://vffqnydxofvunwausakv.supabase.co',
   SUPABASE_ANON_KEY: 'sb_publishable_1SUnHJJpoxKPTkh3_ox4Xg_ONLBue9z',

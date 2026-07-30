@@ -4,15 +4,7 @@
 // Пока config.js пустой, модуль сидит тихо и сайт работает как гостевой демо.
 window.KVAuth = (function () {
   const CFG = window.KV_CONFIG || {};
-  // локальный бэкенд включаем, только когда сама страница открыта локально,
-  // иначе публичный сайт (GitHub Pages) не должен стучаться на localhost
-  const LOCAL = () => {
-    if (CFG.BACKEND !== 'local' || !CFG.LOCAL_API) return false;
-    const apiLocal = /^https?:\/\/(127\.0\.0\.1|localhost|0\.0\.0\.0)/.test(CFG.LOCAL_API);
-    const hostLocal = /^(127\.0\.0\.1|localhost|0\.0\.0\.0|\[::1\])$/.test(location.hostname);
-    return apiLocal ? hostLocal : true;
-  };
-  const configured = () => LOCAL() || !!(CFG.SUPABASE_URL && CFG.SUPABASE_ANON_KEY);
+  const configured = () => !!(CFG.SUPABASE_URL && CFG.SUPABASE_ANON_KEY);
 
   let sb = null;        // клиент supabase-js
   let user = null;      // запись из auth.users
@@ -118,18 +110,6 @@ window.KVAuth = (function () {
     return e && e.message ? e : msg('generic');
   }
 
-  // ---- локальный SQL-бэкенд (демо, папка server/) ----
-  function ltoken() { return localStorage.getItem('kv_local_token') || ''; }
-  function setLtoken(t) { if (t) localStorage.setItem('kv_local_token', t); else localStorage.removeItem('kv_local_token'); }
-  async function lapi(path, opts) {
-    opts = opts || {};
-    const headers = Object.assign({ 'Content-Type': 'application/json' }, ltoken() ? { Authorization: 'Bearer ' + ltoken() } : {});
-    const res = await fetch(CFG.LOCAL_API.replace(/\/$/, '') + path, Object.assign({ headers }, opts));
-    const out = await res.json().catch(() => ({}));
-    if (!res.ok) throw { message: out.error ? tr(out.error) : tr('generic'), code: out.error };
-    return out;
-  }
-
   // ---- регистрация ----
   async function signUp(form) {
     if (!configured()) throw msg('notConfigured');
@@ -142,10 +122,6 @@ window.KVAuth = (function () {
     if (password.length < 8) throw msg('errPass');
     if (email && !looksEmail(email)) throw msg('errEmail');
     if (phone && !looksPhone(phone)) throw msg('errPhone');
-    if (LOCAL()) {
-      const out = await lapi('/auth/register', { method: 'POST', body: JSON.stringify({ username, password, email, phone }) });
-      setLtoken(out.token); await afterAuth(); return { ok: true };
-    }
     // аккаунт заводит edge-функция на service_role: клиентский signUp отбраковывает
     // синтетические адреса. Она проверяет занятость, создаёт юзера и отдаёт OTP.
     if (!CFG.FUNCTIONS_URL) throw msg('generic');
@@ -169,10 +145,6 @@ window.KVAuth = (function () {
     const id = (form.identifier || '').trim();
     const password = form.password || '';
     if (!id || !password) throw msg('errEmpty');
-    if (LOCAL()) {
-      const out = await lapi('/auth/login', { method: 'POST', body: JSON.stringify({ identifier: id, password }) });
-      setLtoken(out.token); await afterAuth(); return { ok: true };
-    }
     // связку «логин -> адрес» и проверку пароля делает edge-функция: наружу почта
     // клиента не отдаётся, а на неверный логин и неверный пароль ответ одинаковый
     if (!CFG.FUNCTIONS_URL) throw msg('generic');
@@ -192,11 +164,6 @@ window.KVAuth = (function () {
 
   // ---- Telegram: виджет на сайте и initData в мини-аппе ----
   async function telegramExchange(body) {
-    if (LOCAL()) {
-      // передаём подписанные данные как есть — сервер сам проверит подпись бот-токеном
-      const out = await lapi('/auth/telegram', { method: 'POST', body: JSON.stringify(body) });
-      setLtoken(out.token); await afterAuth(); return { ok: true };
-    }
     if (!configured() || !CFG.FUNCTIONS_URL) throw msg('noTg');
     const res = await fetch(CFG.FUNCTIONS_URL.replace(/\/$/, '') + '/telegram-auth', {
       method: 'POST',
@@ -229,8 +196,7 @@ window.KVAuth = (function () {
   }
 
   async function signOut() {
-    if (LOCAL()) { try { await lapi('/auth/logout', { method: 'POST' }); } catch (e) {} setLtoken(''); }
-    else if (sb) { try { await sb.auth.signOut(); } catch (e) {} }
+    if (sb) { try { await sb.auth.signOut(); } catch (e) {} }
     user = null; profile = null; admin = false; adminRole = null;
     if (window.KV) { KV.setProfileName('', true); KV.forgetUserState(); }
     updateAll();
@@ -238,14 +204,6 @@ window.KVAuth = (function () {
 
   // ---- после входа: подтягиваем профиль и имя ----
   async function afterAuth() {
-    if (LOCAL()) {
-      try { const out = await lapi('/auth/me', {}); user = out.user; profile = out.user; }
-      catch (e) { user = null; profile = null; setLtoken(''); }
-      admin = !!(profile && profile.is_admin);
-      const nm = profile && (profile.display_name || profile.username);
-      if (window.KV && nm) KV.setProfileName(nm, true);
-      updateAll(); return;
-    }
     const c = await client();
     const g = await c.auth.getUser();
     user = (g && g.data && g.data.user) || null;
@@ -371,12 +329,6 @@ window.KVAuth = (function () {
     rd.readAsDataURL(file);
   }
   async function changeAvatar(dataUrl) {
-    if (LOCAL()) {
-      const out = await lapi('/auth/avatar', { method: 'POST', body: JSON.stringify({ avatar: dataUrl }) });
-      user = out.user; profile = out.user; updateAll();
-      if (window.KV) KV.toast(tr('changeAvatar'));
-      return;
-    }
     // supabase: кладём сжатый data-URL прямо в profiles.avatar (RLS пускает своё, грант на avatar есть)
     if (cloudOn() && user) {
       const c = await client();
@@ -401,7 +353,6 @@ window.KVAuth = (function () {
       if (e.target === d || e.target.closest('.kva-x')) { closeModal(); return; }
       const tb = e.target.closest('[data-tab]');
       if (tb) { tab = tb.dataset.tab; renderModal(); return; }
-      if (e.target.closest('.kva-tg-demo')) { demoTelegramLogin(); return; }
       if (e.target.closest('.kva-submit')) { submit(); return; }
     });
     d.addEventListener('keydown', e => { if (e.key === 'Enter') submit(); });
@@ -427,18 +378,14 @@ window.KVAuth = (function () {
     }
     const tg = window.Telegram && window.Telegram.WebApp;
     const inTg = !!(tg && tg.initData);
-    const localHost = /^(127\.0\.0\.1|localhost|0\.0\.0\.0|\[::1\])$/.test(location.hostname);
-    const localDemo = LOCAL() && localHost;                       // локальный бэкенд на локальном хосте
-    const realWidget = !!CFG.TELEGRAM_BOT && !inTg && !localDemo;  // виджет только на реальном домене бота
+    const realWidget = !!CFG.TELEGRAM_BOT && !inTg;   // виджет только на реальном домене бота
     // На десктопе даём и логин/пароль, и виджет Telegram (он реально логинит браузер;
     // ссылка на бота сессию сайта не авторизует). В мини-аппе вход идёт сам по initData.
     let tgBlock = '';
-    if (!inTg && (realWidget || localDemo)) {
+    if (!inTg && realWidget) {
       tgBlock = '<div class="kva-or"><span>' + tr('or') + '</span></div>' +
-        (localDemo
-          ? '<button class="kva-tg-demo" type="button">✈ ' + tr('tgLogin') + '</button>'
-          : '<div class="kva-tg" id="kva-tg-widget"></div>' +
-            '<div class="kva-note kva-tg-hint">' + tr('tgHint') + '</div>');
+        '<div class="kva-tg" id="kva-tg-widget"></div>' +
+        '<div class="kva-note kva-tg-hint">' + tr('tgHint') + '</div>';
     }
     d.querySelector('.kva-body').innerHTML = notCfg + '<div class="kva-form">' + form + '</div>' +
       '<div class="kva-err" hidden></div>' + tgBlock;
@@ -446,19 +393,6 @@ window.KVAuth = (function () {
   }
   // демо-вход через Telegram для локального показа (реальный виджет требует публичный домен).
   // Заводит стабильный демо-аккаунт с аватаром, чтобы показать поток и аватарку в шапке.
-  function demoTelegramLogin() {
-    let id = +localStorage.getItem('kv_demo_tg') || 0;
-    if (!id) { id = 900000000 + Math.floor(Math.random() * 89999999); localStorage.setItem('kv_demo_tg', String(id)); }
-    // аватар генерим локально (без внешних сервисов), чтобы всегда показывался
-    const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128">' +
-      '<rect width="128" height="128" rx="64" fill="#2aabee"/>' +
-      '<text x="64" y="86" font-size="58" text-anchor="middle" fill="#fff" font-family="Arial">✈</text></svg>';
-    const u = { id: id, first_name: 'Telegram', username: 'demo_' + String(id).slice(-4),
-      photo_url: 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svg))) };
-    telegramExchange({ mode: 'demo', payload: u })
-      .then(() => { closeModal(); if (window.KV) KV.toast(tr('welcome')); })
-      .catch(showErr);
-  }
   function mountTgWidget() {
     const box = document.getElementById('kva-tg-widget'); if (!box) return;
     box.innerHTML = '';
@@ -539,8 +473,6 @@ window.KVAuth = (function () {
 .kva-or{display:flex;align-items:center;gap:10px;margin:16px 0 12px;color:var(--kv-muted);font-size:12px}
 .kva-or::before,.kva-or::after{content:"";flex:1;height:1px;background:var(--kv-line)}
 .kva-tg{display:flex;justify-content:center;min-height:34px}
-.kva-tg-demo{width:100%;background:#2aabee;color:#fff;border:none;border-radius:12px;padding:13px;font-weight:800;font-size:13.5px;cursor:pointer;font-family:inherit}
-.kva-tg-demo:hover{filter:brightness(1.06)}
 .kva-tg-open{display:block;width:100%;text-align:center;background:#2aabee;color:#fff;border:none;border-radius:12px;padding:13px;font-weight:800;font-size:13.5px;cursor:pointer;font-family:inherit;text-decoration:none}
 .kva-tg-open:hover{filter:brightness(1.06)}
 .kva-tg-hint{margin-top:10px}
@@ -577,10 +509,6 @@ window.KVAuth = (function () {
   async function init() {
     injectCSS();
     if (!configured()) { ready = true; updateAll(); return; }
-    if (LOCAL()) {
-      try { if (ltoken()) await afterAuth(); else await tgInitData(); } catch (e) {}
-      ready = true; updateAll(); return;
-    }
     try {
       const c = await client();
       const s = await c.auth.getSession();
@@ -605,7 +533,7 @@ window.KVAuth = (function () {
   }
 
   // режим Supabase активен (не локальный демо-бэкенд и ключи заполнены)
-  const cloudOn = () => !LOCAL() && !!(CFG.SUPABASE_URL && CFG.SUPABASE_ANON_KEY);
+  const cloudOn = () => configured();
 
   // ---- контактные данные получателя ----
   // живут в профиле (облако), для гостя копия в localStorage, чтобы форма не терялась
@@ -645,10 +573,6 @@ window.KVAuth = (function () {
   // ---- бронь: пишем в Supabase с датой выдачи, остаток спишет триггер ----
   async function apiReserve(data) {
     if (!user) return false;
-    if (LOCAL()) {
-      try { await lapi('/reservations', { method: 'POST', body: JSON.stringify(data) }); return true; }
-      catch (e) { return false; }
-    }
     try {
       const c = await client();
       const { error } = await c.from('reservations').insert({
@@ -739,10 +663,6 @@ window.KVAuth = (function () {
   // пока функция не задеплоена; после миграции 0026 вставка с клиента запрещена правами.
   async function apiOrder(data) {
     if (!user) return false;
-    if (LOCAL()) {
-      try { await lapi('/orders', { method: 'POST', body: JSON.stringify(data) }); return true; }
-      catch (e) { return false; }
-    }
     const viaFn = await orderViaFunction(data);
     if (viaFn !== 'no_function') return viaFn;
     try {

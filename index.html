@@ -120,9 +120,23 @@ footer a{color:var(--acc);text-decoration:none}
   <footer>
     <span class="age">18+</span>
     <span>Продажа только совершеннолетним.</span>
-    <span>Заказ: <a href="https://t.me/KatoManager" target="_blank" rel="noopener">@KatoManager</a></span>
+    <span>Заказ: <a id="mgr" target="_blank" rel="noopener"></a></span>
     <span>Код: <a href="https://github.com/nexlyy/KatoVape" target="_blank" rel="noopener">github.com/nexlyy/KatoVape</a></span>
   </footer>
+
+  <!-- Контакт берём из общей таблицы городов, а не переписываем сюда руками: на этой
+       странице город ещё не выбран, поэтому показываем менеджера главного города. -->
+  <script src="shared/config.js?v=2a1c2474"></script>
+  <script>
+  (function () {
+    var links = (window.KV_CONFIG || {}).CITY_LINKS || {};
+    var url = (links.katowice || {}).manager || '';
+    var a = document.getElementById('mgr');
+    var m = url.match(/t\.me\/@?([A-Za-z0-9_]+)/);
+    if (!m) { a.parentNode.remove(); return; }
+    a.href = url; a.textContent = '@' + m[1];
+  })();
+  </script>
 
 </div>
 </body>
