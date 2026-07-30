@@ -70,10 +70,10 @@ Deno.serve(async (req) => {
   // имя и логин дозаполняем, если профиль остался пустым после прежних сбоев.
   if (userId) {
     const { data: cur } = await admin.from("profiles")
-      .select("avatar, display_name, username, full_name, phone, email, paczkomat").eq("id", userId).maybeSingle();
+      .select("avatar, display_name, username, full_name, phone, email, paczkomat, city").eq("id", userId).maybeSingle();
     // данные, собранные ботом при онбординге (хранятся у того же telegram_id)
     const { data: bu } = await admin.from("bot_users")
-      .select("full_name, phone, email, paczkomat").eq("telegram_id", tgUser.id).maybeSingle();
+      .select("full_name, phone, email, paczkomat, city").eq("telegram_id", tgUser.id).maybeSingle();
     const patch: Record<string, unknown> = {
       telegram_id: tgUser.id,
       telegram_username: tgUser.username,
@@ -85,6 +85,9 @@ Deno.serve(async (req) => {
     // из онбординга дозаполняем пустые поля профиля; full_name/paczkomat без unique — сразу сюда
     if (!cur?.full_name && bu?.full_name) patch.full_name = bu.full_name;
     if (!cur?.paczkomat && bu?.paczkomat) patch.paczkomat = bu.paczkomat;
+    // город из анкеты: по нему мини-апп откроется на нужном городе, а не на том,
+    // что остался в памяти телефона от прошлого человека
+    if (!cur?.city && bu?.city) patch.city = bu.city;
     await admin.from("profiles").update(patch).eq("id", userId);
     // телефон и почта уникальны: отдельным запросом, чтобы конфликт «занято» не сорвал привязку выше
     const contact: Record<string, unknown> = {};

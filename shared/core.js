@@ -740,7 +740,15 @@ window.KV = (function () {
     return d;
   }
   function validPhone(s) { return /^\+\d{10,14}$/.test(normPhonePl(s)); }
-  function validEmail(s) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((s || '').trim()); }
+  // Почта нужна рабочая: по ней уходит подтверждение заказа. Прежняя проверка
+  // «что-то@что-то.что-то» пропускала мусор вида a@b.c и адреса со спецсимволами.
+  // Требуем: разумное имя, домен из меток по буквам/цифрам/дефису и TLD от двух букв.
+  const EMAIL_RE = /^[A-Za-z0-9]([A-Za-z0-9._%+-]{0,62}[A-Za-z0-9])?@([A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)+[A-Za-z]{2,24}$/;
+  function validEmail(s) {
+    const v = (s || '').trim();
+    if (v.length > 254 || v.includes('..')) return false;
+    return EMAIL_RE.test(v);
+  }
   function normPaczko(s) { return (s || '').trim().toUpperCase().replace(/\s+/g, ''); }
   function validPaczko(s) { return /^[A-Z]{3}\d{2,4}[A-Z]{0,2}$/.test(normPaczko(s)); }
 
@@ -1392,6 +1400,8 @@ window.KV = (function () {
 
   async function setCity(id) {
     localStorage.setItem('kv_city', id);
+    // выбор человека едет в профиль: с другого телефона магазин откроется тем же городом
+    if (window.KVAuth && KVAuth.saveCity) KVAuth.saveCity(id);
     await loadCity(id);
     loadCart();
     const cs = document.getElementById('city');
@@ -1403,6 +1413,17 @@ window.KV = (function () {
     renderInfo();                      // самовывоз зависит от города
     if (hooks.cart) hooks.cart();
     track('city', { to: id });
+  }
+
+  // Город из анкеты в боте. Человек выбирает город при первом запуске бота, а мини-апп
+  // открывался с тем городом, что остался в localStorage от прошлой сессии на этом
+  // телефоне — то есть чужим. Профиль главнее, пока человек сам не переключит город
+  // в шапке: тогда стоит kv_city_picked и мы не спорим с ручным выбором.
+  async function adoptCity(id) {
+    if (!id || id === city) return;
+    if (!cities.some(c => c.id === id)) return;
+    if (localStorage.getItem('kv_city_picked')) return;
+    await setCity(id);
   }
 
   // шапка прячется при скролле вниз и возвращается при скролле вверх.
@@ -2447,6 +2468,33 @@ window.KV = (function () {
     myRevs = [];
     reviewables = null;
   }
+
+  // Личные данные в localStorage привязаны к устройству, а не к аккаунту. В мини-аппе
+  // Telegram вход происходит сам по initData, без всякого «выйти», поэтому со сменой
+  // аккаунта на том же телефоне следующий человек видел чужое: избранное, контакты для
+  // доставки, свои же прошлые заказы. Держим владельца этих ключей и чистим их, когда
+  // аккаунт сменился.
+  // Настройки самого устройства (язык, тема, 18+, корзина) не трогаем: они общие.
+  const OWNED = ['kv_favs', 'kv_contact', 'kv_orders', 'kv_profile', 'kv_promo',
+    'kv_invited', 'kv_me', 'kv_delivery', 'kv_city_picked'];
+  function claimUser(uid) {
+    const now = uid || '';
+    const was = localStorage.getItem('kv_owner') || '';
+    if (was === now) return false;
+    localStorage.setItem('kv_owner', now);
+    // с гостя на первый аккаунт переносим как есть: это тот же человек, который
+    // только что зарегистрировался, забирать у него избранное незачем
+    if (!was) return false;
+    OWNED.forEach(k => localStorage.removeItem(k));
+    profileName = '';
+    appliedPromo = null;
+    delivery = null;
+    forgetUserState();
+    if (hooks.render) hooks.render();
+    if (hooks.cart) hooks.cart();
+    drawDrawer();
+    return true;
+  }
   function stLabel(s) {
     const k = { new: 'stNew', confirmed: 'stConfirmed', done: 'stDone', cancelled: 'stCancelled',
       active: 'stActive', expired: 'stExpired', notified: 'stNotified' }[s];
@@ -3166,7 +3214,7 @@ body.kv-noscroll{overflow:hidden}
     starsHTML, badgesHTML, filterPass, searchSuggest, track,
     openProduct, openProfile, openFavs, isFav, toggleFav, removeFav, favs, tasteOf, flavorDesc,
     openManager, openChannel, managerLink, managerName, cityLink, bulkOrder,
-    setProfileName, refreshProfile, forgetUserState,
+    setProfileName, refreshProfile, forgetUserState, claimUser, adoptCity,
     get db() { return db; }, get lang() { return lang; }, get city() { return city; },
     manager: MANAGER
   };

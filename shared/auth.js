@@ -92,7 +92,13 @@ window.KVAuth = (function () {
 
   // ---- нормализация и проверки ----
   const normPhone = s => (s || '').replace(/[^\d+]/g, '');
-  const looksEmail = s => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s || '');
+  // то же правило, что в корзине (core.js validEmail): имя, домен по меткам, TLD от двух
+  // букв. Иначе регистрация принимала адрес, который потом заворачивала доставка
+  const EMAIL_RE = /^[A-Za-z0-9]([A-Za-z0-9._%+-]{0,62}[A-Za-z0-9])?@([A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)+[A-Za-z]{2,24}$/;
+  const looksEmail = s => {
+    const v = (s || '').trim();
+    return v.length <= 254 && !v.includes('..') && EMAIL_RE.test(v);
+  };
   const looksPhone = s => /^\+?\d[\d\s()-]{6,}$/.test(s || '');
   // если реальной почты нет, вход по синтетическому адресу (в auth.users нужен email).
   // домен на реальном TLD: .local зарезервирован и не проходит валидацию Supabase Auth.
@@ -198,7 +204,8 @@ window.KVAuth = (function () {
   async function signOut() {
     if (sb) { try { await sb.auth.signOut(); } catch (e) {} }
     user = null; profile = null; admin = false; adminRole = null;
-    if (window.KV) { KV.setProfileName('', true); KV.forgetUserState(); }
+    // выход тоже смена владельца: личные ключи на устройстве оставлять нельзя
+    if (window.KV) { KV.setProfileName('', true); KV.forgetUserState(); KV.claimUser(null); }
     updateAll();
   }
 
@@ -209,11 +216,20 @@ window.KVAuth = (function () {
     user = (g && g.data && g.data.user) || null;
     profile = null; admin = false;
     if (user) {
+      // Личное состояние на устройстве принадлежит конкретному аккаунту. В мини-аппе вход
+      // идёт сам по initData, без «выйти», поэтому смену аккаунта ловим здесь: иначе
+      // следующий человек открывает магазин с чужим избранным и чужими контактами.
+      const switched = window.KV && KV.claimUser ? KV.claimUser(user.id) : false;
       const pr = await c.from('profiles').select('*').eq('id', user.id).maybeSingle();
       profile = (pr && pr.data) || null;
       const nm = (profile && (profile.display_name || profile.username)) ||
         (user.user_metadata && user.user_metadata.username) || '';
       if (window.KV && nm) KV.setProfileName(nm, true);
+      // город из анкеты в боте: после смены аккаунта он главнее того, что осталось
+      // в localStorage от прошлого человека
+      if (switched && window.KV && KV.adoptCity && profile && profile.city) {
+        await KV.adoptCity(profile.city);
+      }
       // роль спрашиваем у сервера: она же отвечает, показывать ли кнопку панели
       await loadAdminFlag();
     }
@@ -570,6 +586,17 @@ window.KVAuth = (function () {
     return { ok: true };
   }
 
+  // выбранный город запоминаем в профиле: он же подставится на другом устройстве
+  async function saveCity(city) {
+    if (!user || !cloudOn() || !city) return false;
+    try {
+      const c = await client();
+      const { error } = await c.from('profiles').update({ city, updated_at: new Date().toISOString() }).eq('id', user.id);
+      if (!error && profile) profile.city = city;
+      return !error;
+    } catch (e) { return false; }
+  }
+
   // ---- бронь: пишем в Supabase с датой выдачи, остаток спишет триггер ----
   async function apiReserve(data) {
     if (!user) return false;
@@ -766,7 +793,7 @@ window.KVAuth = (function () {
   return {
     init, signUp, signIn, signOut, openModal, decorateProfile,
     apiReserve, apiOrder, loggedIn, contact, saveContact,
-    apiMyReservations, apiCancelReservation, apiMyOrders, apiRestock, promoCheck, promoUse,
+    apiMyReservations, apiCancelReservation, apiMyOrders, apiRestock, promoCheck, promoUse, saveCity,
     apiAllReviews, apiMyReviews, apiReviewables, apiReview, cloudOn,
     isAdmin, role, refresh: afterAuth, reservationLoad, accessToken,
     _tgWidget: tgWidget,

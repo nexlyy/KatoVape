@@ -71,7 +71,13 @@ function normPhone(s) {
   return d;
 }
 const validPhone = s => /^\+\d{10,14}$/.test(s);
-const validEmail = s => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((s || '').trim());
+// то же правило, что на витрине (core.js validEmail): анкета в боте и оформление
+// в мини-аппе не должны расходиться в том, какой адрес считается годным
+const EMAIL_RE = /^[A-Za-z0-9]([A-Za-z0-9._%+-]{0,62}[A-Za-z0-9])?@([A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)+[A-Za-z]{2,24}$/;
+const validEmail = s => {
+  const v = (s || '').trim();
+  return v.length <= 254 && !v.includes('..') && EMAIL_RE.test(v);
+};
 const normPaczko = s => (s || '').trim().toUpperCase().replace(/\s+/g, '');
 const validPaczko = s => /^[A-Z]{3}\d{2,4}[A-Z]{0,2}$/.test(s);
 
