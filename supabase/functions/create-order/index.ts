@@ -17,6 +17,7 @@ const env: Env = { SUPABASE_URL, SERVICE_KEY, CATALOG_BASE };
 
 const DELIVERY = ["pickup", "inpost", "courier"];
 const CITIES = ["katowice", "gliwice", "warszawa"];
+const RATE_LIMIT = Number(Deno.env.get("KV_ORDER_RATE_LIMIT") || 5);   // заказов в минуту на человека
 const str = (v: unknown, max: number) => String(v == null ? "" : v).trim().slice(0, max);
 
 // Контакты кладём в заказ обрезанными: это снимок для менеджера, а не поле для сочинений.
@@ -49,6 +50,16 @@ Deno.serve(async (req) => {
     userId = await userFromToken(req.headers.get("authorization"));
   }
   if (!userId && !tgId) return json({ error: "auth required" }, 401);
+
+  // Простой лимит: заказы этого же человека за последнюю минуту. Считаем по базе, а не в
+  // памяти инстанса — edge-функция живёт в нескольких копиях, и локальный счётчик обошли бы
+  // повторной отправкой. Заодно ловит двойной тап по кнопке оформления.
+  const since = new Date(Date.now() - 60_000).toISOString();
+  const who = userId ? "user_id=eq." + userId : "telegram_id=eq." + tgId;
+  try {
+    const recent = await rest("GET", "orders?" + who + "&created_at=gte." + since + "&select=id&limit=" + (RATE_LIMIT + 1), undefined, "count=none");
+    if (Array.isArray(recent) && recent.length >= RATE_LIMIT) return json({ error: "too_many" }, 429);
+  } catch { /* не смогли посчитать — не мешаем оформить заказ */ }
 
   const city = CITIES.includes(String(b.city)) ? String(b.city) : "katowice";
   const delivery = DELIVERY.includes(String(b.delivery)) ? String(b.delivery) : "pickup";

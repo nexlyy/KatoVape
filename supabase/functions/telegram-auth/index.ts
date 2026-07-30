@@ -4,75 +4,8 @@
 // Проверив подпись Telegram, находим или заводим пользователя и отдаём одноразовый OTP,
 // который фронт меняет на настоящую сессию через verifyOtp.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const cors = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
-const json = (body: unknown, status = 200) =>
-  new Response(JSON.stringify(body), { status, headers: { ...cors, "Content-Type": "application/json" } });
-
-const enc = new TextEncoder();
-async function sha256(data: Uint8Array): Promise<Uint8Array> {
-  return new Uint8Array(await crypto.subtle.digest("SHA-256", data));
-}
-async function hmac(keyBytes: Uint8Array, msg: string): Promise<Uint8Array> {
-  const key = await crypto.subtle.importKey("raw", keyBytes, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
-  return new Uint8Array(await crypto.subtle.sign("HMAC", key, enc.encode(msg)));
-}
-const toHex = (b: Uint8Array) => Array.from(b).map((x) => x.toString(16).padStart(2, "0")).join("");
-function safeEqual(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
-  let r = 0;
-  for (let i = 0; i < a.length; i++) r |= a.charCodeAt(i) ^ b.charCodeAt(i);
-  return r === 0;
-}
-
-const DAY = 86400;
-
-// Login Widget: secret = SHA256(botToken), hash = HMAC(secret, data_check_string)
-async function verifyWidget(payload: Record<string, unknown>, token: string) {
-  const hash = String(payload.hash || "");
-  const pairs = Object.keys(payload).filter((k) => k !== "hash").sort()
-    .map((k) => `${k}=${payload[k]}`).join("\n");
-  const secret = await sha256(enc.encode(token));
-  const check = toHex(await hmac(secret, pairs));
-  if (!safeEqual(check, hash)) return null;
-  if (Number(payload.auth_date || 0) < Math.floor(Date.now() / 1000) - DAY) return null;
-  return {
-    id: Number(payload.id),
-    username: payload.username ? String(payload.username) : null,
-    first_name: payload.first_name ? String(payload.first_name) : null,
-    photo_url: payload.photo_url ? String(payload.photo_url) : null,
-  };
-}
-
-// WebApp initData: secret = HMAC("WebAppData", botToken), hash = HMAC(secret, data_check_string)
-async function verifyInitData(initData: string, token: string) {
-  const params = new URLSearchParams(initData);
-  const hash = params.get("hash") || "";
-  const secret = await hmac(enc.encode("WebAppData"), token);
-  const checkString = (skip: string[]) =>
-    [...params.entries()].filter(([k]) => !skip.includes(k)).sort(([a], [b]) => a < b ? -1 : 1)
-      .map(([k, v]) => `${k}=${v}`).join("\n");
-  // Новые клиенты Telegram добавляют в initData поле signature (подпись для сторонней
-  // проверки). Часть версий не включает его в строку для хеша, часть включает, поэтому
-  // пробуем оба варианта: иначе на свежих телефонах вход падал бы на проверке подписи.
-  let ok = safeEqual(toHex(await hmac(secret, checkString(["hash"]))), hash);
-  if (!ok && params.has("signature")) {
-    ok = safeEqual(toHex(await hmac(secret, checkString(["hash", "signature"]))), hash);
-  }
-  if (!ok) return null;
-  if (Number(params.get("auth_date") || 0) < Math.floor(Date.now() / 1000) - DAY) return null;
-  const u = JSON.parse(params.get("user") || "{}");
-  return {
-    id: Number(u.id),
-    username: u.username ? String(u.username) : null,
-    first_name: u.first_name ? String(u.first_name) : null,
-    photo_url: u.photo_url ? String(u.photo_url) : null,
-  };
-}
+import { cors, json } from "../_shared/cors.ts";
+import { verifyInitDataUser, verifyWidget } from "../_shared/telegram.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
@@ -86,7 +19,7 @@ Deno.serve(async (req) => {
 
   let tgUser = null;
   if (body.mode === "widget" && body.payload) tgUser = await verifyWidget(body.payload as Record<string, unknown>, token);
-  else if (body.mode === "initdata" && typeof body.initData === "string") tgUser = await verifyInitData(body.initData, token);
+  else if (body.mode === "initdata" && typeof body.initData === "string") tgUser = await verifyInitDataUser(body.initData, token);
   else return json({ error: "bad request" }, 400);
 
   if (!tgUser || !tgUser.id) return json({ error: "telegram signature invalid" }, 401);
