@@ -1,5 +1,4 @@
-// Общие заголовки и ответ для edge-функций. Тот же CORS, что в login/signup/telegram-auth,
-// вынесен сюда, чтобы не расходился между функциями.
+// Shared CORS headers and JSON response helper, so the functions cannot drift apart.
 export const cors = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",

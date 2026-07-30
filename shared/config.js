@@ -1,32 +1,33 @@
-// KatoVape: настройки фронта. Публичные ключи — их можно держать в коде
-// (доступ к данным ограничен политиками RLS, а не секретностью ключа).
-// Секретный ключ Supabase и токен бота сюда НЕ кладём — они только на сервере бота.
+// Front-end settings. The keys here are public by design: data access is limited by RLS
+// policies, not by the secrecy of the key.
+// The Supabase service key and the bot token never belong here; they live on the bot server.
 window.KV_CONFIG = {
-  // Аккаунты, бронь, заказы и панель живут в Supabase. Флаг оставлен как выключатель
-  // облака: без него витрина работает как витрина по файлам из data/, без входа и заказов.
+  // Accounts, reservations, orders and the panel live in Supabase. The flag doubles as the
+  // cloud switch: without it the storefront runs off data/ files, with no login or orders.
   BACKEND: 'supabase',
 
   SUPABASE_URL: 'https://vffqnydxofvunwausakv.supabase.co',
   SUPABASE_ANON_KEY: 'sb_publishable_1SUnHJJpoxKPTkh3_ox4Xg_ONLBue9z',
   FUNCTIONS_URL: 'https://vffqnydxofvunwausakv.supabase.co/functions/v1',
 
-  // Оплата (Stripe на сайте + нативный инвойс Telegram в мини-аппе). Пока PAYMENTS: false —
-  // чекаут работает как раньше (оплата при выдаче). Как включить: deploy/PAYMENTS_SETUP.md.
-  // STRIPE_PK — публичный ключ (pk_test_… / pk_live_…), секретный живёт только в Supabase.
+  // Payments: Stripe on the website, Stripe Checkout in the mini app.
+  // With PAYMENTS false the checkout stays cash on pickup. See deploy/PAYMENTS_SETUP.md.
+  // STRIPE_PK is the publishable key; the secret one lives only in Supabase.
   PAYMENTS: true,
-  // карта временно отключена: кнопка оплаты объясняет это и ведёт к менеджеру города.
-  // Вернуть онлайн-оплату = поставить false (ключи и функции уже настроены).
+  // Card payment is switched off for now: the button explains that and leads to the city
+  // manager. Set this to false to bring online payment back; keys and functions are ready.
   PAYMENTS_CARD_OFF: true,
   STRIPE_PK: 'pk_live_51TwKp12Oh3bIhyuZcduvlmYmOyWc92Q3z4lLhhDvzu3W6FNtCLjSIdCrlD67rWUYTpcMqFqT3f56fbuDj53JRWg900Y20uiegv',
   PAYMENTS_CURRENCY: 'pln',
 
-  TELEGRAM_BOT: 'KatoVape_bot',   // username бота: бронь диплинком, вход в мини-аппе, кнопка "Открыть в Telegram"
+  TELEGRAM_BOT: 'KatoVape_bot',   // bot username: reservation deep links and mini-app login
 
-  // Ссылки по городам — единственное место, где они живут. Кнопка канала, связь с
-  // менеджером, попап подписки и подвал берут их отсюда через KV.cityLink(), поэтому
-  // добавить город или сменить чат можно правкой одного этого блока, без правок кода.
-  // Пустой channel = ссылки ещё нет: кнопка скажет об этом и предложит менеджера.
-  // У каждого города свой менеджер: заказ должен попасть тому, кто выдаёт товар на месте.
+  // City links live here and nowhere else. The channel button, the manager contact, the
+  // subscribe popup and the footer all read them through KV.cityLink(), so adding a city or
+  // moving a chat is a change to this block alone.
+  // An empty channel means the link does not exist yet: the button says so and offers the
+  // manager instead. Every city has its own manager, because the order must reach the person
+  // who hands the goods over.
   CITY_LINKS: {
     katowice: { channel: 'https://t.me/+Dx0xgIyr4XkwOWEy', manager: 'https://t.me/KatoManager' },
     gliwice:  { channel: 'https://t.me/+P-8bC9IvIn01YmQy', manager: 'https://t.me/KatoManagerGliwice' },
@@ -34,10 +35,10 @@ window.KV_CONFIG = {
   },
 
   ADMIN_IDS: [5301671230],
-  ADMIN_URL: 'https://nexlyy.github.io/KatoVape/demos/admin/?v=2',   // куда ведёт кнопка "В админку" для админов
+  ADMIN_URL: 'https://nexlyy.github.io/KatoVape/demos/admin/?v=2',   // panel link shown to admins
 
-  // Пачкоматы выбираются из своего списка (data/inpost/<город>.json, выгрузка
-  // server/inpost-fetch.mjs из открытого справочника InPost), поэтому ключ не нужен.
-  // Обновить список: node server/inpost-fetch.mjs
+  // Lockers come from our own list in data/inpost/<city>.json, exported by
+  // server/inpost-fetch.mjs from the public InPost directory, so no API key is needed.
+  // Refresh it with: node server/inpost-fetch.mjs
   INPOST_SOURCE: 'data/inpost'
 };

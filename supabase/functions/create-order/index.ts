@@ -1,9 +1,8 @@
-// KatoVape: оформление заказа с оплатой при выдаче.
-// Раньше витрина писала заказ прямо в таблицу и присылала сумму сама. Подменить её в
-// запросе мог кто угодно: менеджер видел в панели ту цифру, которую прислал браузер, и
-// выдавал товар по ней. Теперь состав корзины считает сервер той же priceCart, что и
-// оплата картой, — цена в заказе всегда наша.
-// Заходят двумя путями: сайт присылает access-токен, мини-апп — подписанный initData.
+// Cash-on-pickup order creation.
+// The storefront used to write the order straight into the table and send the total itself,
+// which anyone could forge: the manager saw whatever number the browser sent and handed the
+// goods over for it. The cart is now priced by the same priceCart the card payment uses.
+// Two entry paths: the website sends an access token, the mini app a signed initData.
 import { cors, json } from "../_shared/cors.ts";
 import { priceCart, type Env } from "../_shared/pricing.ts";
 import { verifyInitData } from "../_shared/telegram.ts";
@@ -17,10 +16,10 @@ const env: Env = { SUPABASE_URL, SERVICE_KEY, CATALOG_BASE };
 
 const DELIVERY = ["pickup", "inpost", "courier"];
 const CITIES = ["katowice", "gliwice", "warszawa"];
-const RATE_LIMIT = Number(Deno.env.get("KV_ORDER_RATE_LIMIT") || 5);   // заказов в минуту на человека
+const RATE_LIMIT = Number(Deno.env.get("KV_ORDER_RATE_LIMIT") || 5);   // orders per minute per person
 const str = (v: unknown, max: number) => String(v == null ? "" : v).trim().slice(0, max);
 
-// Контакты кладём в заказ обрезанными: это снимок для менеджера, а не поле для сочинений.
+// Contacts are stored trimmed: this is a snapshot for the manager, not a free-text field.
 function contactOf(raw: any) {
   const c = raw && typeof raw === "object" ? raw : {};
   return {
@@ -38,7 +37,7 @@ Deno.serve(async (req) => {
   let b: any;
   try { b = await req.json(); } catch { return json({ error: "bad json" }, 400); }
 
-  // кто оформляет: токен сайта либо подпись мини-аппа, иначе не пускаем
+  // Who is ordering: a website token or a mini-app signature, otherwise refuse.
   let userId: string | null = null;
   let tgId: number | null = null;
   if (typeof b.initData === "string" && b.initData) {
@@ -51,20 +50,20 @@ Deno.serve(async (req) => {
   }
   if (!userId && !tgId) return json({ error: "auth required" }, 401);
 
-  // Простой лимит: заказы этого же человека за последнюю минуту. Считаем по базе, а не в
-  // памяти инстанса — edge-функция живёт в нескольких копиях, и локальный счётчик обошли бы
-  // повторной отправкой. Заодно ловит двойной тап по кнопке оформления.
+  // Rate limit by this person's orders in the last minute. Counted in the database rather
+  // than in instance memory: the function runs in several copies, so a local counter would be
+  // trivially bypassed. It also catches a double tap on the checkout button.
   const since = new Date(Date.now() - 60_000).toISOString();
   const who = userId ? "user_id=eq." + userId : "telegram_id=eq." + tgId;
   try {
     const recent = await rest("GET", "orders?" + who + "&created_at=gte." + since + "&select=id&limit=" + (RATE_LIMIT + 1), undefined, "count=none");
     if (Array.isArray(recent) && recent.length >= RATE_LIMIT) return json({ error: "too_many" }, 429);
-  } catch { /* не смогли посчитать — не мешаем оформить заказ */ }
+  } catch { /* cannot count: do not block an honest order */ }
 
   const city = CITIES.includes(String(b.city)) ? String(b.city) : "katowice";
   const delivery = DELIVERY.includes(String(b.delivery)) ? String(b.delivery) : "pickup";
 
-  // сумма, остатки, промокод и доставка — всё считает сервер по своему каталогу
+  // Total, stock, promo and delivery are all computed server-side from our own catalogue.
   let priced;
   try { priced = await priceCart(env, { ...b, city, delivery }); }
   catch (e) { return json({ error: (e && (e as any).code) || "price" }, 400); }
@@ -78,13 +77,13 @@ Deno.serve(async (req) => {
       user_id: userId, telegram_id: tgId,
       city, items: Array.isArray(b.items) ? b.items : [],
       sum: priced.total_zl,
-      // самовывоз — без адреса, что бы ни прислал клиент
+      // Pickup carries no address, whatever the client sent.
       delivery, address: delivery === "pickup" ? null : (str(b.address, 200) || null),
       contact, comment: str(b.comment, 500) || null,
-      // коды и скидка — те, что реально сработали на сервере, а не присланные клиентом
+      // Codes and discount as they actually applied server-side, not as sent by the client.
       promo: priced.promo.length ? priced.promo : null, discount: priced.discount,
       pay_way: "cash", status: "new",
-      // оплата при выдаче: денег ещё нет, менеджеру заказ показывает джоба бота
+      // Cash on pickup: no money yet; the bot job shows the order to the manager.
       payment_status: "unpaid",
       amount: priced.amount, currency: priced.currency,
     });

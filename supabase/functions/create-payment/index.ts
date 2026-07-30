@@ -1,8 +1,7 @@
-// KatoVape: оплата картой/кошельком на сайте. Клиент присылает корзину, мы считаем сумму
-// сами (pricing.ts), заводим заказ со статусом оплаты pending и создаём Stripe PaymentIntent.
-// Наружу уходит только client_secret — фронт им подтверждает оплату (Express Checkout Element).
-// Ключ Stripe живёт секретом STRIPE_SECRET_KEY, в браузер не попадает; факт оплаты
-// подтверждает не фронт, а webhook (stripe-webhook), потому что фронту верить нельзя.
+// Card and wallet payment on the website. The client sends a cart, we price it ourselves
+// (pricing.ts), create the order as pending and open a Stripe PaymentIntent. Only the
+// client_secret goes out; the Stripe key stays in STRIPE_SECRET_KEY. Payment is confirmed by
+// the webhook, never by the front end.
 import { cors, json } from "../_shared/cors.ts";
 import { priceCart, type Env } from "../_shared/pricing.ts";
 import { rest, userFromToken } from "../_shared/rest.ts";
@@ -30,11 +29,11 @@ Deno.serve(async (req) => {
   } catch (e) {
     return json({ error: (e && (e as any).code) || "price" }, 400);
   }
-  // оплата картой дороже на 10% (наличными при выдаче — цена та же)
+  // Card payment costs 10% more; cash on pickup keeps the plain price.
   priced.amount = Math.round(priced.amount * 1.1);
   priced.total_zl = Math.round(priced.total_zl * 1.1);
 
-  // заказ заводим сразу, чтобы webhook нашёл его по metadata.order_id
+  // Create the order first so the webhook can find it by metadata.order_id.
   const ct = b.contact || {};
   let order;
   try {
@@ -42,8 +41,8 @@ Deno.serve(async (req) => {
       user_id: userId, city: b.city || "katowice",
       items: Array.isArray(b.items) ? b.items : [], sum: priced.total_zl,
       delivery: b.delivery || "pickup", address: b.address || null,
-      // комментарий и способ оплаты идут в заказ так же, как при оплате наличными:
-      // иначе менеджер видит карточный заказ как «при выдаче» и без просьбы покупателя
+      // Comment and payment method are stored like on the cash path; without them a card
+      // order shows up as pay-on-pickup and loses the customer's note.
       contact: ct, comment: b.comment || null, pay_way: "card", status: "new",
       promo: priced.promo.length ? priced.promo : null, discount: priced.discount,
       payment_status: "pending", payment_provider: "stripe",
@@ -55,8 +54,8 @@ Deno.serve(async (req) => {
   }
   if (!order || !order.id) return json({ error: "order failed" }, 500);
 
-  // PaymentIntent на посчитанную сумму. automatic_payment_methods сам включает карты,
-  // Google Pay и Apple Pay — фронт показывает их кнопками через Express Checkout Element.
+  // PaymentIntent for the computed amount. automatic_payment_methods enables cards,
+  // Google Pay and Apple Pay, which the front shows through the Express Checkout Element.
   const form = new URLSearchParams();
   form.set("amount", String(priced.amount));
   form.set("currency", priced.currency);

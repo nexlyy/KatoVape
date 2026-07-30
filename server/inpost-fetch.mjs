@@ -1,7 +1,7 @@
-// Разовая выгрузка пачкоматов InPost в статические файлы data/inpost/<город>.json.
-// Публичный справочник точек ShipX ключа не требует, поэтому витрине не нужен ни токен,
-// ни виджет: список лежит в проекте и грузится по требованию.
-// Запуск: node server/inpost-fetch.mjs
+// One-off export of InPost lockers into data/inpost/<city>.json.
+// The public ShipX point directory needs no key, so the storefront needs neither a token nor
+// the widget: the list ships with the project and loads on demand.
+// Run: node server/inpost-fetch.mjs
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';

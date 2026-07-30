@@ -1,5 +1,5 @@
-// Работа с Telegram: проверка подписи (initData + Login Widget) и Bot API.
-// Токен бота живёт только в окружении TELEGRAM_BOT_TOKEN, в браузер не уходит.
+// Telegram signature checks and Bot API calls.
+// The bot token lives only in TELEGRAM_BOT_TOKEN and never reaches the browser.
 import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
 
 export const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
@@ -11,7 +11,7 @@ function safeEq(a, b) {
   return A.length === B.length && timingSafeEqual(A, B);
 }
 
-// Login Widget на сайте: secret = SHA256(token), hash = HMAC(secret, data_check_string)
+// Website Login Widget: secret = SHA256(token), hash = HMAC(secret, data_check_string).
 export function verifyWidget(payload, token = BOT_TOKEN) {
   if (!token || !payload || !payload.hash) return null;
   const pairs = Object.keys(payload).filter(k => k !== 'hash').sort()
@@ -49,17 +49,16 @@ export async function tgCall(method, body, token = BOT_TOKEN) {
 export const sendMessage = (chat_id, text, extra = {}) =>
   tgCall('sendMessage', { chat_id, text, parse_mode: 'HTML', disable_web_page_preview: true, ...extra });
 
-// правка уже отправленного сообщения: список заказов листается и обновляется на месте,
-// без новых сообщений в чате
+// Editing a sent message keeps the order list paging in place instead of flooding the chat.
 export const editMessage = (chat_id, message_id, text, extra = {}) =>
   tgCall('editMessageText', { chat_id, message_id, text, parse_mode: 'HTML', disable_web_page_preview: true, ...extra });
 
-// ответ на нажатие инлайн-кнопки (иначе у кнопки бесконечно крутится часики)
+// Answer an inline button, otherwise its spinner never stops.
 export const answerCallback = (id, text, alert) =>
   tgCall('answerCallbackQuery', { callback_query_id: id, ...(text ? { text } : {}), ...(alert ? { show_alert: true } : {}) });
 
-// Фото для рассылки. Панель присылает картинку как data:URL, поэтому отправляем её
-// файлом (multipart), а не ссылкой — Telegram по ссылке data: ходить не умеет.
+// Broadcast photo. The panel sends a data: URL, so it goes as a multipart file: Telegram
+// cannot fetch a data: link.
 export async function sendPhoto(chat_id, photo, caption, extra = {}, token = BOT_TOKEN) {
   if (!token) return { ok: false, error: 'no token' };
   const body = new FormData();
@@ -73,7 +72,7 @@ export async function sendPhoto(chat_id, photo, caption, extra = {}, token = BOT
     const bin = Buffer.from(b64, 'base64');
     body.set('photo', new Blob([bin], { type: mime }), 'photo.jpg');
   } else {
-    body.set('photo', photo);            // обычная ссылка на картинку
+    body.set('photo', photo);            // plain image URL
   }
   const res = await fetch(`${API(token)}/sendPhoto`, { method: 'POST', body });
   return res.json().catch(() => ({ ok: false }));

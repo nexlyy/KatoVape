@@ -1,9 +1,8 @@
-// KatoVape: регистрация по логину/почте/телефону + пароль.
-// Клиентский auth.signUp отбраковывает синтетические адреса (валидация почты у GoTrue),
-// поэтому аккаунт заводит сервер через service_role (admin.createUser), как и телеграм-вход.
-// Проверив занятость логина, создаём подтверждённого пользователя и отдаём одноразовый OTP,
-// который фронт меняет на сессию через verifyOtp. telegram_id тут не трогаем (ставит только
-// телеграм-функция после проверки подписи).
+// Registration by username, email or phone plus password.
+// The client-side auth.signUp rejects synthetic addresses, so the account is created by the
+// server through service_role, as with the Telegram login. After the availability check we
+// create a confirmed user and return a one-time OTP.
+// telegram_id is untouched here: only the Telegram function sets it, after verifying a signature.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const cors = {
@@ -39,7 +38,7 @@ Deno.serve(async (req) => {
     { auth: { autoRefreshToken: false, persistSession: false } },
   );
 
-  // занятость логина/почты/телефона (финальную гарантию дают уникальные индексы)
+  // Availability check; the unique indexes give the final guarantee.
   const { data: av } = await admin.rpc("login_availability", {
     p_username: username, p_email: email || null, p_phone: phone || null,
   });
@@ -50,7 +49,7 @@ Deno.serve(async (req) => {
     if (a.phone_taken) return json({ error: "takenPhone" }, 409);
   }
 
-  // синтетический адрес на реальном TLD, чтобы был валиден и в auth.users
+  // Synthetic address on a real TLD so auth.users accepts it.
   const authEmail = email && looksEmail(email)
     ? email.toLowerCase()
     : "u_" + username.toLowerCase().replace(/[^a-z0-9_]/g, "") + "@users.katovape.pl";

@@ -1,9 +1,9 @@
-// Подписи проверяют три функции: telegram-auth (вход), create-order/create-checkout
-// (заказ из мини-аппа) и stripe-webhook (факт оплаты). Раньше у каждой была своя копия
-// этих десяти строк — правка в одной не доезжала до остальных.
+// Signature checks are used by telegram-auth (login), create-order/create-checkout (mini-app
+// orders) and stripe-webhook (payment). Each used to carry its own copy of these helpers, so a
+// fix in one never reached the others.
 export const enc = new TextEncoder();
 
-// Сравнение за постоянное время: обычное === выдаёт длину совпадающего префикса.
+// Constant-time compare: a plain === leaks the length of the matching prefix.
 export function safeEqual(a: string, b: string): boolean {
   if (a.length !== b.length) return false;
   let r = 0;

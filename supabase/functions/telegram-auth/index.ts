@@ -1,8 +1,7 @@
-// KatoVape: проверка входа через Telegram.
-// Токен бота живёт только тут (секрет TELEGRAM_BOT_TOKEN), в браузер не попадает.
-// Работает и для Login Widget на сайте (mode: "widget"), и для мини-аппа (mode: "initdata").
-// Проверив подпись Telegram, находим или заводим пользователя и отдаём одноразовый OTP,
-// который фронт меняет на настоящую сессию через verifyOtp.
+// Telegram login. The bot token lives only here and never reaches the browser.
+// Handles both the website Login Widget (mode "widget") and the mini app (mode "initdata").
+// After the signature checks out we find or create the user and return a one-time OTP that
+// the front exchanges for a real session.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { cors, json } from "../_shared/cors.ts";
 import { verifyInitDataUser, verifyWidget } from "../_shared/telegram.ts";
@@ -30,19 +29,19 @@ Deno.serve(async (req) => {
     { auth: { autoRefreshToken: false, persistSession: false } },
   );
 
-  // Аккаунт ищем по telegram_id, а адрес для OTP берём из самого профиля. Вычислять его
-  // нельзя: домен синтетической почты со временем менялся, и на несовпадении generateLink
-  // заводил второй пустой аккаунт, в который человек и попадал (без имени и аватара).
+  // Find the account by telegram_id and take the OTP address from the profile itself.
+  // Deriving it is unsafe: the synthetic mail domain changed over time, and on a mismatch
+  // generateLink created a second empty account that the person then landed in.
   const { data: existing } = await admin.from("profiles")
     .select("id, auth_email, display_name")
     .eq("telegram_id", tgUser.id).maybeSingle();
   let userId = existing?.id as string | undefined;
   const email = existing?.auth_email || `tg_${tgUser.id}@telegram.katovape.pl`;
 
-  // если такого телеграм-пользователя ещё нет, заводим. username делаем гарантированно
-  // уникальным (tg_<id>), настоящий @username кладём отдельным полем.
-  // ВАЖНО: telegram_id НЕ передаём в user_metadata — триггер профиля ему не доверяет
-  // (клиент может подделать при обычном signUp). Привязку ставим ниже сами.
+  // Create the user if this Telegram account is new. The username is made unique (tg_<id>)
+  // and the real @username goes into its own column.
+  // telegram_id is deliberately NOT passed in user_metadata: the profile trigger does not
+  // trust it, since a client could forge it during an ordinary signUp. It is linked below.
   if (!userId) {
     const { data: created, error: cErr } = await admin.auth.admin.createUser({
       email,
@@ -54,24 +53,23 @@ Deno.serve(async (req) => {
       },
     });
     userId = created?.user?.id;
-    // 422 = пользователь уже есть (гонка), это не ошибка для нас
+    // 422 means the user already exists (a race), which is fine here.
     if (cErr && !String(cErr.message || "").toLowerCase().includes("already")) {
       return json({ error: "cannot create user" }, 500);
     }
-    // добираем id, если создание попало в гонку
     if (!userId) {
       const { data: u } = await admin.auth.admin.listUsers();
       userId = u?.users?.find((x) => x.email === email)?.id;
     }
   }
 
-  // привязку Telegram выставляет только сервер, после проверки подписи (доверенный путь).
-  // аватар берём из photo_url телеги, но не затираем уже загруженный пользователем.
-  // имя и логин дозаполняем, если профиль остался пустым после прежних сбоев.
+  // Only the server links Telegram, and only after the signature check.
+  // The avatar comes from photo_url but never overwrites one the user uploaded; name and
+  // username are filled in if the profile stayed empty after earlier failures.
   if (userId) {
     const { data: cur } = await admin.from("profiles")
       .select("avatar, display_name, username, full_name, phone, email, paczkomat, city").eq("id", userId).maybeSingle();
-    // данные, собранные ботом при онбординге (хранятся у того же telegram_id)
+    // Data the bot collected during onboarding, stored under the same telegram_id.
     const { data: bu } = await admin.from("bot_users")
       .select("full_name, phone, email, paczkomat, city").eq("telegram_id", tgUser.id).maybeSingle();
     const patch: Record<string, unknown> = {
@@ -82,14 +80,14 @@ Deno.serve(async (req) => {
     if (tgUser.photo_url && !cur?.avatar) patch.avatar = tgUser.photo_url;
     if (!cur?.display_name) patch.display_name = tgUser.first_name || tgUser.username || `tg_${tgUser.id}`;
     if (!cur?.username) patch.username = `tg_${tgUser.id}`;
-    // из онбординга дозаполняем пустые поля профиля; full_name/paczkomat без unique — сразу сюда
+    // Fill empty profile fields from onboarding; full_name and paczkomat have no unique index.
     if (!cur?.full_name && bu?.full_name) patch.full_name = bu.full_name;
     if (!cur?.paczkomat && bu?.paczkomat) patch.paczkomat = bu.paczkomat;
-    // город из анкеты: по нему мини-апп откроется на нужном городе, а не на том,
-    // что остался в памяти телефона от прошлого человека
+    // City from the questionnaire, so the mini app opens on the right one instead of whatever
+    // the previous person left in this phone's storage.
     if (!cur?.city && bu?.city) patch.city = bu.city;
     await admin.from("profiles").update(patch).eq("id", userId);
-    // телефон и почта уникальны: отдельным запросом, чтобы конфликт «занято» не сорвал привязку выше
+    // Phone and email are unique: a separate request so a conflict cannot undo the link above.
     const contact: Record<string, unknown> = {};
     if (!cur?.phone && bu?.phone) contact.phone = bu.phone;
     if (!cur?.email && bu?.email) contact.email = bu.email;
@@ -99,15 +97,15 @@ Deno.serve(async (req) => {
     }
   }
 
-  // вход через Telegram означает, что человек дошёл до бота: держим его в списке
-  // рассылки. Мёртвые адреса бот сам пометит opted_in=false при первой неудаче.
+  // Logging in through Telegram means the person reached the bot, so keep them on the
+  // broadcast list. The bot marks dead ones opted_in=false on the first failure.
   await admin.from("bot_users").upsert({
     telegram_id: tgUser.id,
     username: tgUser.username,
     first_name: tgUser.first_name,
   }, { onConflict: "telegram_id" });
 
-  // одноразовый OTP, который фронт обменяет на сессию (verifyOtp, type: magiclink)
+  // One-time OTP the front exchanges for a session.
   const { data: link, error: lErr } = await admin.auth.admin.generateLink({ type: "magiclink", email });
   if (lErr || !link || !link.properties || !link.properties.email_otp) {
     return json({ error: "cannot start session" }, 500);

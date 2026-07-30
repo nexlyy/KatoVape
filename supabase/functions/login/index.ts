@@ -1,7 +1,7 @@
-// KatoVape: вход по логину, почте или телефону + пароль.
-// Раньше фронт спрашивал у базы адрес по логину (resolve_login) и логинился сам. Это
-// отдавало постороннему реальную почту клиента: подобрал логин — узнал адрес. Теперь
-// связка «логин -> адрес» и проверка пароля живут на сервере, наружу уходит только сессия.
+// Login by username, email or phone plus password.
+// The front used to resolve the address from the login itself, which handed a stranger the
+// customer's real email: guess the login, learn the address. The mapping and the password
+// check now live on the server and only a session goes out.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const cors = {
@@ -30,10 +30,9 @@ Deno.serve(async (req) => {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
-  // Адрес ищем тремя отдельными точными запросами. Склеивать идентификатор в строку
-  // фильтра (.or) нельзя: запятая внутри закрывает условие и дописывает своё, из-за
-  // чего можно было войти в чужой аккаунт, не зная его логина. В .eq значение
-  // экранируется клиентом и остаётся значением, а не частью выражения.
+// Three separate exact queries. The identifier must not be spliced into an .or filter
+  // string: a comma inside it closes the condition and appends another, which allowed
+  // signing into someone else's account. With .eq the value stays a value.
   async function findEmail(column: string, value: string): Promise<string | null> {
     if (!value) return null;
     const { data } = await admin.from("profiles")
@@ -44,8 +43,8 @@ Deno.serve(async (req) => {
   if (!email) email = await findEmail("email", identifier);
   if (!email) email = await findEmail("phone", normPhone(identifier));
   if (!email && looksEmail(identifier)) email = identifier.toLowerCase();
-  // отвечаем одинаково и на «нет такого», и на «пароль неверный»,
-  // чтобы нельзя было перебором узнать, какие логины существуют
+  // Answer identically for "no such user" and "wrong password" so the set of existing
+  // logins cannot be probed.
   if (!email) return json({ error: "badCreds" }, 401);
 
   const res = await fetch(`${url}/auth/v1/token?grant_type=password`, {

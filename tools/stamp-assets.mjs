@@ -1,18 +1,18 @@
-// Проставляет ?v=<хеш> у общих скриптов во всех HTML.
+// Stamps ?v=<hash> onto the shared scripts in every HTML page.
 //
-// Раньше версии правились руками в трёх файлах, и это стабильно забывалось: у людей
-// оставался старый core.js из кеша, то есть старый расчёт цен. Хеш считается от
-// содержимого файла — поменялся файл, поменялась ссылка, кеш обновился сам.
+// Versions used to be bumped by hand in three files and were reliably forgotten, leaving
+// people with a cached core.js and therefore the old pricing. The hash comes from the file
+// contents, so a changed file changes the URL and the cache refreshes itself.
 //
-//   npm run stamp        проставить версии
-//   npm run stamp:check  только проверить (для CI и хука перед коммитом)
+//   npm run stamp        write the versions
+//   npm run stamp:check  verify only, for CI or a pre-commit hook
 import { readFileSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 
 const ROOT = new URL('../', import.meta.url);
 const read = (p) => readFileSync(new URL(p, ROOT), 'utf8');
 
-// какие HTML обходим и какие скрипты в них штампуем
+// Pages to walk and scripts to stamp in them.
 const PAGES = [
   'index.html',
   'demos/vapor/site/index.html',
@@ -31,9 +31,9 @@ for (const page of PAGES) {
   const before = read(page);
   let after = before;
   for (const [name, v] of Object.entries(stamps)) {
-    // Только внутри src="...": имя файла встречается и в обычном тексте (подсказка
-    // «заполните ключ в shared/config.js»), и туда версию дописывать нельзя.
-    // Ловим и уже проставленный ?v=..., и ссылку вообще без версии.
+    // Only inside src="...": the file name also appears in plain prose (a hint telling the
+    // manager to fill in shared/config.js) and must not be stamped there.
+    // Matches both an existing ?v=... and a link with no version at all.
     const re = new RegExp('(src=["\'][^"\']*shared/' + name.replace('.', '\\.') + ')(\\?v=[^"\']*)?', 'g');
     after = after.replace(re, '$1?v=' + v);
   }

@@ -1,14 +1,14 @@
-// Честная сумма заказа считается ТУТ, на сервере, а не берётся с фронта: иначе можно
-// прислать свою цену и оплатить корзину за грош. Логика ровно как в shared/core.js
-// (ступенчатая цена, промокод, доставка), источник — те же data/*.json, что видит сайт,
-// плюс живые цены/остатки из таблицы products (менеджер правит их в админке).
+// The order total is computed here, on the server, never taken from the client: otherwise
+// anyone could send their own price. The rules mirror shared/core.js (tier price, promo,
+// delivery) and read the same data/*.json the storefront reads, plus live prices and stock
+// from the products table.
 
 type Tier = { q: number; p: number };
 type Flavor = { name: string; qty?: number };
 type Item = { id: string; name?: string; price?: number; tiers?: Tier[]; flavors?: Flavor[]; qty?: number; _cat?: string };
 type CartLine = { id: string; flavor?: string; n: number };
 
-// фолбэк доставки, если в content.json нет блока delivery (совпадает с DELIVERY_DEF во фронте)
+// Delivery fallback when content.json has no delivery block; matches DELIVERY_DEF on the front.
 const DELIVERY_DEF: Record<string, number> = { pickup: 0, inpost: 12, courier: 18 };
 
 async function getJson(url: string): Promise<any> {
@@ -17,22 +17,21 @@ async function getJson(url: string): Promise<any> {
   return res.json();
 }
 
-// каталог нужного города: главный город лежит в products.json, у остальных свой файл (cities[].file)
 async function cityCatalog(base: string, city: string): Promise<Item[]> {
   const master = await getJson(base + "/data/products.json");
   const cities = master.cities || [{ id: master.city || "katowice", main: true }];
   const c = cities.find((x: any) => x.id === city) || cities[0];
   const data = c.main ? master : await getJson(base + "/" + c.file);
   const items: Item[] = [];
-  // категорию помечаем прямо на товаре (как _cat во фронте): по ней промокод решает,
-  // распространяется ли он на корзину
+  // Tag the category onto the item (like _cat on the front): a promo code uses it to decide
+  // whether it applies to this cart.
   for (const cat of data.categories || []) for (const it of cat.items || []) items.push({ ...it, _cat: cat.id });
   return items;
 }
 
-// живые цена/остаток/ступени из облака (как cloudStock во фронте): цена и ступени привязаны
-// к id, остаток к id+вкус. Ступени обязательны в выборке: менеджер правит их в панели, и без
-// них сервер считал бы опт по старым числам из файла, а витрина — по новым.
+// Live price, stock and tiers from the cloud. Tiers must be selected: the manager edits them
+// in the panel, and without them the server would price wholesale from the stale file numbers
+// while the storefront used the new ones.
 async function cloudOverrides(env: Env, city: string) {
   const url = env.SUPABASE_URL.replace(/\/$/, "") +
     "/rest/v1/products?city=eq." + encodeURIComponent(city) + "&select=id,flavor,price,qty,tiers";
@@ -53,14 +52,14 @@ async function cloudOverrides(env: Env, city: string) {
 }
 type Overrides = Awaited<ReturnType<typeof cloudOverrides>>;
 
-// Признак оптовой группы — тот же, что tierGroupOf в shared/core.js: модель. Расходиться
-// эти два определения не должны, иначе витрина и списание посчитают по-разному.
+// Wholesale grouping key, same as tierGroupOf in shared/core.js: the model. These two
+// definitions must not drift apart, or the cart and the charge disagree.
 const tierGroupOf = (item: Item) => item.id;
 
-// n — количество по всей группе, а не по одной строке корзины
+// n is the quantity across the whole group, not one cart line.
 function unitPrice(item: Item, n: number, ov: Overrides): number {
   const tiers = ov.tiersById[item.id] || item.tiers;
-  // есть ступени — цена целиком из них (базовую и облачную игнорируем, как tierPrice во фронте)
+  // With tiers the price comes only from them, ignoring base and cloud price.
   if (tiers && tiers.length) {
     let p = tiers[0].p;
     for (const t of tiers) if (n >= t.q) p = t.p;
@@ -76,12 +75,12 @@ export interface Env {
   CATALOG_BASE: string;
 }
 
-// Скидку считает та же функция базы promo_check, что и корзина в браузере. Раньше тут был
-// свой список из content.json: код из панели оплата не видела (списывала полную сумму),
-// а старый демо-код KATO10 наоборот срабатывал и в любом регистре. Обе цены расходились
-// с тем, что человек видел перед оплатой.
-// Лимит «на человека» тут не проверяется: под service_role auth.uid() пуст, его считает
-// promo_use после заказа.
+// The discount comes from the same promo_check database function the browser cart uses.
+// This used to keep its own list in content.json, so a code created in the panel was
+// invisible to checkout while an old demo code still applied — both ways the charge
+// disagreed with what the customer saw.
+// The per-user limit is not enforced here: auth.uid() is empty under service_role, so
+// promo_use counts it after the order.
 async function promoDiscount(
   env: Env, code: string, city: string, sum: number, cats: string[],
 ): Promise<{ discount: number; stackable: boolean }> {
@@ -102,12 +101,12 @@ async function promoDiscount(
   };
 }
 
-// Кодов может быть несколько, и каждый считается от исходной суммы товаров, а не от
-// остатка после предыдущего: так порядок ввода не влияет на итог, и клиент с сервером
-// считают одинаково. Общая скидка не больше корзины.
-// База — единственный источник правды. Запасного списка тут нет намеренно: если функция
-// не ответила, посчитать «как получится» значит списать не ту сумму, которую человек видел.
-// Лучше честно не дать оплатить и показать ошибку.
+// Several codes may apply. Each is computed against the original goods total rather than
+// the remainder after the previous one, so the order of entry cannot change the result and
+// client and server agree. The combined discount never exceeds the cart.
+// The database is the only source of truth: there is deliberately no fallback list. If the
+// function does not answer, charging a best-guess amount would mean charging something the
+// customer never saw, so the payment is refused instead.
 async function discountFor(
   env: Env, codes: string[], city: string, sum: number, cats: string[],
 ): Promise<{ discount: number; applied: string[] }> {
@@ -120,15 +119,15 @@ async function discountFor(
     } catch (_e) {
       throw Object.assign(new Error("promo"), { code: "promo" });
     }
-    // код с stackable=false действует только в одиночку. Витрина такую пару не даст
-    // собрать, но запрос мог прийти и мимо неё — тогда просто не применяем его.
+    // A stackable=false code works alone. The storefront will not let such a pair be built,
+    // but a request may arrive around it, and then the code is simply skipped.
     if (!r.stackable && codes.length > 1) continue;
     if (r.discount > 0) { disc += r.discount; applied.push(raw); }
   }
   return { discount: Math.min(Math.max(disc, 0), sum), applied };
 }
 
-// promo приходит строкой (старый формат) или списком; чистим и убираем повторы
+// promo arrives as a string (legacy) or a list; clean it and drop repeats.
 function promoList(v: unknown): string[] {
   const arr = Array.isArray(v) ? v : [v];
   const out: string[] = [];
@@ -136,19 +135,19 @@ function promoList(v: unknown): string[] {
     const s = String(x == null ? "" : x).trim();
     if (s && s.length <= 24 && !out.includes(s)) out.push(s);
   }
-  return out.slice(0, 10);   // разумный потолок, чтобы не гонять сотню проверок
+  return out.slice(0, 10);
 }
 
 export interface Priced {
-  amount: number;       // к списанию, в грошах (zł * 100)
-  total_zl: number;     // к списанию, в злотых (для лейбла)
+  amount: number;       // charged amount in grosz (zł * 100)
+  total_zl: number;     // charged amount in zloty
   currency: string;     // pln
-  label: string;        // короткое описание для инвойса/чека
-  discount: number;     // сколько скинули по промокодам, в злотых
-  promo: string[];      // какие коды реально сработали — их и пишем в заказ
+  label: string;        // short line for the invoice
+  discount: number;     // promo discount in zloty
+  promo: string[];      // codes that actually applied; these go into the order
 }
 
-// Считает сумму по корзине. Кидает {code} на плохой товар / нехватку остатка / пустой заказ.
+// Prices a cart. Throws {code} on an unknown item, missing stock or an empty order.
 export async function priceCart(
   env: Env,
   body: { city?: string; items?: CartLine[]; delivery?: string; promo?: string | string[] },
@@ -165,8 +164,8 @@ export async function priceCart(
   const byId: Record<string, Item> = {};
   for (const it of items) byId[it.id] = it;
 
-  // Количества нормализуем и складываем по группам заранее: ступень цены зависит от суммы
-  // по модели, поэтому цену строки нельзя посчитать, не зная всей корзины.
+  // Normalise quantities and sum them per group first: the price tier depends on the total
+  // for the model, so a line price cannot be known without the whole cart.
   const rows = lines.map((l) => {
     const item = byId[l.id];
     if (!item) throw Object.assign(new Error("bad_item"), { code: "bad_item", id: l.id });
@@ -186,7 +185,7 @@ export async function priceCart(
   let sub = 0, count = 0;
   const cats = new Set<string>();
   for (const r of rows) {
-    // остаток проверяем только когда точно знаем его: иначе честный заказ не должен падать
+    // Only check stock when it is actually known, so an honest order never fails on a gap.
     const avail = ov.qtyByKey[r.id + "::" + r.flavor];
     if (avail != null && r.n > avail) throw Object.assign(new Error("out_of_stock"), { code: "out_of_stock", id: r.id });
     sub += unitPrice(r.item, groupQty[tierGroupOf(r.item)], ov) * r.n;

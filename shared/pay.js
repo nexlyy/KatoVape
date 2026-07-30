@@ -1,27 +1,26 @@
-// KatoVape: онлайн-оплата. Подключается после auth.js.
-// Сайт — Stripe Express Checkout Element (Apple Pay / Google Pay / карта одной строкой).
-// Мини-апп Telegram — нативный инвойс (кошельки Telegram показывает сам), потому что
-// Stripe.js в вебвью Telegram не всегда даёт кошельки.
-// Сумму и заказ создаёт сервер (edge-функции create-payment / create-checkout), фронт лишь
-// подтверждает платёж. Пока в конфиге нет PAYMENTS/STRIPE_PK — модуль молчит, чекаут
-// работает как раньше (оплата при выдаче).
+// Online payment, loaded after auth.js.
+// Website: Stripe Express Checkout Element. Mini app: Stripe Checkout in an external browser,
+// because Stripe.js does not reliably offer wallets inside the Telegram webview.
+// The amount and the order are created by the edge functions; the front only confirms the
+// payment. Without PAYMENTS or STRIPE_PK in the config this module stays silent and checkout
+// remains cash on pickup.
 window.KVPay = (function () {
   const CFG = window.KV_CONFIG || {};
   const currency = String(CFG.PAYMENTS_CURRENCY || 'pln').toLowerCase();
 
   const tgApp = () => (window.Telegram && window.Telegram.WebApp) || null;
   const inMiniApp = () => { const a = tgApp(); return !!(a && a.initData); };
-  // Оплата картой временно выключена (CARD_OFF): вместо формы Stripe показываем кнопку,
-  // которая честно говорит, что оплата недоступна, и уводит к менеджеру. Ключи и функции
-  // остаются рабочими — снять флаг в конфиге достаточно, чтобы вернуть оплату.
+  // Card payment is off (CARD_OFF): instead of the Stripe form we show a button that says so
+  // and leads to the manager. Keys and functions stay working; clearing the flag brings it back.
   const cardOff = () => !!(CFG.PAYMENTS_CARD_OFF);
   const cloudOn = () => CFG.BACKEND === 'supabase' && !!(CFG.SUPABASE_URL && CFG.SUPABASE_ANON_KEY);
-  // оплата доступна: включён флаг, есть облако и адрес функций; на сайте нужен ещё ключ Stripe
+  // Payment is available when the flag, the cloud and the functions URL are set; the website
+  // additionally needs the Stripe key.
   const enabled = () => !!(CFG.PAYMENTS && cloudOn() && CFG.FUNCTIONS_URL &&
     (cardOff() || inMiniApp() || CFG.STRIPE_PK));
   const fnUrl = p => CFG.FUNCTIONS_URL.replace(/\/$/, '') + p;
 
-  // Stripe.js грузим с их домена один раз (для кошельков он обязан быть с js.stripe.com)
+  // Stripe.js is loaded once from their domain: wallets require it to come from js.stripe.com.
   let stripe = null;
   function loadStripe() {
     if (window.Stripe) return Promise.resolve(window.Stripe);
@@ -45,17 +44,16 @@ window.KVPay = (function () {
     return out;
   }
 
-  // ---- сайт: Express Checkout Element ----
   async function mountWeb(box, data, cb) {
     const lib = await loadStripe();
     stripe = stripe || lib(CFG.STRIPE_PK);
-    // Отложенный PaymentIntent: элемент создаём с суммой, сам платёж заводим на 'confirm',
-    // когда человек уже выбрал кошелёк. Итоговую сумму всё равно считает сервер.
+    // Deferred PaymentIntent: the element is created with an amount, the payment itself only
+    // on 'confirm' once a wallet is chosen. The final amount is still computed by the server.
     const elements = stripe.elements({ mode: 'payment', amount: Math.max(data.amount | 0, 100), currency });
     const ece = elements.create('expressCheckout');
     ece.mount(box);
     ece.on('confirm', async () => {
-      // с этого момента платёж пошёл: окно заказа не должно перерисовываться под нами
+      // The payment has started: the order dialog must not re-render underneath it.
       cb.onStart && cb.onStart();
       const sub = await elements.submit();
       if (sub.error) { cb.onError(sub.error.message); return; }
@@ -74,14 +72,13 @@ window.KVPay = (function () {
     });
   }
 
-  // ---- мини-апп: Stripe Checkout во внешнем браузере ----
-  // Telegram убрал Stripe из провайдеров BotFather, поэтому нативный инвойс со Stripe не
-  // собрать. Открываем страницу Stripe Checkout (там Apple Pay / Google Pay / карта, без
-  // верификации домена), а итог оплаты узнаём опросом статуса заказа, когда человек вернётся.
+  // Mini app: Stripe Checkout in an external browser. Telegram dropped Stripe from the
+  // BotFather providers, so a native invoice is impossible. The result is learned by polling
+  // the order status once the person comes back.
   function mountTg(box, data, cb) {
     const btn = document.createElement('button');
     btn.type = 'button'; btn.className = 'kvpay-btn';
-    btn.textContent = 'Оплатить ' + Math.round((data.amount | 0) / 100) + ' zł';
+    btn.textContent = KV.t('payNow', Math.round((data.amount | 0) / 100));
     const note = document.createElement('div');
     note.className = 'kvpay-note'; note.hidden = true;
     btn.onclick = async () => {
@@ -93,16 +90,16 @@ window.KVPay = (function () {
         out = await api('/create-checkout', Object.assign({ initData: tgApp().initData }, data));
       } catch (e) { btn.disabled = false; cb.onError((e && e.message) || 'pay'); return; }
       note.hidden = false;
-      note.textContent = 'Оплата открыта в браузере. Заверши её и вернись — подтвердим здесь.';
+      note.textContent = KV.t('payInBrowser');
       tgApp().openLink(out.url);
       pollOrder(out.orderId, cb, () => { btn.disabled = false; });
     };
     box.appendChild(btn);
     box.appendChild(note);
   }
-  // опрашиваем свой заказ (RLS пускает своё) до 2 минут: paid -> успех, failed -> ошибка
-  // Опрос останавливается сам, если окно оплаты закрыли: раньше интервал продолжал
-  // ходить в базу каждые три секунды даже после ухода с экрана.
+  // Poll our own order for up to two minutes: paid means success, failed means error.
+  // The poll stops itself when the payment dialog closes; it used to keep hitting the database
+  // every three seconds after the person had left the screen.
   let pollTimer = null;
   function stopPoll() { if (pollTimer) { clearInterval(pollTimer); pollTimer = null; } }
   async function pollOrder(orderId, cb, onStop) {
@@ -113,7 +110,7 @@ window.KVPay = (function () {
     let tries = 0;
     const done = (fn, arg) => { stopPoll(); onStop && onStop(); fn && fn(arg); };
     pollTimer = setInterval(async () => {
-      // окно заказа закрыли или перерисовали — опрашивать больше некому
+      // The dialog was closed or re-rendered, so there is nobody left to poll for.
       if (box && !box.isConnected) { done(cb.onCancel); return; }
       if (++tries > 40) { done(cb.onCancel); return; }
       try {
@@ -133,30 +130,30 @@ window.KVPay = (function () {
     s.textContent = '.kvpay-btn{width:100%;background:#635bff;color:#fff;border:none;border-radius:12px;' +
       'padding:14px;font-weight:800;font-size:14px;cursor:pointer;font-family:inherit}' +
       '.kvpay-btn[disabled]{opacity:.6;cursor:default}' +
-      // карта отключена: кнопка приглушённая, чтобы не выглядела основным действием
+      // Card is off: the button is muted so it does not read as the primary action.
       '.kvpay-off{background:none;border:1px solid var(--kv-line,rgba(127,127,127,.35));color:var(--kv-muted,#889);font-weight:700}' +
       '.kvpay-note{margin-top:10px;font-size:12px;line-height:1.45;color:var(--kv-muted,#889)}';
     (document.head || document.documentElement).appendChild(s);
   }
 
-  // заглушка на время, пока карта отключена: одна кнопка вместо формы оплаты
+  // Placeholder while card payment is off: one button instead of the payment form.
   function mountOff(box, cb) {
     const btn = document.createElement('button');
     btn.type = 'button'; btn.className = 'kvpay-btn kvpay-off';
-    btn.textContent = (window.KV && KV.t) ? KV.t('payCardBtn') : 'Оплатить картой';
+    btn.textContent = KV.t('payCardBtn');
     let busy = false;
     btn.onclick = () => {
-      if (busy) return;                     // второй тап не должен открывать чат дважды
+      if (busy) return;                     // a second tap must not open the chat twice
       busy = true; setTimeout(() => { busy = false; }, 1200);
       cb.onError('card_off');
-      // чат менеджера открываем прямо в обработчике клика: из таймера браузер счёл бы
-      // это всплывающим окном и заблокировал бы переход
+      // The manager chat is opened inside the click handler: from a timer the browser would
+      // treat it as a popup and block it.
       if (window.KV && KV.openManager) KV.openManager();
     };
     box.appendChild(btn);
   }
 
-  // монтируем оплату в переданный контейнер; cb: {onSuccess, onError, onCancel}
+  // Mounts payment into the given container; cb: {onStart, onSuccess, onError, onCancel}.
   async function mount(box, data, cb) {
     injectCSS();
     box.innerHTML = '';

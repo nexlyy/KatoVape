@@ -1,6 +1,5 @@
-// Проверка подписи Telegram: initData мини-аппа и Login Widget на сайте.
-// Одна копия на все edge-функции — раньше тот же код лежал отдельно в telegram-auth
-// и create-checkout, и правку про поле signature пришлось бы вносить дважды.
+// Telegram signature checks: mini-app initData and the website Login Widget.
+// One copy for every edge function; the signature-field fix below used to be needed twice.
 import { enc, hmac, hmacHex, safeEqual, sha256, toHex } from "./crypto.ts";
 
 const DAY = 86400;
@@ -23,9 +22,9 @@ const userOf = (u: any): TgUser | null =>
     }
     : null;
 
-// initData мини-аппа: secret = HMAC("WebAppData", token).
-// Свежие клиенты добавляют поле signature, и часть версий не включает его в строку для
-// хеша — пробуем оба варианта, иначе вход падал бы на новых телефонах.
+// Mini-app initData: secret = HMAC("WebAppData", token).
+// Recent clients add a signature field and some versions leave it out of the hashed string,
+// so both variants are tried; otherwise login fails on newer phones.
 export async function verifyInitDataUser(initData: string, token: string): Promise<TgUser | null> {
   if (!initData || !token) return null;
   const p = new URLSearchParams(initData);
@@ -36,18 +35,17 @@ export async function verifyInitDataUser(initData: string, token: string): Promi
       .map(([k, v]) => `${k}=${v}`).join("\n");
   let ok = safeEqual(await hmacHex(secret, check(["hash"])), hash);
   if (!ok && p.has("signature")) ok = safeEqual(await hmacHex(secret, check(["hash", "signature"])), hash);
-  // без проверки срока старый initData можно было бы переигрывать сколько угодно
+  // Without an age check an old initData could be replayed indefinitely.
   if (!ok || !fresh(p.get("auth_date"))) return null;
   try { return userOf(JSON.parse(p.get("user") || "{}")); } catch { return null; }
 }
 
-// когда нужен только идентификатор (оформление заказа и оплата)
 export async function verifyInitData(initData: string, token: string): Promise<number | null> {
   const u = await verifyInitDataUser(initData, token);
   return u ? u.id : null;
 }
 
-// Login Widget на сайте: secret = SHA256(token), hash = HMAC(secret, data_check_string)
+// Website Login Widget: secret = SHA256(token), hash = HMAC(secret, data_check_string).
 export async function verifyWidget(payload: Record<string, unknown>, token: string): Promise<TgUser | null> {
   if (!payload || !token) return null;
   const hash = String(payload.hash || "");
