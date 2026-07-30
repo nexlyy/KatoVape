@@ -3,7 +3,9 @@ alter table public.promo_codes add column if not exists stackable boolean not nu
 comment on column public.promo_codes.stackable is
   'false — код применяется только в одиночку, вместе с другими не работает';
 
-create or replace function public.promo_check(p_code text, p_city text, p_sum numeric, p_categories text[] default null)
+drop function if exists public.promo_check(text, text, numeric, text[]);
+
+create function public.promo_check(p_code text, p_city text, p_sum numeric, p_categories text[] default null)
 returns table(ok boolean, discount integer, kind text, value numeric, stackable boolean, reason text)
 language plpgsql stable security definer set search_path = public as $$
 declare p record; v_used int; v_disc numeric;
