@@ -4,7 +4,9 @@
   "type": "module",
   "description": "Витрина KatoVape: сайт, мини-апп Telegram, панель управления, бот",
   "scripts": {
-    "test": "node --test \"test/**/*.test.mjs\""
+    "test": "node --test \"test/**/*.test.mjs\"",
+    "stamp": "node tools/stamp-assets.mjs",
+    "stamp:check": "node tools/stamp-assets.mjs --check"
   },
   "engines": {
     "node": ">=22.18"
