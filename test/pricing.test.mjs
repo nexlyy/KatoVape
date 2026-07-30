@@ -27,17 +27,21 @@ const PRODUCTS = [
 ];
 
 let cloudTiers = null;          // «менеджер поправил опт в панели»
-let promo = { ok: false, discount: 0, reason: 'not_found' };
+let promos = {};                // код -> ответ promo_check
 let promoStatus = 200;          // 500 — база не ответила
+const NO_PROMO = { ok: false, discount: 0, reason: 'not_found' };
 
-globalThis.fetch = async (url) => {
+globalThis.fetch = async (url, opts) => {
   const u = String(url);
   const ok = (body, status = 200) =>
     new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
   if (u.endsWith('/data/products.json')) return ok(CATALOG);
   if (u.endsWith('/data/content.json')) return ok(CONTENT);
   if (u.includes('/rest/v1/products')) return ok(cloudTiers ? PRODUCTS.map((r) => ({ ...r, tiers: cloudTiers })) : PRODUCTS);
-  if (u.includes('/rest/v1/rpc/promo_check')) return ok([promo], promoStatus);
+  if (u.includes('/rest/v1/rpc/promo_check')) {
+    const code = JSON.parse((opts && opts.body) || '{}').p_code;
+    return ok([promos[code] || NO_PROMO], promoStatus);
+  }
   throw new Error('нежданный fetch: ' + u);
 };
 
@@ -97,20 +101,78 @@ test('ступени из панели перекрывают файл ката�
 });
 
 test('скидку по промокоду даёт база, а не файл', async () => {
-  promo = { ok: true, discount: 35, reason: null };
+  promos = { LATO10: { ok: true, discount: 35, reason: null } };
   assert.equal(await sum({ items: [line('model-a', 'Strawberry', 10)], promo: 'LATO10' }), 315);
-  promo = { ok: false, discount: 0, reason: 'expired' };
+  promos = { LATO10: { ok: false, discount: 0, reason: 'expired' } };
   assert.equal(await sum({ items: [line('model-a', 'Strawberry', 10)], promo: 'LATO10' }), 350);
-  promo = { ok: false, discount: 0, reason: 'not_found' };
+  promos = {};
+});
+
+test('несколько кодов складываются, каждый считается от суммы товаров', async () => {
+  // корзина 350: LETO10 — 20 zł фиксом, LETO11 — 10% (35 zł)
+  promos = {
+    LETO10: { ok: true, discount: 20, reason: null },
+    LETO11: { ok: true, discount: 35, reason: null }
+  };
+  const cart = { items: [line('model-a', 'Strawberry', 10)] };
+  assert.equal(await sum({ ...cart, promo: ['LETO10', 'LETO11'] }), 295);
+  // порядок ввода на итог не влияет
+  assert.equal(await sum({ ...cart, promo: ['LETO11', 'LETO10'] }), 295);
+  // строкой по-прежнему можно прислать один код
+  assert.equal(await sum({ ...cart, promo: 'LETO10' }), 330);
+  promos = {};
+});
+
+test('негодный код в списке просто не применяется, остальные работают', async () => {
+  promos = {
+    LETO10: { ok: true, discount: 20, reason: null },
+    STARY: { ok: false, discount: 0, reason: 'expired' }
+  };
+  assert.equal(await sum({ items: [line('model-a', 'Strawberry', 10)], promo: ['LETO10', 'STARY'] }), 330);
+  promos = {};
+});
+
+test('в заказ пишутся только сработавшие коды и их общая скидка', async () => {
+  promos = {
+    LETO10: { ok: true, discount: 20, reason: null },
+    STARY: { ok: false, discount: 0, reason: 'expired' }
+  };
+  const p = await priceCart(env, { items: [line('model-a', 'Strawberry', 10)], promo: ['LETO10', 'STARY'] });
+  assert.deepEqual(p.promo, ['LETO10']);
+  assert.equal(p.discount, 20);
+  promos = {};
+});
+
+test('повторы и мусор в списке кодов отсеиваются', async () => {
+  promos = { LETO10: { ok: true, discount: 20, reason: null } };
+  const p = await priceCart(env, {
+    items: [line('model-a', 'Strawberry', 10)],
+    promo: ['LETO10', ' LETO10 ', '', null, 'LETO10']
+  });
+  assert.deepEqual(p.promo, ['LETO10'], 'один код не должен сработать дважды');
+  assert.equal(p.discount, 20);
+  promos = {};
+});
+
+test('общая скидка не превышает корзину', async () => {
+  promos = {
+    BIG1: { ok: true, discount: 300, reason: null },
+    BIG2: { ok: true, discount: 300, reason: null }
+  };
+  // товаров на 350, доставка 12 — в минус уйти нельзя
+  assert.equal(await sum({ items: [line('model-a', 'Strawberry', 10)], promo: ['BIG1', 'BIG2'], delivery: 'inpost' }), 12);
+  promos = {};
 });
 
 test('если база не проверила код — оплату не пропускаем', async () => {
+  promos = { LATO10: { ok: true, discount: 35, reason: null } };
   promoStatus = 500;
   await assert.rejects(
     () => priceCart(env, { items: [line('model-a', 'Strawberry', 10)], promo: 'LATO10' }),
     (e) => e.code === 'promo'
   );
   promoStatus = 200;
+  promos = {};
 });
 
 test('чужой товар в корзине отклоняется', async () => {

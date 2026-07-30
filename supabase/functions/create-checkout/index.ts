@@ -49,6 +49,7 @@ Deno.serve(async (req) => {
       // комментарий и способ оплаты идут в заказ так же, как при оплате наличными:
       // иначе менеджер видит карточный заказ как «при выдаче» и без просьбы покупателя
       contact: b.contact || {}, comment: b.comment || null, pay_way: "card", status: "new",
+      promo: priced.promo.length ? priced.promo : null, discount: priced.discount,
       payment_status: "pending", payment_provider: "stripe",
       amount: priced.amount, currency: priced.currency,
     });

@@ -127,7 +127,8 @@ window.KV = (function () {
       promoWhy_expired: 'Срок промокода истёк', promoWhy_not_started: 'Промокод ещё не начал действовать',
       promoWhy_other_city: 'Промокод действует в другом городе', promoWhy_other_category: 'Промокод на другую категорию',
       promoWhy_min_sum: 'Сумма заказа слишком мала для этого промокода', promoWhy_limit: 'Промокод уже исчерпан',
-      promoWhy_used_by_you: 'Вы уже использовали этот промокод', hitBadge: 'Хит',
+      promoWhy_used_by_you: 'Вы уже использовали этот промокод',
+      promoWhy_already: 'Этот код уже применён', remove: 'Убрать', hitBadge: 'Хит',
       payWay: 'Способ оплаты', payCash: 'Наличными', payCard: 'Картой', payCardNote: '+10% к сумме', payFail: 'Оплата не прошла, попробуйте ещё раз',
       checkData: 'Проверьте данные:', fioPh: 'Фамилия и имя',
       errFio: 'Укажите фамилию и имя', errPhone2: 'Телефон в формате +48 600 000 000',
@@ -186,7 +187,8 @@ window.KV = (function () {
       promoWhy_expired: 'Термін промокоду минув', promoWhy_not_started: 'Промокод ще не почав діяти',
       promoWhy_other_city: 'Промокод діє в іншому місті', promoWhy_other_category: 'Промокод на іншу категорію',
       promoWhy_min_sum: 'Сума замовлення замала для цього промокоду', promoWhy_limit: 'Промокод вичерпано',
-      promoWhy_used_by_you: 'Ви вже використали цей промокод', hitBadge: 'Хіт',
+      promoWhy_used_by_you: 'Ви вже використали цей промокод',
+      promoWhy_already: 'Цей код уже застосовано', remove: 'Прибрати', hitBadge: 'Хіт',
       payWay: 'Спосіб оплати', payCash: 'Готівкою', payCard: 'Карткою', payCardNote: '+10% до суми', payFail: 'Оплата не пройшла, спробуйте ще раз',
       checkData: 'Перевірте дані:', fioPh: 'Прізвище та ім’я',
       errFio: 'Вкажіть прізвище та ім’я', errPhone2: 'Телефон у форматі +48 600 000 000',
@@ -245,7 +247,8 @@ window.KV = (function () {
       promoWhy_expired: 'Kod wygasł', promoWhy_not_started: 'Kod jeszcze nie działa',
       promoWhy_other_city: 'Kod działa w innym mieście', promoWhy_other_category: 'Kod na inną kategorię',
       promoWhy_min_sum: 'Zbyt mała kwota zamówienia dla tego kodu', promoWhy_limit: 'Kod został wyczerpany',
-      promoWhy_used_by_you: 'Ten kod już został przez Ciebie użyty', hitBadge: 'Hit',
+      promoWhy_used_by_you: 'Ten kod już został przez Ciebie użyty',
+      promoWhy_already: 'Ten kod jest już zastosowany', remove: 'Usuń', hitBadge: 'Hit',
       payWay: 'Sposób płatności', payCash: 'Gotówką', payCard: 'Kartą', payCardNote: '+10% do sumy', payFail: 'Płatność nie przeszła, spróbuj ponownie',
       checkData: 'Sprawdź dane:', fioPh: 'Imię i nazwisko',
       errFio: 'Podaj imię i nazwisko', errPhone2: 'Telefon w formacie +48 600 000 000',
@@ -333,7 +336,9 @@ window.KV = (function () {
   let cart = {};
   let hooks = { render: null, cart: null };
   let content = {};                  // тексты разделов, промо, самовывоз
-  let appliedPromo = null;           // применённый промокод {code, type, value}
+  // применённые промокоды, по порядку ввода: [{code, type, value, discount}]
+  // Раньше держали один: второй код вытеснял первый, и сложить скидки было нельзя.
+  let appliedPromos = [];
   let filters = { brand: '', maxPrice: 0 };
   let modal = null;                  // открытая карточка товара {id, fl, rate}
   let resLoad = null;                // сколько броней человек уже держит (для подсказки)
@@ -697,7 +702,7 @@ window.KV = (function () {
       ' x' + l.n + (l.item.price ? ', ' + l.sum + ' zł' : ''));
     const disc = discount();
     const discLine = disc
-      ? '\n' + ui('discount') + (appliedPromo ? ' ' + appliedPromo.code : '') + ': −' + disc + ' zł' : '';
+      ? '\n' + ui('discount') + (appliedPromos.length ? ' ' + promoCodes().join(', ') : '') + ': −' + disc + ' zł' : '';
     const fee = deliveryFee();
     const feeLine = fee ? '\n' + t('delivPay') + ': +' + fee + ' zł' : '';
     return t('order') + ' KatoVape (' + cityName(currentCity) + '):\n' + lines.join('\n') +
@@ -862,9 +867,10 @@ window.KV = (function () {
     if (d && !d.hidden) renderConfirm();
   }
   async function recheckPromo() {
-    if (!appliedPromo || !(window.KVAuth && KVAuth.promoCheck && KVAuth.cloudOn && KVAuth.cloudOn())) return;
-    const res = await applyPromo(appliedPromo.code);
-    if (!res.ok) toast(t('promoWhy_' + (res.reason || 'not_found')));
+    if (!appliedPromos.length || !(window.KVAuth && KVAuth.promoCheck && KVAuth.cloudOn && KVAuth.cloudOn())) return;
+    const dropped = await recheckPromos();
+    // говорим про каждый снятый код отдельно: причины у них разные
+    dropped.forEach(d => toast(d.code + ': ' + t('promoWhy_' + (d.reason || 'not_found'))));
     drawDrawer();
     const d = document.getElementById('kvc');
     if (d && !d.hidden) renderConfirm();
@@ -966,7 +972,7 @@ window.KV = (function () {
     }));
     return {
       city, sum: payTotal(), amount: payTotal() * 100, pay_way: payWay,
-      delivery: cur.method, promo: appliedPromo ? appliedPromo.code : '',
+      delivery: cur.method, promo: promoCodes(),
       // у самовывоза адреса нет. Раньше сюда попадал cur.addr, оставшийся от прошлого
       // выбора курьера, и менеджер видел «pickup, Sucha 7b» — будто это доставка
       address: cur.method === 'pickup' ? '' : (inpost ? normPaczko(ct.paczkomat) : (cur.addr || '')),
@@ -986,10 +992,10 @@ window.KV = (function () {
     // Код засчитываем здесь, а не в оформлении наличными: карточный заказ приходит сюда
     // же через onSuccess, и раньше его промокод мимо счётчика проходил — лимиты «всего»
     // и «на человека» для оплаты картой не считались вовсе.
-    const used = appliedPromo && appliedPromo.code;
-    if (used && window.KVAuth && KVAuth.promoUse) KVAuth.promoUse(used).catch(() => {});
-    // промокод одноразовый: после заказа снимаем его, чтобы он не тянулся в следующий
-    appliedPromo = null;
+    const used = promoCodes();
+    if (window.KVAuth && KVAuth.promoUse) used.forEach(c => KVAuth.promoUse(c).catch(() => {}));
+    // промокоды одноразовые: после заказа снимаем их, чтобы не тянулись в следующий
+    appliedPromos = [];
     localStorage.removeItem('kv_promo');
     saveCart();
     closeConfirm();
@@ -1283,16 +1289,20 @@ window.KV = (function () {
       }
       if (e.target.closest('.kvd-promo-go')) {
         const inp = d.querySelector('.kvd-promo input');
-        applyPromo(inp.value).then(r => {
+        const code = inp.value;
+        applyPromo(code).then(r => {
           toast(r.ok ? ui('discount') : t('promoWhy_' + (r.reason || 'not_found')));
+          if (r.ok) inp.value = '';   // поле освобождаем под следующий код
           drawDrawer();
         });
       }
+      const pdel = e.target.closest('[data-promo]');
+      if (pdel) { dropPromo(pdel.dataset.promo); drawDrawer(); }
       if (e.target.closest('.kvd-repeat')) repeatOrder();
       const dopt = e.target.closest('[data-deliv]');
       if (dopt) { setDelivery(dopt.dataset.deliv, undefined); drawDrawer(); }
       if (e.target.closest('.kvd-go')) checkout();
-      if (e.target.closest('.kvd-clear')) { cart = {}; appliedPromo = null; saveCart(); }
+      if (e.target.closest('.kvd-clear')) { cart = {}; appliedPromos = []; savePromos(); saveCart(); }
     };
     // адрес доставки печатают в поле, полный перерисов сбил бы фокус
     d.addEventListener('input', e => {
@@ -1327,8 +1337,16 @@ window.KV = (function () {
       const fee = deliveryFee();
       extra.innerHTML =
         deliveryHTML() +
+        // поле всегда пустое: коды складываются, применённые показаны чипами под ним
         '<div class="kvd-promo"><input type="text" placeholder="' + ui('promoPh') +
-          '" value="' + (appliedPromo ? appliedPromo.code : '') + '"><button class="kvd-promo-go">' + ui('promoApply') + '</button></div>' +
+          '" value=""><button class="kvd-promo-go">' + ui('promoApply') + '</button></div>' +
+        (appliedPromos.length
+          ? '<div class="kvd-promos">' + appliedPromos.map(p =>
+              '<span class="kvd-promo-chip">' + esc(p.code) +
+              '<i>−' + promoValue(p, cartTotal()) + ' zł</i>' +
+              '<button class="kvd-promo-del" data-promo="' + esc(p.code) + '" aria-label="' + t('remove') + '">&times;</button></span>').join('') +
+            '</div>'
+          : '') +
         (disc ? '<div class="kvd-disc"><span>' + ui('discount') + '</span><span>−' + disc + ' zł</span></div>' : '') +
         (fee ? '<div class="kvd-disc kvd-fee"><span>' + t('delivPay') + '</span><span>+' + fee + ' zł</span></div>' : '');
     } else {
@@ -1619,24 +1637,48 @@ window.KV = (function () {
   function findPromo(code) {
     return (content.promos || []).find(p => p.code.toUpperCase() === String(code).trim().toUpperCase());
   }
+  const promoCodes = () => appliedPromos.map(p => p.code);
+  function savePromos() {
+    if (appliedPromos.length) localStorage.setItem('kv_promo', JSON.stringify(promoCodes()));
+    else localStorage.removeItem('kv_promo');
+  }
+  function dropPromo(code) {
+    appliedPromos = appliedPromos.filter(p => p.code !== code);
+    savePromos();
+  }
+  // Добавляет код к уже применённым. Регистр важен: KATOVAPE и katovape — разные коды.
   async function applyPromo(code) {
-    const raw = String(code || '').trim();   // регистр важен: KATOVAPE и katovape — разные коды
-    if (!raw) { appliedPromo = null; localStorage.removeItem('kv_promo'); return { ok: false, reason: 'not_found' }; }
+    const raw = String(code || '').trim();
+    if (!raw) return { ok: false, reason: 'not_found' };
+    if (appliedPromos.some(p => p.code === raw)) return { ok: false, reason: 'already' };
     if (window.KVAuth && KVAuth.promoCheck && KVAuth.cloudOn && KVAuth.cloudOn()) {
       const cats = [...new Set(cartLines().map(l => l.item._cat).filter(Boolean))];
       const res = await KVAuth.promoCheck(raw, city, cartTotal(), cats);
       if (res && res.ok) {
-        appliedPromo = { code: raw, type: res.kind === 'percent' ? 'percent' : 'fixed', value: res.value, discount: res.discount };
-        localStorage.setItem('kv_promo', raw);
+        appliedPromos.push({ code: raw, type: res.kind === 'percent' ? 'percent' : 'fixed', value: res.value, discount: res.discount });
+        savePromos();
         return { ok: true };
       }
-      appliedPromo = null; localStorage.removeItem('kv_promo');
       return { ok: false, reason: (res && res.reason) || 'not_found' };
     }
     const p = findPromo(raw);
-    if (!p) { appliedPromo = null; return { ok: false, reason: 'not_found' }; }
-    appliedPromo = p; localStorage.setItem('kv_promo', p.code);
+    if (!p) return { ok: false, reason: 'not_found' };
+    appliedPromos.push(p); savePromos();
     return { ok: true };
+  }
+  // Перепроверка всех кодов разом: условия у каждого свои (минимальная сумма, категория),
+  // и после правки корзины часть могла перестать подходить. Отвалившиеся снимаем.
+  async function recheckPromos() {
+    if (!appliedPromos.length) return [];
+    const codes = promoCodes();
+    appliedPromos = [];
+    const dropped = [];
+    for (const code of codes) {
+      const res = await applyPromo(code);
+      if (!res.ok) dropped.push({ code, reason: res.reason });
+    }
+    savePromos();
+    return dropped;
   }
   function invitedCount() { return +(localStorage.getItem('kv_invited') || 0); }
   function referralReady() {
@@ -1661,15 +1703,19 @@ window.KV = (function () {
   // Скидку пересчитываем от текущей корзины. Держать число, посчитанное при вводе кода,
   // нельзя: корзину после этого меняют, а процент обязан идти следом — иначе на витрине
   // одна сумма, а сервер перед оплатой считает другую. Формула та же, что в promo_check.
+  // Несколько кодов складываются, и каждый считается от исходной суммы товаров, а не
+  // от остатка после предыдущего: так порядок ввода не влияет на итог. Больше корзины
+  // скидка не бывает — это же ограничение стоит и на сервере.
+  function promoValue(p, sub) {
+    const v = Number(p.value);
+    return p.type === 'percent' && Number.isFinite(v)
+      ? Math.round(sub * v / 100)
+      : (p.discount != null ? p.discount : v || 0);
+  }
   function discount() {
     const sub = cartTotal();
-    let d = 0;
-    if (appliedPromo) {
-      const v = Number(appliedPromo.value);
-      d += appliedPromo.type === 'percent' && Number.isFinite(v) ? Math.round(sub * v / 100)
-        : (appliedPromo.discount != null ? appliedPromo.discount : v || 0);
-    }
-    return Math.min(d, sub);
+    const d = appliedPromos.reduce((s, p) => s + promoValue(p, sub), 0);
+    return Math.min(Math.max(d, 0), sub);
   }
   function grandTotal() { return Math.max(cartTotal() - discount(), 0) + deliveryFee(); }
 
@@ -2489,7 +2535,7 @@ window.KV = (function () {
     if (!was) return false;
     OWNED.forEach(k => localStorage.removeItem(k));
     profileName = '';
-    appliedPromo = null;
+    appliedPromos = [];
     delivery = null;
     forgetUserState();
     if (hooks.render) hooks.render();
@@ -2834,6 +2880,14 @@ window.KV = (function () {
 .kvd-promo{display:flex;gap:7px;margin-top:4px}
 .kvd-promo input{flex:1;min-width:0;background:var(--kv-field);border:1px solid var(--kv-line);color:var(--kv-text);border-radius:10px;padding:9px 12px;font-family:inherit;font-size:13px}
 .kvd-promo button{background:var(--kv-surface);border:1px solid var(--kv-line);color:var(--kv-text);border-radius:10px;padding:0 14px;font-weight:700;font-size:12.5px;cursor:pointer;font-family:inherit}
+/* применённые промокоды: чип на код, крестик снимает его отдельно */
+.kvd-promos{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.kvd-promo-chip{display:inline-flex;align-items:center;gap:6px;background:var(--kv-surface2,var(--kv-surface));
+  border:1px solid var(--kv-line);border-radius:99px;padding:5px 6px 5px 11px;font-size:12px;font-weight:700;color:var(--kv-text)}
+.kvd-promo-chip i{font-style:normal;font-weight:800;color:var(--kv-accent-2,var(--kv-accent))}
+.kvd-promo-del{background:none;border:none;color:var(--kv-muted);font-size:15px;line-height:1;cursor:pointer;
+  padding:0 4px;font-family:inherit}
+.kvd-promo-del:hover{color:var(--kv-text)}
 .kvd-disc{display:flex;justify-content:space-between;color:var(--kv-accent-2,var(--kv-accent));font-weight:700;font-size:13.5px}
 .kvd-ref{border:1px dashed var(--kv-line);border-radius:var(--kv-radius);padding:12px;font-size:12.5px;color:var(--kv-muted);line-height:1.5}
 .kvd-ref b{color:var(--kv-text);display:block;margin-bottom:4px}
@@ -3167,9 +3221,15 @@ body.kv-noscroll{overflow:hidden}
       if (opts.fail) opts.fail();
       return;
     }
-    // восстанавливаем ранее введённый промокод
+    // Восстанавливаем ранее введённые промокоды. Раньше тут лежала одна строка с кодом,
+    // теперь список — старое значение читаем как единственный код.
     const savedPromo = localStorage.getItem('kv_promo');
-    if (savedPromo) applyPromo(savedPromo).then(() => drawDrawer());
+    if (savedPromo) {
+      let codes = [];
+      try { const p = JSON.parse(savedPromo); codes = Array.isArray(p) ? p : [savedPromo]; }
+      catch (e) { codes = [savedPromo]; }
+      (async () => { for (const c of codes) await applyPromo(c); drawDrawer(); })();
+    }
     // имя из профиля, иначе имя из Telegram
     let savedProf = null;
     try { savedProf = JSON.parse(localStorage.getItem('kv_profile') || 'null'); } catch (e) {}

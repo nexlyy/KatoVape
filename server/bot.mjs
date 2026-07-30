@@ -380,6 +380,10 @@ const ST_LABEL = { new: 'новый', confirmed: 'подтверждён', done:
 // в сообщениях менеджеру способ получения писался кодом из базы («pickup»), а не по-русски
 const DELIV_LABEL = { pickup: 'самовывоз', inpost: 'InPost', courier: 'курьер' };
 const delivLine = o => (DELIV_LABEL[o.delivery] || o.delivery || '') + (o.address ? ', ' + o.address : '');
+// строка про промокоды: менеджеру надо понимать, почему сумма ниже прайса
+const promoLine = o => (o.promo && o.promo.length)
+  ? '\nПромокод: ' + esc(o.promo.join(', ')) + (o.discount ? ' (−' + o.discount + ' zł)' : '')
+  : '';
 const PAY_LABEL = { paid: 'оплачен', pending: 'ждёт оплаты', unpaid: 'при выдаче', failed: 'оплата не прошла' };
 
 async function cityFilterFor(tgId) {
@@ -423,7 +427,7 @@ async function ordersScreen(tgId, page = 0, mode = 'active') {
 async function orderCard(tgId, id, mode = 'active') {
   const onlyCity = await cityFilterFor(tgId);
   const rows = await sbSelect('orders', 'id=eq.' + Number(id) +
-    '&select=id,city,items,sum,status,payment_status,delivery,address,contact,comment,created_at,telegram_id').catch(() => []);
+    '&select=id,city,items,sum,status,payment_status,delivery,address,contact,comment,promo,discount,created_at,telegram_id').catch(() => []);
   const o = rows && rows[0];
   if (!o) return { text: 'Заказ не найден.', markup: { inline_keyboard: [[{ text: '‹ К списку', callback_data: 'o:list:0:' + mode }]] } };
   // менеджер чужого города не должен видеть карточку, даже зная номер
@@ -438,7 +442,7 @@ async function orderCard(tgId, id, mode = 'active') {
   const text = '<b>Заказ №' + o.id + '</b> · ' + esc(o.city) + '\n' +
     'Статус: <b>' + (ST_LABEL[o.status] || o.status) + '</b> · ' + (PAY_LABEL[o.payment_status] || o.payment_status) + '\n' +
     'Оформлен: ' + fmtDMY(o.created_at) + '\n\n' + esc(items) +
-    '\n\nИтого: <b>' + (o.sum || 0) + ' zł</b>' +
+    '\n\nИтого: <b>' + (o.sum || 0) + ' zł</b>' + promoLine(o) +
     '\nПолучение: ' + esc(delivLine(o)) +
     (o.comment ? '\nКомментарий: ' + esc(o.comment) : '') +
     (c.name || c.phone ? '\n\nКлиент: ' + esc([c.name, c.phone, c.email].filter(Boolean).join(', ')) : '');
@@ -615,7 +619,7 @@ async function notifyOrders() {
   // pending (карта/checkout начаты, но не оплачены) менеджеру не показываем — только
   // оплату при выдаче (unpaid) и уже оплаченные онлайн (paid)
   const list = await sbSelect('orders',
-    'manager_notified_at=is.null&payment_status=in.(unpaid,paid)&select=id,city,items,sum,delivery,address,contact,comment,payment_status,payment_provider,profiles(username,telegram_username,telegram_id)').catch(() => []);
+    'manager_notified_at=is.null&payment_status=in.(unpaid,paid)&select=id,city,items,sum,delivery,address,contact,comment,promo,discount,payment_status,payment_provider,profiles(username,telegram_username,telegram_id)').catch(() => []);
   for (const o of list || []) {
     const items = (o.items || []).map((x, i) =>
       (i + 1) + ') ' + (typeof x === 'string' ? x : (x.name || x.id) + (x.flavor ? ', ' + x.flavor : '') + ' x' + (x.n || 1) + (x.sum ? ' = ' + x.sum + ' zl' : ''))).join('\n');
@@ -628,7 +632,7 @@ async function notifyOrders() {
       ? '\nОплачено онлайн (' + esc(o.payment_provider || 'stripe') + ')'
       : '\nОплата при выдаче';
     const text = '<b>Новый заказ №' + o.id + '</b> (' + esc(o.city) + ')\n' + esc(items) +
-      '\nИтого: ' + (o.sum || 0) + ' zł' + payLine + '\nПолучение: ' + esc(deliv) +
+      '\nИтого: ' + (o.sum || 0) + ' zł' + promoLine(o) + payLine + '\nПолучение: ' + esc(deliv) +
       (o.comment ? '\nКомментарий: ' + esc(o.comment) : '') +
       (who ? '\n\nКлиент:\n' + esc(who) : '') + (tgLine ? '\nTelegram: ' + esc(tgLine) : '');
     // уведомление уходит менеджеру города заказа, а не всем менеджерам сразу

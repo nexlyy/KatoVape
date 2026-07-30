@@ -97,21 +97,38 @@ async function promoDiscount(env: Env, code: string, city: string, sum: number, 
   return r && r.ok ? Number(r.discount) || 0 : 0;
 }
 
+// Кодов может быть несколько, и каждый считается от исходной суммы товаров, а не от
+// остатка после предыдущего: так порядок ввода не влияет на итог, и клиент с сервером
+// считают одинаково. Общая скидка не больше корзины.
 // База — единственный источник правды. Запасного списка тут нет намеренно: если функция
 // не ответила, посчитать «как получится» значит списать не ту сумму, которую человек видел.
 // Лучше честно не дать оплатить и показать ошибку.
 async function discountFor(
-  env: Env, code: string, city: string, sum: number, cats: string[],
-): Promise<number> {
-  const raw = code.trim();
-  if (!raw) return 0;
+  env: Env, codes: string[], city: string, sum: number, cats: string[],
+): Promise<{ discount: number; applied: string[] }> {
+  const applied: string[] = [];
   let disc = 0;
-  try {
-    disc = await promoDiscount(env, raw, city, sum, cats);
-  } catch (_e) {
-    throw Object.assign(new Error("promo"), { code: "promo" });
+  for (const raw of codes) {
+    let d = 0;
+    try {
+      d = await promoDiscount(env, raw, city, sum, cats);
+    } catch (_e) {
+      throw Object.assign(new Error("promo"), { code: "promo" });
+    }
+    if (d > 0) { disc += d; applied.push(raw); }
   }
-  return Math.min(Math.max(disc, 0), sum);   // скидка не больше самой корзины и не отрицательная
+  return { discount: Math.min(Math.max(disc, 0), sum), applied };
+}
+
+// promo приходит строкой (старый формат) или списком; чистим и убираем повторы
+function promoList(v: unknown): string[] {
+  const arr = Array.isArray(v) ? v : [v];
+  const out: string[] = [];
+  for (const x of arr) {
+    const s = String(x == null ? "" : x).trim();
+    if (s && s.length <= 24 && !out.includes(s)) out.push(s);
+  }
+  return out.slice(0, 10);   // разумный потолок, чтобы не гонять сотню проверок
 }
 
 export interface Priced {
@@ -119,12 +136,14 @@ export interface Priced {
   total_zl: number;     // к списанию, в злотых (для лейбла)
   currency: string;     // pln
   label: string;        // короткое описание для инвойса/чека
+  discount: number;     // сколько скинули по промокодам, в злотых
+  promo: string[];      // какие коды реально сработали — их и пишем в заказ
 }
 
 // Считает сумму по корзине. Кидает {code} на плохой товар / нехватку остатка / пустой заказ.
 export async function priceCart(
   env: Env,
-  body: { city?: string; items?: CartLine[]; delivery?: string; promo?: string },
+  body: { city?: string; items?: CartLine[]; delivery?: string; promo?: string | string[] },
 ): Promise<Priced> {
   const city = (body.city || "katowice").toString();
   const lines = Array.isArray(body.items) ? body.items : [];
@@ -167,7 +186,7 @@ export async function priceCart(
     if (r.item._cat) cats.add(r.item._cat);
   }
 
-  const disc = await discountFor(env, String(body.promo || ""), city, sub, [...cats]);
+  const { discount: disc, applied } = await discountFor(env, promoList(body.promo), city, sub, [...cats]);
 
   const methods: any[] = (content.delivery && content.delivery.methods) || null;
   const dm = String(body.delivery || "pickup");
@@ -181,5 +200,7 @@ export async function priceCart(
     total_zl,
     currency: "pln",
     label: "KatoVape · " + count + " " + (count === 1 ? "товар" : "товара/ов"),
+    discount: disc,
+    promo: applied,
   };
 }

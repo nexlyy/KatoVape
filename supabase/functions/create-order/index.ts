@@ -81,6 +81,8 @@ Deno.serve(async (req) => {
       // самовывоз — без адреса, что бы ни прислал клиент
       delivery, address: delivery === "pickup" ? null : (str(b.address, 200) || null),
       contact, comment: str(b.comment, 500) || null,
+      // коды и скидка — те, что реально сработали на сервере, а не присланные клиентом
+      promo: priced.promo.length ? priced.promo : null, discount: priced.discount,
       pay_way: "cash", status: "new",
       // оплата при выдаче: денег ещё нет, менеджеру заказ показывает джоба бота
       payment_status: "unpaid",

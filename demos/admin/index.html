@@ -193,6 +193,7 @@ td .sub{display:block;color:var(--muted);font-size:11.5px;margin-top:2px}
 
 .pform{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px}
 .pform-wide{grid-column:1 / -1}
+.promo-tag{color:var(--accent)}
 .i-hit{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;color:var(--ink-2);white-space:nowrap}
 .i-hit input{width:auto;margin:0}
 .bcphoto{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px}
@@ -494,6 +495,8 @@ let me = null, profile = null, tab = 'orders', overview = null;
 
 const CITIES = ['katowice', 'gliwice', 'warszawa'];
 const CITY_LABEL = { katowice: 'Katowice', gliwice: 'Gliwice', warszawa: 'Warszawa' };
+// способ получения в списке заказов писался кодом из базы («pickup»), а не по-русски
+const DELIV_LABEL = { pickup: 'самовывоз', inpost: 'InPost', courier: 'курьер' };
 const PROMO_CATS = ['liquids', 'disposables', 'snus', 'cartridges', 'pods'];
 // город менеджера: у владельца и разработчика его нет, значит доступны все города
 const myCity = () => (overview && overview.role === 'manager' && overview.city) || null;
@@ -781,10 +784,15 @@ async function renderOrders(m) {
         ? btn('ost', o.id, 'done', L('Выдан'), 'primary') + btn('ost', o.id, 'cancelled', L('Отказ'), 'danger') : '';
     return [`<span class="num">#${o.id}</span><span class="sub">${fdate(o.created_at)}</span>`,
       esc(itemsStr(o.items)) +
-        `<span class="sub">${esc(CITY_LABEL[o.city] || o.city)} · ${esc(o.delivery || '')}${o.address ? ' · ' + esc(o.address) : ''}</span>` +
+        `<span class="sub">${esc(CITY_LABEL[o.city] || o.city)} · ${esc(DELIV_LABEL[o.delivery] || o.delivery || '')}${o.address ? ' · ' + esc(o.address) : ''}</span>` +
         (o.comment ? `<span class="sub">${L('Комментарий')}: ${esc(o.comment)}</span>` : ''),
       who || '<span class="sub">' + L('нет данных') + '</span>',
-      `<span class="num">${o.sum || 0} zł</span>`, pill(o.status), `<div class="tools">${acts}</div>`];
+      // сумма со скидкой сама по себе непонятна: показываем, каким кодом её сбили
+      `<span class="num">${o.sum || 0} zł</span>` +
+        (o.promo && o.promo.length
+          ? `<span class="sub promo-tag">${esc(o.promo.join(', '))}${o.discount ? ' −' + o.discount + ' zł' : ''}</span>`
+          : ''),
+      pill(o.status), `<div class="tools">${acts}</div>`];
   });
   swap(m, panel(L('Все заказы'), rows.length
     ? table([L('Заказ'), L('Состав'), L('Клиент'), L('Сумма'), L('Статус'), ''], rows)
