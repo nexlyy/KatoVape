@@ -25,7 +25,8 @@ vm.runInContext(
   slice('const DASH_RANGES = [', 'async function renderDash(') +
   // dashRange объявлен через let, снаружи его не видно — отдаём сеттер из самой песочницы
   '\nout = { dashBounds, trend, lineChart, barChart, donut, money, nf, RING_COLORS,' +
-  ' setRange: (r) => { dashRange = r; }, setCustom: (c) => { dashCustom = c; } };',
+  ' setRange: (r) => { dashRange = r; }, setCustom: (c) => { dashCustom = c; },' +
+  ' fillSeries, dashLabel };',
   box
 );
 const D = box.out;
@@ -77,23 +78,41 @@ test('рост считается от предыдущего периода и 
 });
 
 test('графики переживают пустые данные', () => {
-  for (const html of [D.lineChart([], 'b', 'v', {}), D.barChart([], 'b', 'v', {}), D.donut([], 'b', 'v', D.RING_COLORS)]) {
+  for (const html of [D.lineChart([], 'v', {}), D.barChart([], 'b', 'v', {}), D.donut([], 'b', 'v', D.RING_COLORS)]) {
     assert.match(html, /Нет данных за период/);
     assert.ok(!/NaN|Infinity|undefined/.test(html), 'в разметке мусор: ' + html.slice(0, 120));
   }
 });
 
 test('линия строится по точкам и не даёт NaN на одинаковых значениях', () => {
-  const rows = [{ b: '01-01', v: 0 }, { b: '01-02', v: 0 }, { b: '01-03', v: 0 }];
-  const html = D.lineChart(rows, 'b', 'v', {});
+  const rows = [{ label: '01-01-2026', v: 0 }, { label: '02-01-2026', v: 0 }, { label: '03-01-2026', v: 0 }];
+  const html = D.lineChart(rows, 'v', {});
   assert.ok(!/NaN/.test(html), 'нулевой ряд ломает координаты');
   assert.match(html, /polyline/);
 });
 
-test('одна точка тоже рисуется', () => {
-  const html = D.lineChart([{ b: '01-01', v: 10 }], 'b', 'v', { money: true });
+test('единственный день рисуется столбцом, а не точкой в пустоте', () => {
+  const html = D.lineChart([{ label: '31-07-2026', v: 57 }], 'v', { money: true });
   assert.ok(!/NaN/.test(html));
-  assert.match(html, /10 zł/);
+  assert.match(html, /chart-bar/, 'одна точка должна становиться столбцом');
+  assert.match(html, /57 zł/);
+  assert.match(html, /31-07-2026/);
+});
+
+test('пустые дни заполняются нулями, а не выпадают из графика', () => {
+  const from = new Date('2026-07-01T00:00:00').toISOString();
+  const to = new Date('2026-07-30T23:59:59').toISOString();
+  const filled = D.fillSeries([{ bucket: '2026-07-15', revenue: 57 }], from, to, 'day', ['revenue']);
+  assert.equal(filled.length, 30, 'в июле должно быть 30 точек, а не одна');
+  assert.equal(filled.filter((r) => r.revenue === 57).length, 1);
+  assert.equal(filled.filter((r) => r.revenue === 0).length, 29);
+});
+
+test('подписи дат в формате ДД-ММ-ГГГГ', () => {
+  assert.equal(D.dashLabel('2026-07-31', 'day'), '31-07-2026');
+  assert.equal(D.dashLabel('2026-07-01', 'month'), '07-2026');
+  const filled = D.fillSeries([], new Date('2026-03-05T00:00:00').toISOString(), new Date('2026-03-06T23:59:59').toISOString(), 'day', ['n']);
+  assert.equal(filled[0].label, '05-03-2026');
 });
 
 test('кольцевая диаграмма раскладывает доли без переполнения', () => {

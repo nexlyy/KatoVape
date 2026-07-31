@@ -204,10 +204,13 @@ td .sub{display:block;color:var(--muted);font-size:11.5px;margin-top:2px}
 .kpi-t.up{color:var(--ok)}.kpi-t.down{color:var(--danger)}.kpi-t.flat{color:var(--muted)}
 .dash-2{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:16px}
 .dash-none{color:var(--muted);font-size:13px;padding:14px 0;text-align:center}
-.chart{width:100%;height:160px;display:block;overflow:visible}
+.chart{width:100%;height:170px;display:block;overflow:visible}
 .chart-line{fill:none;stroke:var(--accent);stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
 .chart-area{fill:var(--accent-dim);stroke:none}
 .chart circle{fill:var(--accent)}
+.chart .grid{stroke:var(--line);stroke-width:1;vector-effect:non-scaling-stroke}
+.chart .grid-t{fill:var(--muted);font-size:9px;vector-effect:non-scaling-stroke}
+.chart-bar{fill:var(--accent)}
 .chart-x{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:6px}
 .bars{display:flex;flex-direction:column;gap:7px}
 .bar-row{display:grid;grid-template-columns:minmax(90px,1.4fr) 2fr auto;gap:10px;align-items:center;font-size:12.5px}
@@ -1217,25 +1220,74 @@ function kpi(label, value, extra) {
 
 // Charts are hand-drawn SVG on purpose: the panel has no build step and no dependencies,
 // and a chart library would be the single heaviest thing on the page.
-function lineChart(rows, xKey, yKey, opts) {
+// The database only returns buckets that have data, so a month with a single order came back
+// as one point and the chart had nothing to draw. Empty days are filled with zeros here, which
+// is also what makes a flat stretch visibly flat instead of absent.
+function fillSeries(rows, fromISO, toISO, bucket, keys) {
+  const byDate = {};
+  for (const r of rows) byDate[String(r.bucket).slice(0, 10)] = r;
+  const out = [];
+  const cur = new Date(fromISO);
+  const end = new Date(toISO);
+  cur.setHours(12, 0, 0, 0);
+  if (bucket === 'month') cur.setDate(1);
+  let guard = 0;
+  while (cur <= end && guard++ < 400) {
+    const iso = cur.getFullYear() + '-' + String(cur.getMonth() + 1).padStart(2, '0') + '-' +
+      String(bucket === 'month' ? 1 : cur.getDate()).padStart(2, '0');
+    const src = byDate[iso] || {};
+    const row = { date: iso, label: dashLabel(iso, bucket) };
+    for (const k of keys) row[k] = Number(src[k] || 0);
+    out.push(row);
+    if (bucket === 'month') cur.setMonth(cur.getMonth() + 1); else cur.setDate(cur.getDate() + 1);
+  }
+  return out;
+}
+// Dates are shown the way the shop writes them everywhere else: DD-MM-YYYY.
+function dashLabel(iso, bucket) {
+  const [y, m, d] = String(iso).slice(0, 10).split('-');
+  return bucket === 'month' ? m + '-' + y : d + '-' + m + '-' + y;
+}
+
+function lineChart(rows, yKey, opts) {
   const o = opts || {};
-  const pts = rows.map(r => ({ x: r[xKey], y: Number(r[yKey] || 0) }));
-  if (!pts.length) return `<p class="dash-none">${L('Нет данных за период')}</p>`;
-  const W = 640, H = 160, P = 8;
-  const max = Math.max(...pts.map(p => p.y), 1);
-  const step = pts.length > 1 ? (W - P * 2) / (pts.length - 1) : 0;
-  const xy = i => [P + step * i, H - P - (pts[i].y / max) * (H - P * 2)];
-  const line = pts.map((_, i) => xy(i).join(',')).join(' ');
-  const area = `${P},${H - P} ${line} ${P + step * (pts.length - 1)},${H - P}`;
-  const dots = pts.map((p, i) => {
-    const [x, y] = xy(i);
-    return `<circle cx="${x}" cy="${y}" r="2.5"><title>${esc(p.x)}: ${o.money ? money(p.y) : nf(p.y)}</title></circle>`;
+  if (!rows.length) return `<p class="dash-none">${L('Нет данных за период')}</p>`;
+  const vals = rows.map(r => Number(r[yKey] || 0));
+  const max = Math.max(...vals, 1);
+  const W = 600, H = 170, PL = 6, PR = 6, PT = 14, PB = 26;
+  const plotW = W - PL - PR, plotH = H - PT - PB;
+  const fmt = v => o.money ? money(v) : nf(v);
+  const grid = [0, 0.5, 1].map(f => {
+    const y = PT + plotH * (1 - f);
+    return `<line class="grid" x1="${PL}" y1="${y}" x2="${W - PR}" y2="${y}"></line>` +
+      `<text class="grid-t" x="${PL}" y="${y - 3}">${fmt(Math.round(max * f))}</text>`;
   }).join('');
-  return `<svg class="chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img">
+
+  // A single bucket has no line to draw, so it is shown as one column instead of a stray dot.
+  if (rows.length === 1) {
+    const h = Math.max(3, (vals[0] / max) * plotH);
+    return `<svg class="chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img">${grid}
+      <rect class="chart-bar" x="${W / 2 - 26}" y="${PT + plotH - h}" width="52" height="${h}"></rect>
+      </svg><div class="chart-x"><span>${esc(rows[0].label)}</span><span>${fmt(vals[0])}</span></div>`;
+  }
+
+  const step = plotW / (rows.length - 1);
+  const xy = i => [PL + step * i, PT + plotH - (vals[i] / max) * plotH];
+  const line = rows.map((_, i) => xy(i).join(',')).join(' ');
+  const area = `${PL},${PT + plotH} ${line} ${PL + step * (rows.length - 1)},${PT + plotH}`;
+  // Dots only where something happened, otherwise a quiet month is a wall of circles.
+  const dots = rows.map((r, i) => {
+    if (!vals[i]) return '';
+    const [x, y] = xy(i);
+    return `<circle cx="${x}" cy="${y}" r="2.6"><title>${esc(r.label)}: ${fmt(vals[i])}</title></circle>`;
+  }).join('');
+  const mid = rows[Math.floor(rows.length / 2)];
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img">${grid}
     <polygon class="chart-area" points="${area}"></polygon>
     <polyline class="chart-line" points="${line}"></polyline>${dots}</svg>
-    <div class="chart-x"><span>${esc(pts[0].x)}</span><span>${o.money ? money(max) : nf(max)} ${L('макс')}</span><span>${esc(pts[pts.length - 1].x)}</span></div>`;
+    <div class="chart-x"><span>${esc(rows[0].label)}</span><span>${esc(mid.label)}</span><span>${esc(rows[rows.length - 1].label)}</span></div>`;
 }
+
 function barChart(rows, labelKey, valueKey, opts) {
   const o = opts || {};
   if (!rows.length) return `<p class="dash-none">${L('Нет данных за период')}</p>`;
@@ -1314,22 +1366,20 @@ async function renderDash(m) {
     ${kpi(L('Сумма скидок'), money(k.discount_total))}
   </div>`;
 
-  const fmtB = b => String(b).slice(5);
-  const orders = (s.orders || []).map(r => ({ ...r, bucket: fmtB(r.bucket) }));
-  const charts = `
-    ${panel(L('Выручка'), `<div class="panel-body">${lineChart(orders, 'bucket', 'revenue', { money: true })}</div>`)}
-    ${panel(L('Заказы'), `<div class="panel-body">${lineChart(orders, 'bucket', 'orders', {})}</div>`)}
-    ${panel(L('Средний чек'), `<div class="panel-body">${lineChart(orders, 'bucket', 'avg_check', { money: true })}</div>`)}
-    ${panel(L('Новые клиенты'), `<div class="panel-body">${lineChart((s.users || []).map(r => ({ ...r, bucket: fmtB(r.bucket) })), 'bucket', 'users', {})}</div>`)}
-    ${panel(L('Отзывы'), `<div class="panel-body">${lineChart((s.reviews || []).map(r => ({ ...r, bucket: fmtB(r.bucket) })), 'bucket', 'reviews', {})}</div>`)}
-    <div class="dash-2">
-      ${panel(L('Статусы заказов'), `<div class="panel-body">${donut(s.statuses || [], 'status', 'n', RING_COLORS)}</div>`)}
-      ${panel(L('Способы оплаты'), `<div class="panel-body">${donut((s.payments || []).map(r => ({ ...r, label: L(r.pay_way === 'card' ? 'Картой' : 'Наличными') + ' · ' + r.payment_status })), 'label', 'n', RING_COLORS)}</div>`)}
-    </div>
-    <div class="dash-2">
-      ${panel(L('Города'), `<div class="panel-body">${barChart(s.cities || [], 'city', 'revenue', { money: true, label: r => CITY_LABEL[r.city] || r.city })}</div>`)}
-      ${panel(L('Промокоды'), `<div class="panel-body">${barChart(s.promo || [], 'code', 'n')}</div>`)}
-    </div>`;
+  const ordersS = fillSeries(s.orders || [], from, to, bucket, ['orders', 'done', 'revenue', 'avg_check']);
+  const usersS = fillSeries(s.users || [], from, to, bucket, ['users']);
+  const reviewsS = fillSeries(s.reviews || [], from, to, bucket, ['reviews']);
+  const charts = `<div class="dash-2">
+    ${panel(L('Выручка'), `<div class="panel-body">${lineChart(ordersS, 'revenue', { money: true })}</div>`)}
+    ${panel(L('Заказы'), `<div class="panel-body">${lineChart(ordersS, 'orders', {})}</div>`)}
+    ${panel(L('Средний чек'), `<div class="panel-body">${lineChart(ordersS, 'avg_check', { money: true })}</div>`)}
+    ${panel(L('Новые клиенты'), `<div class="panel-body">${lineChart(usersS, 'users', {})}</div>`)}
+    ${panel(L('Отзывы'), `<div class="panel-body">${lineChart(reviewsS, 'reviews', {})}</div>`)}
+    ${panel(L('Статусы заказов'), `<div class="panel-body">${donut(s.statuses || [], 'status', 'n', RING_COLORS)}</div>`)}
+    ${panel(L('Способы оплаты'), `<div class="panel-body">${donut((s.payments || []).map(r => ({ ...r, label: L(r.pay_way === 'card' ? 'Картой' : 'Наличными') + ' · ' + r.payment_status })), 'label', 'n', RING_COLORS)}</div>`)}
+    ${panel(L('Города'), `<div class="panel-body">${barChart(s.cities || [], 'city', 'revenue', { money: true, label: r => CITY_LABEL[r.city] || r.city })}</div>`)}
+    ${panel(L('Промокоды'), `<div class="panel-body">${barChart(s.promo || [], 'code', 'n')}</div>`)}
+  </div>`;
 
   const goods = `<div class="dash-2">
     ${panel(L('Продаётся чаще всего'), `<div class="panel-body">${barChart(p.top_qty || [], 'name', 'qty')}</div>`)}
