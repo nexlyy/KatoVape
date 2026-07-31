@@ -9,7 +9,7 @@ const LBL = { hitBadge: 'Хит', lastFew: 'осталось мало' };
 const { api, box } = sandbox(
   [
     slice('function qty(item)', 'function match(item, q)'),
-    slice('const BADGES = [', '// ==== иконки вкусов'),
+    slice('const BADGES = [', '// Цветная метка вкуса'),
     slice('function applyStock(rows)', '// вкусы показываем на английском')
   ],
   {

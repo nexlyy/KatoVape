@@ -627,35 +627,6 @@ window.KV = (function () {
       'loading="lazy" decoding="async" onerror="this.remove()"></div>';
   }
 
-  // раскрытая часть карточки: рейтинг, характеристика, вкусы, похожее, отзывы, кнопки
-  function detailsHTML(item) {
-    const st = status(item);
-    let rows = '';
-    if (item.flavors && item.flavors.length) {
-      rows = '<div class="kvf-list">' + item.flavors.map((f, i) => {
-        const have = f.qty > 0;
-        return '<div class="kvf-row' + (have ? '' : ' off') + '">' +
-          '<span class="kvf-name">' + esc(flavorName(f)) + '</span>' +
-          '<span class="kvf-qty">' + (have ? t('left', f.qty) : t('qtyNone')) + '</span>' +
-          (have ? '<button class="kvf-add" data-add="' + item.id + '" data-fl="' + i + '">' + t('add') + '</button>' : '') +
-          '</div>';
-      }).join('') + '</div>';
-    } else if (st !== 'out') {
-      rows = '<div class="kvf-list"><div class="kvf-row">' +
-        '<span class="kvf-name">' + t('left', qty(item)) + '</span>' +
-        '<button class="kvf-add" data-add="' + item.id + '">' + t('add') + '</button>' +
-        '</div></div>';
-    }
-    const spec = specOf(item);
-    const metaLine = spec ? '<div class="kvf-meta">' + spec + '</div>' : '';
-    const stars = st !== 'out' ? '<div class="kvf-rate">' + starsHTML(item) + '</div>' : '';
-    const action = st === 'out'
-      ? '<button class="kv-restock" data-notify="' + item.id + '">' + ui('notify') + '</button>'
-      : '<button class="kvf-res" data-res="' + item.id + '">' + t('reserve') + '</button>';
-    return '<div class="kv-details">' + stars + metaLine + rows +
-      reviewsHTML(item) + relatedHTML(item) + action + '</div>';
-  }
-
   // корзина хранится как "id::вкус" -> штук
   // сколько штук позиции реально есть на складе
   function availFor(key) {
@@ -1506,14 +1477,6 @@ window.KV = (function () {
     for (let i = 1; i <= 5; i++) s += '<span class="kv-star' + (i <= full ? ' on' : '') + '">★</span>';
     return '<span class="kv-stars">' + s + '<i>' + r.avg.toFixed(1) + ' · ' + r.count + '</i></span>';
   }
-  function reviewsHTML(item) {
-    const list = reviewsFor(item.id);
-    if (!list.length) return '';
-    return '<div class="kv-revs"><b>' + ui('reviews') + '</b>' + list.map(rv =>
-      '<div class="kv-rev"><span class="kv-rev-h">' + esc(rv.author || t('you')) +
-      (rv.flavor ? ' <i class="kv-rev-fl">' + esc(flavorName(rv.flavor)) + '</i>' : '') +
-      ' <em>' + '★'.repeat(rv.stars || 5) + '</em></span>' + esc(rv.body || '') + '</div>').join('') + '</div>';
-  }
 
   // ==== ярлыки товара (10) ====
   // Реестр ярлыков: у каждого свой ключ, оформление, место в ряду и источник. Источник —
@@ -1536,23 +1499,6 @@ window.KV = (function () {
     const out = badgesOf(item).map(b =>
       '<span class="kv-badge ' + b.cls + '">' + esc(b.label()) + '</span>');
     return out.length ? '<div class="kv-badges">' + out.join('') + '</div>' : '';
-  }
-
-  // ==== иконки вкусов (13) ====
-  const FLAVOR_ICONS = [
-    [/лёд|лед|лід|ice/, '🧊'], [/арбуз|watermelon|кавун/, '🍉'], [/манго|mango/, '🥭'],
-    [/клубник|полуниц|truskaw|strawberr/, '🍓'], [/виноград|grape|winogron/, '🍇'],
-    [/черник|голубик|чорниц|лохин|blueberr|jagoda|borówk/, '🫐'], [/вишн|cherry|wiśni/, '🍒'],
-    [/кола|cola/, '🥤'], [/энергетик|energy|energetyk/, '⚡'], [/мят|mint|м’ят|mięt/, '🌿'],
-    [/лимон|лайм|lemon|lime|cytryn|limonk/, '🍋'], [/персик|peach|brzoskwin/, '🍑'],
-    [/ананас|pineapple|ananas/, '🍍'], [/банан|banana/, '🍌'], [/яблок|apple|jabłk/, '🍏'],
-    [/дын|melon|дин/, '🍈'], [/груш|pear|gruszk/, '🍐'], [/ежевик|blackberr|ожин|jeżyn/, '🫐'],
-    [/малин|raspberr|malin/, '🍓'], [/табак|tobacco|tytoń/, '🚬'], [/энерг|барбарис|тропик|микс|mix/, '🍹']
-  ];
-  function flavorIcon(name) {
-    const n = name.toLowerCase();
-    for (const [re, ic] of FLAVOR_ICONS) if (re.test(n)) return ic + ' ';
-    return '';
   }
 
   // Цветная метка вкуса вместо эмодзи: полоска с градиентом по «настроению» вкуса.
@@ -1690,26 +1636,6 @@ window.KV = (function () {
     }
     savePromos();
     return dropped;
-  }
-  function invitedCount() { return +(localStorage.getItem('kv_invited') || 0); }
-  function referralReady() {
-    const r = content.referral;
-    return r && invitedCount() >= r.need;
-  }
-  // ссылка-приглашение: свой же сайт с меткой ref
-  function referralLink() { return location.origin + location.pathname + '?ref=' + (localStorage.getItem('kv_me') || 'me'); }
-  function inviteFriend() {
-    const r = content.referral; if (!r) return;
-    // демо: каждый показ ссылки засчитываем как принятое приглашение, до нужного числа
-    const n = Math.min(invitedCount() + 1, r.need);
-    localStorage.setItem('kv_invited', n);
-    copyText(referralLink());
-    const url = 'https://t.me/share/url?url=' + encodeURIComponent(referralLink()) +
-      '&text=' + encodeURIComponent('KatoVape, украинские вейпы в Польше');
-    const tg = window.Telegram && window.Telegram.WebApp;
-    if (tg && tg.initData) tg.openTelegramLink(url); else window.open(url, '_blank');
-    toast(n >= r.need ? loc(r.done) : loc(r.progress).replace('{n}', n).replace('{need}', r.need));
-    drawDrawer();
   }
   // Скидку пересчитываем от текущей корзины. Держать число, посчитанное при вводе кода,
   // нельзя: корзину после этого меняют, а процент обязан идти следом — иначе на витрине
@@ -2566,7 +2492,7 @@ window.KV = (function () {
   // аккаунт сменился.
   // Настройки самого устройства (язык, тема, 18+, корзина) не трогаем: они общие.
   const OWNED = ['kv_favs', 'kv_contact', 'kv_orders', 'kv_profile', 'kv_promo',
-    'kv_invited', 'kv_me', 'kv_delivery', 'kv_city_picked'];
+    'kv_delivery', 'kv_city_picked'];
   function claimUser(uid) {
     const now = uid || '';
     const was = localStorage.getItem('kv_owner') || '';
@@ -2888,12 +2814,10 @@ window.KV = (function () {
 .kv-star{color:var(--kv-line)}.kv-star.on{color:#ffb020}
 .kv-stars i{font-style:normal;color:var(--kv-muted);font-size:11px;margin-left:5px}
 .kv-badges{display:flex;gap:5px;flex-wrap:wrap}
-.kv-badge.hit{background:var(--kv-accent);color:var(--kv-accent-ink)}
 .kv-badge{font-size:10px;font-weight:800;padding:3px 8px;border-radius:99px;text-transform:uppercase;letter-spacing:.4px}
 .kv-badge.hit{background:#ff5c3322;color:#ff6a3d}
 .kv-badge.choice{background:#8f6bff22;color:#9a7bff}
 .kv-badge.few{background:#ffb02022;color:#e0920f}
-.kv-revs{margin-top:12px}.kv-revs>b{font-size:12px;color:var(--kv-muted);display:block;margin-bottom:6px}
 .kv-rev{font-size:12.5px;line-height:1.5;padding:7px 0;border-top:1px solid var(--kv-line)}
 .kv-rev-h{display:block;font-weight:700}.kv-rev-h em{color:#ffb020;font-style:normal;font-size:11px}
 .kv-rel{margin-top:12px}.kv-rel>b{font-size:12px;color:var(--kv-muted);display:block;margin-bottom:7px}
@@ -2935,10 +2859,6 @@ window.KV = (function () {
   padding:0 4px;font-family:inherit}
 .kvd-promo-del:hover{color:var(--kv-text)}
 .kvd-disc{display:flex;justify-content:space-between;color:var(--kv-accent-2,var(--kv-accent));font-weight:700;font-size:13.5px}
-.kvd-ref{border:1px dashed var(--kv-line);border-radius:var(--kv-radius);padding:12px;font-size:12.5px;color:var(--kv-muted);line-height:1.5}
-.kvd-ref b{color:var(--kv-text);display:block;margin-bottom:4px}
-.kvd-ref button{margin-top:8px;background:var(--kv-accent);color:var(--kv-accent-ink);border:none;border-radius:10px;padding:9px 14px;font-weight:800;font-size:12.5px;cursor:pointer;font-family:inherit}
-.kvd-ref .kvd-ref-p{margin-top:6px;font-weight:700;color:var(--kv-text)}
 .kvd-repeat{width:100%;background:var(--kv-surface);border:1px solid var(--kv-line);color:var(--kv-text);border-radius:var(--kv-radius);padding:12px;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit}
 #kv-info{max-width:1100px;margin:0 auto;padding:10px 22px 40px;display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));position:relative;z-index:1}
 .kv-sec{background:var(--kv-surface);border:1px solid var(--kv-line);border-radius:var(--kv-radius);padding:20px 22px}
@@ -3254,7 +3174,6 @@ body.kv-noscroll{overflow:hidden}
     hooks.cart = opts.cart || null;
     isApp = !!opts.app;
     injectCSS();
-    if (!localStorage.getItem('kv_me')) localStorage.setItem('kv_me', Math.random().toString(36).slice(2, 8));
     try {
       // data/meta.json больше не грузим: ярлыки задаются в панели управления, а других
       // данных в нём не осталось — лишний запрос на старте
@@ -3317,7 +3236,7 @@ body.kv-noscroll{overflow:hidden}
 
   return {
     init, t, ui, loc, catName, cityName, pickup, cityLogo, flavorName, specOf, qty, status,
-    isNew, match, find, price, plural, fmtDate, photo, detailsHTML, openCart, checkout,
+    isNew, match, find, price, plural, fmtDate, photo, openCart, checkout,
     cartCount, cartTotal, toast, autoHideHeader, sortItems,
     starsHTML, badgesHTML, filterPass, searchSuggest, track,
     openProduct, openProfile, openFavs, isFav, toggleFav, removeFav, favs, tasteOf, flavorDesc,

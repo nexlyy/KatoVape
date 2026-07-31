@@ -6,16 +6,6 @@
     { "code": "VAPE5", "type": "fixed", "value": 5, "note": { "ru": "-5 zł на заказ", "uk": "-5 zł на замовлення", "pl": "-5 zł na zamówienie" } }
   ],
 
-  "referral": {
-    "need": 5,
-    "reward": 5,
-    "title": { "ru": "Пригласи 5 друзей, минус 5 zł", "uk": "Запроси 5 друзів, мінус 5 zł", "pl": "Zaproś 5 znajomych, minus 5 zł" },
-    "text": { "ru": "Отправь друзьям свою ссылку. Как только по ней зайдут пятеро, скидка 5 zł применится к заказу.", "uk": "Надішли друзям своє посилання. Щойно за ним зайдуть п'ятеро, знижка 5 zł застосується до замовлення.", "pl": "Wyślij znajomym swój link. Gdy wejdzie przez niego pięć osób, rabat 5 zł doda się do zamówienia." },
-    "invite": { "ru": "Пригласить друга", "uk": "Запросити друга", "pl": "Zaproś znajomego" },
-    "progress": { "ru": "приглашено {n} из {need}", "uk": "запрошено {n} з {need}", "pl": "zaproszono {n} z {need}" },
-    "done": { "ru": "Готово! Скидка 5 zł ваша", "uk": "Готово! Знижка 5 zł ваша", "pl": "Gotowe! Rabat 5 zł jest Twój" }
-  },
-
   "delivery": {
     "title": { "ru": "Получение", "uk": "Отримання", "pl": "Odbiór" },
     "methods": [
