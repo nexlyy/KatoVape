@@ -64,7 +64,7 @@ for (const [name, dict] of [['витрина', STR], ['вход', AUTH]]) {
 
   test(name + ': украинский перевод не остался русским', () => {
     // Эти слова в русском и украинском пишутся одинаково — совпадение здесь не ошибка.
-    const SAME_BY_NATURE = new Set(['new', 'reserve', 'pcs', 'ml']);
+    const SAME_BY_NATURE = new Set(['new', 'reserve', 'pcs', 'ml', 'password']);
     const same = Object.keys(dict.ru)
       .filter((k) => !SAME_BY_NATURE.has(k) && dict.uk[k] === dict.ru[k] && /[А-Яа-яЁё]/.test(dict.ru[k]));
     assert.deepEqual(same, [], name + ': эти строки не переведены на украинский');
