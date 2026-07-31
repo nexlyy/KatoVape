@@ -1016,6 +1016,18 @@ async function notifyRestocks() {
   }
 }
 
+// Host metrics Postgres cannot see. The developer section of the dashboard reads the last
+// beat, so a stale timestamp is itself the signal that the bot is down.
+const BOT_VERSION = '3.1';
+const STARTED_AT = new Date().toISOString();
+async function heartbeat() {
+  const mb = Math.round(process.memoryUsage().rss / 1048576);
+  await sbUpsert('bot_heartbeat', [{
+    id: 1, version: BOT_VERSION, started_at: STARTED_AT,
+    beat_at: new Date().toISOString(), rss_mb: mb, node: process.version
+  }], 'id').catch(() => {});
+}
+
 async function jobsLoop() {
   for (;;) {
     try {
@@ -1030,6 +1042,7 @@ async function jobsLoop() {
       await doBroadcasts();
       await doSyncJobs();
       await notifyRestocks();
+      await heartbeat();
     } catch {}
     await sleep(JOBS_MS);
   }

@@ -193,6 +193,37 @@ td .sub{display:block;color:var(--muted);font-size:11.5px;margin-top:2px}
 
 .pform{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px}
 .pform-wide{grid-column:1 / -1}
+/* dashboard */
+.kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:10px;margin-top:4px}
+.kpi{background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r);padding:12px 13px;
+  display:flex;flex-direction:column;gap:3px;min-width:0}
+.kpi-l{font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.kpi-v{font-size:19px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.kpi-t{font-size:11.5px;font-weight:700}
+.kpi-t.up{color:var(--ok)}.kpi-t.down{color:var(--danger)}.kpi-t.flat{color:var(--muted)}
+.dash-2{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:16px}
+.dash-none{color:var(--muted);font-size:13px;padding:14px 0;text-align:center}
+.chart{width:100%;height:160px;display:block;overflow:visible}
+.chart-line{fill:none;stroke:var(--accent);stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.chart-area{fill:var(--accent-dim);stroke:none}
+.chart circle{fill:var(--accent)}
+.chart-x{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:6px}
+.bars{display:flex;flex-direction:column;gap:7px}
+.bar-row{display:grid;grid-template-columns:minmax(90px,1.4fr) 2fr auto;gap:10px;align-items:center;font-size:12.5px}
+.bar-l{color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar-t{background:var(--field);border-radius:99px;height:8px;overflow:hidden}
+.bar-t i{display:block;height:100%;background:var(--accent);border-radius:99px}
+.bar-v{font-variant-numeric:tabular-nums;white-space:nowrap;font-size:12px}
+.donut-wrap{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.donut{width:140px;height:140px;flex-shrink:0;transform:rotate(-90deg)}
+.donut .ring{fill:none;stroke-width:16}
+.donut-legend{list-style:none;display:flex;flex-direction:column;gap:6px;font-size:12.5px;min-width:0}
+.donut-legend li{display:flex;align-items:center;gap:8px;color:var(--ink-2)}
+.donut-legend i{width:10px;height:10px;border-radius:3px;flex-shrink:0}
+.donut-legend b{margin-left:auto;font-variant-numeric:tabular-nums;color:var(--ink)}
+@media(max-width:640px){.kpis{grid-template-columns:repeat(auto-fill,minmax(140px,1fr))}
+  .bar-row{grid-template-columns:minmax(70px,1fr) 1.4fr auto}}
 .promo-tag{color:var(--accent)}
 .i-hit{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;color:var(--ink-2);white-space:nowrap}
 .i-hit input{width:auto;margin:0}
@@ -314,6 +345,71 @@ const fday = s => s ? String(s).slice(0, 10).split('-').reverse().join('-') : ''
 // falls back to Russian, so a new string never breaks the interface.
 const DICT = {
   uk: {
+    'Дашборд': 'Дашборд',
+    'Ключевые показатели, графики и аналитика.': 'Ключові показники, графіки та аналітика.',
+    'Нет данных за период': 'Немає даних за період',
+    'макс': 'макс',
+    'Период': 'Період',
+    'Показать': 'Показати',
+    'Выручка за период': 'Виторг за період',
+    'Выручка всего': 'Виторг усього',
+    'Сегодня': 'Сьогодні',
+    'За неделю': 'За тиждень',
+    'За месяц': 'За місяць',
+    'За год': 'За рік',
+    'Заказов': 'Замовлень',
+    'Выдано': 'Видано',
+    'Отменено': 'Скасовано',
+    'Активных броней': 'Активних броней',
+    'Средний чек': 'Середній чек',
+    'Броней выкуплено': 'Броней викуплено',
+    'Новых клиентов': 'Нових клієнтів',
+    'Покупали в периоде': 'Купували в періоді',
+    'Отзывов': 'Відгуків',
+    'Средняя оценка': 'Середня оцінка',
+    'Заказов с промокодом': 'Замовлень із промокодом',
+    'Сумма скидок': 'Сума знижок',
+    'Выручка': 'Виторг',
+    'Новые клиенты': 'Нові клієнти',
+    'Отзывы': 'Відгуки',
+    'Статусы заказов': 'Статуси замовлень',
+    'Способы оплаты': 'Способи оплати',
+    'Города': 'Міста',
+    'Продаётся чаще всего': 'Продається найчастіше',
+    'Приносит больше всего': 'Приносить найбільше',
+    'Популярные вкусы': 'Популярні смаки',
+    'Бренды': 'Бренди',
+    'Чаще бронируют': 'Частіше бронюють',
+    'Чаще отменяют': 'Частіше скасовують',
+    'Заканчивается': 'Закінчується',
+    'Вкус': 'Смак',
+    'Остаток': 'Залишок',
+    'Есть в наличии, но не продаётся': 'Є в наявності, але не продається',
+    'Покупателей': 'Покупців',
+    'Покупали повторно': 'Купували повторно',
+    'Доля повторных': 'Частка повторних',
+    'Заказов на человека': 'Замовлень на людину',
+    'Средний доход с клиента': 'Середній дохід з клієнта',
+    'Самые активные покупатели': 'Найактивніші покупці',
+    'Менеджеры': 'Менеджери',
+    'Telegram ID': 'Telegram ID',
+    'Среднее время, ч': 'Середній час, год',
+    'Заказы распределяются по городам, поэтому статистика менеджера — это статистика его города.': 'Замовлення розподіляються за містами, тому статистика менеджера — це статистика його міста.',
+    'Система': 'Система',
+    'Размер базы': 'Розмір бази',
+    'Версия Postgres': 'Версія Postgres',
+    'Версия схемы': 'Версія схеми',
+    'Соединений': 'Зʼєднань',
+    'Заданий в очереди': 'Завдань у черзі',
+    'Ошибок за сутки': 'Помилок за добу',
+    'Рассылок в очереди': 'Розсилок у черзі',
+    'Зависших оплат': 'Завислих оплат',
+    'Бот': 'Бот',
+    'нет сигнала': 'немає сигналу',
+    'Бот на связи': 'Бот на звʼязку',
+    'Память бота': 'Памʼять бота',
+    'Node': 'Node',
+    'Укажите обе даты': 'Вкажіть обидві дати',
     'Заказы': 'Замовлення', 'панель управления': 'панель керування',
     'Вход для менеджеров': 'Вхід для менеджерів',
     'Войдите аккаунтом магазина или через Telegram. Доступ открыт только тем, кому его выдали.': 'Увійдіть акаунтом магазину або через Telegram. Доступ відкрито лише тим, кому його надали.',
@@ -411,6 +507,71 @@ const DICT = {
   },
 
   pl: {
+    'Дашборд': 'Pulpit',
+    'Ключевые показатели, графики и аналитика.': 'Kluczowe wskaźniki, wykresy i analityka.',
+    'Нет данных за период': 'Brak danych za okres',
+    'макс': 'maks',
+    'Период': 'Okres',
+    'Показать': 'Pokaż',
+    'Выручка за период': 'Przychód za okres',
+    'Выручка всего': 'Przychód łącznie',
+    'Сегодня': 'Dzisiaj',
+    'За неделю': 'Za tydzień',
+    'За месяц': 'Za miesiąc',
+    'За год': 'Za rok',
+    'Заказов': 'Zamówień',
+    'Выдано': 'Wydane',
+    'Отменено': 'Anulowane',
+    'Активных броней': 'Aktywnych rezerwacji',
+    'Средний чек': 'Średni koszyk',
+    'Броней выкуплено': 'Rezerwacji odebranych',
+    'Новых клиентов': 'Nowych klientów',
+    'Покупали в периоде': 'Kupowało w okresie',
+    'Отзывов': 'Opinii',
+    'Средняя оценка': 'Średnia ocena',
+    'Заказов с промокодом': 'Zamówień z kodem',
+    'Сумма скидок': 'Suma rabatów',
+    'Выручка': 'Przychód',
+    'Новые клиенты': 'Nowi klienci',
+    'Отзывы': 'Opinie',
+    'Статусы заказов': 'Statusy zamówień',
+    'Способы оплаты': 'Sposoby płatności',
+    'Города': 'Miasta',
+    'Продаётся чаще всего': 'Sprzedaje się najczęściej',
+    'Приносит больше всего': 'Przynosi najwięcej',
+    'Популярные вкусы': 'Popularne smaki',
+    'Бренды': 'Marki',
+    'Чаще бронируют': 'Częściej rezerwują',
+    'Чаще отменяют': 'Częściej anulują',
+    'Заканчивается': 'Kończy się',
+    'Вкус': 'Smak',
+    'Остаток': 'Stan',
+    'Есть в наличии, но не продаётся': 'Dostępne, ale się nie sprzedaje',
+    'Покупателей': 'Kupujących',
+    'Покупали повторно': 'Kupowało ponownie',
+    'Доля повторных': 'Udział powtórnych',
+    'Заказов на человека': 'Zamówień na osobę',
+    'Средний доход с клиента': 'Średni przychód z klienta',
+    'Самые активные покупатели': 'Najaktywniejsi kupujący',
+    'Менеджеры': 'Menedżerowie',
+    'Telegram ID': 'Telegram ID',
+    'Среднее время, ч': 'Średni czas, godz.',
+    'Заказы распределяются по городам, поэтому статистика менеджера — это статистика его города.': 'Zamówienia są przypisane do miast, więc statystyka menedżera to statystyka jego miasta.',
+    'Система': 'System',
+    'Размер базы': 'Rozmiar bazy',
+    'Версия Postgres': 'Wersja Postgresa',
+    'Версия схемы': 'Wersja schematu',
+    'Соединений': 'Połączeń',
+    'Заданий в очереди': 'Zadań w kolejce',
+    'Ошибок за сутки': 'Błędów na dobę',
+    'Рассылок в очереди': 'Wysyłek w kolejce',
+    'Зависших оплат': 'Zawieszonych płatności',
+    'Бот': 'Bot',
+    'нет сигнала': 'brak sygnału',
+    'Бот на связи': 'Bot online',
+    'Память бота': 'Pamięć bota',
+    'Node': 'Node',
+    'Укажите обе даты': 'Podaj obie daty',
     'Заказы': 'Zamówienia', 'панель управления': 'panel zarządzania',
     'Вход для менеджеров': 'Logowanie dla menedżerów',
     'Войдите аккаунтом магазина или через Telegram. Доступ открыт только тем, кому его выдали.': 'Zaloguj się kontem sklepu lub przez Telegram. Dostęp mają wyłącznie osoby, którym go przyznano.',
@@ -644,7 +805,9 @@ async function afterLogin() {
 /* ================= каркас ================= */
 const ROLE_RU = { owner: L('владелец'), dev: L('разработчик'), manager: L('менеджер') };
 // подписи считаем на каждый рендер: иначе переключатель языка их не обновит
+const canDash = () => !!(overview && ['owner', 'dev'].includes(overview.role));
 const TABS = () => [
+  ['dash', L('Дашборд'), null],
   ['orders', L('Заказы'), ov => ov.orders_new],
   ['reservations', L('Бронь'), ov => ov.res_active],
   ['products', L('Ассортимент'), null],
@@ -680,7 +843,7 @@ function shell() {
         <div class="brand"><img src="../../data/photos/cat.png" alt=""><div>
           <b>KatoVape</b><span>${L('управление')}</span></div></div>
         <nav class="nav" id="nav">
-          ${TABS().filter(([k]) => k !== 'access' || (overview && overview.can_grant)).map(([k, label, badge]) => {
+          ${TABS().filter(([k]) => (k !== 'access' || (overview && overview.can_grant)) && (k !== 'dash' || canDash())).map(([k, label, badge]) => {
             const n = badge && overview ? badge(overview) : 0;
             return `<button data-t="${k}" class="${k === tab ? 'on' : ''}">${label}
               ${n ? `<i class="count">${n}</i>` : ''}</button>`;
@@ -763,7 +926,8 @@ function itemsStr(items) {
 /* ================= вкладки ================= */
 async function render() {
   const m = document.getElementById('main'); if (!m) return;
-  const titles = { orders: [L('Заказы'), L('Подтверждайте и отмечайте выдачу — клиенту уходит уведомление в Telegram.')],
+  const titles = { dash: [L('Дашборд'), L('Ключевые показатели, графики и аналитика.')],
+    orders: [L('Заказы'), L('Подтверждайте и отмечайте выдачу — клиенту уходит уведомление в Telegram.')],
     reservations: [L('Бронь'), L('Отменённая или просроченная бронь возвращает товар в наличие сама.')],
     products: [L('Ассортимент'), L('Правки видны на витрине сразу после сохранения.')],
     customers: [L('Клиенты'), L('Те, кто заводил аккаунт в магазине.')],
@@ -776,7 +940,8 @@ async function render() {
   const slot = () => m.querySelector('.panel');
 
   try {
-    if (tab === 'orders') await renderOrders(m);
+    if (tab === 'dash') { if (!canDash()) { tab = 'orders'; return shell(); } await renderDash(m); }
+    else if (tab === 'orders') await renderOrders(m);
     else if (tab === 'reservations') await renderReservations(m);
     else if (tab === 'products') await renderProducts(m);
     else if (tab === 'customers') await renderCustomers(m);
@@ -999,6 +1164,243 @@ const roleSelect = (id, val) => `<select id="${id}" style="width:auto">` +
 const citySelect = id => `<select id="${id}" style="width:auto">` +
   CITIES.map(c => `<option value="${c}">${CITY_LABEL[c]}</option>`).join('') + '</select>';
 
+
+/* ================= dashboard ================= */
+// Owner and developer only. Every figure is aggregated by the database (dash_* functions),
+// which also enforces the role: the tab being hidden is convenience, not the access control.
+const DASH_RANGES = [
+  ['today', 'Сегодня'], ['yesterday', 'Вчера'], ['7d', '7 дней'], ['30d', '30 дней'],
+  ['quarter', 'Квартал'], ['year', 'Год'], ['all', 'Всё время']
+];
+let dashRange = localStorage.getItem('kv_dash_range') || '30d';
+let dashCustom = { from: '', to: '' };
+
+function dashBounds() {
+  const now = new Date();
+  const day = 86400000;
+  const startOfDay = d => { const x = new Date(d); x.setHours(0, 0, 0, 0); return x; };
+  let from, to = now;
+  if (dashRange === 'custom' && dashCustom.from && dashCustom.to) {
+    from = new Date(dashCustom.from + 'T00:00:00');
+    to = new Date(dashCustom.to + 'T23:59:59');
+  } else if (dashRange === 'today') from = startOfDay(now);
+  else if (dashRange === 'yesterday') { to = startOfDay(now); from = new Date(to - day); }
+  else if (dashRange === '7d') from = new Date(now - 7 * day);
+  else if (dashRange === 'quarter') from = new Date(now - 90 * day);
+  else if (dashRange === 'year') from = new Date(now - 365 * day);
+  else if (dashRange === 'all') from = new Date('2020-01-01');
+  else from = new Date(now - 30 * day);
+  const days = (to - from) / day;
+  return { from: from.toISOString(), to: to.toISOString(), bucket: days > 120 ? 'month' : 'day' };
+}
+
+const nf = n => Number(n || 0).toLocaleString('pl-PL');
+const money = n => nf(Math.round(Number(n || 0))) + ' zł';
+
+// Growth against the previous window of the same length. Null when there is nothing to
+// compare with, so an empty history does not render as a triumphant +100%.
+function trend(now, prev) {
+  const a = Number(now || 0), b = Number(prev || 0);
+  if (!b) return a ? null : 0;
+  return Math.round(((a - b) / b) * 100);
+}
+function trendHTML(t) {
+  if (t == null) return '';
+  const cls = t > 0 ? 'up' : t < 0 ? 'down' : 'flat';
+  const sign = t > 0 ? '+' : '';
+  return `<span class="kpi-t ${cls}">${sign}${t}%</span>`;
+}
+function kpi(label, value, extra) {
+  return `<div class="kpi"><span class="kpi-l">${esc(label)}</span>
+    <b class="kpi-v">${value}</b>${extra || ''}</div>`;
+}
+
+// Charts are hand-drawn SVG on purpose: the panel has no build step and no dependencies,
+// and a chart library would be the single heaviest thing on the page.
+function lineChart(rows, xKey, yKey, opts) {
+  const o = opts || {};
+  const pts = rows.map(r => ({ x: r[xKey], y: Number(r[yKey] || 0) }));
+  if (!pts.length) return `<p class="dash-none">${L('Нет данных за период')}</p>`;
+  const W = 640, H = 160, P = 8;
+  const max = Math.max(...pts.map(p => p.y), 1);
+  const step = pts.length > 1 ? (W - P * 2) / (pts.length - 1) : 0;
+  const xy = i => [P + step * i, H - P - (pts[i].y / max) * (H - P * 2)];
+  const line = pts.map((_, i) => xy(i).join(',')).join(' ');
+  const area = `${P},${H - P} ${line} ${P + step * (pts.length - 1)},${H - P}`;
+  const dots = pts.map((p, i) => {
+    const [x, y] = xy(i);
+    return `<circle cx="${x}" cy="${y}" r="2.5"><title>${esc(p.x)}: ${o.money ? money(p.y) : nf(p.y)}</title></circle>`;
+  }).join('');
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img">
+    <polygon class="chart-area" points="${area}"></polygon>
+    <polyline class="chart-line" points="${line}"></polyline>${dots}</svg>
+    <div class="chart-x"><span>${esc(pts[0].x)}</span><span>${o.money ? money(max) : nf(max)} ${L('макс')}</span><span>${esc(pts[pts.length - 1].x)}</span></div>`;
+}
+function barChart(rows, labelKey, valueKey, opts) {
+  const o = opts || {};
+  if (!rows.length) return `<p class="dash-none">${L('Нет данных за период')}</p>`;
+  const max = Math.max(...rows.map(r => Number(r[valueKey] || 0)), 1);
+  return `<div class="bars">${rows.map(r => {
+    const v = Number(r[valueKey] || 0);
+    return `<div class="bar-row"><span class="bar-l">${esc(o.label ? o.label(r) : r[labelKey])}</span>
+      <span class="bar-t"><i style="width:${Math.max(2, (v / max) * 100)}%"></i></span>
+      <b class="bar-v">${o.money ? money(v) : nf(v)}</b></div>`;
+  }).join('')}</div>`;
+}
+function donut(rows, labelKey, valueKey, colors) {
+  const total = rows.reduce((s, r) => s + Number(r[valueKey] || 0), 0);
+  if (!total) return `<p class="dash-none">${L('Нет данных за период')}</p>`;
+  let acc = 0;
+  const R = 54, C = 2 * Math.PI * R;
+  const arcs = rows.map((r, i) => {
+    const share = Number(r[valueKey] || 0) / total;
+    const dash = `${(share * C).toFixed(2)} ${(C - share * C).toFixed(2)}`;
+    const off = (-acc * C).toFixed(2);
+    acc += share;
+    return `<circle class="ring" r="${R}" cx="70" cy="70" stroke="${colors[i % colors.length]}"
+      stroke-dasharray="${dash}" stroke-dashoffset="${off}"></circle>`;
+  }).join('');
+  const legend = rows.map((r, i) =>
+    `<li><i style="background:${colors[i % colors.length]}"></i>${esc(r[labelKey])}
+      <b>${nf(r[valueKey])}</b></li>`).join('');
+  return `<div class="donut-wrap"><svg class="donut" viewBox="0 0 140 140">${arcs}</svg>
+    <ul class="donut-legend">${legend}</ul></div>`;
+}
+
+const RING_COLORS = ['#5ff3d0', '#67d9f5', '#f5b83d', '#fb7185', '#9d8bff', '#4ade80'];
+
+async function renderDash(m) {
+  const { from, to, bucket } = dashBounds();
+  const args = { p_from: from, p_to: to };
+  const isDev = overview && overview.role === 'dev';
+  const calls = [
+    sb.rpc('dash_kpi', args), sb.rpc('dash_series', { ...args, p_bucket: bucket }),
+    sb.rpc('dash_products', args), sb.rpc('dash_customers', args), sb.rpc('dash_managers', args)
+  ];
+  if (isDev) calls.push(sb.rpc('dash_system'));
+  const res = await Promise.all(calls);
+  const err = res.find(r => r.error);
+  if (err) { swap(m, panel(L('Ошибка'), `<div class="empty">${esc(err.error.message)}</div>`)); return; }
+  const [k, s, p, c, mg, sys] = res.map(r => r.data || {});
+
+  const ranges = DASH_RANGES.map(([key, label]) =>
+    `<button class="btn sm ${key === dashRange ? 'primary' : ''}" data-range="${key}">${L(label)}</button>`).join('') +
+    `<button class="btn sm ${dashRange === 'custom' ? 'primary' : ''}" data-range="custom">${L('Период')}</button>`;
+  const customRow = dashRange === 'custom'
+    ? `<div class="tools" style="margin-top:10px">
+        <input type="date" id="d_from" value="${esc(dashCustom.from)}">
+        <input type="date" id="d_to" value="${esc(dashCustom.to)}">
+        <button class="btn sm primary" id="d_apply">${L('Показать')}</button></div>`
+    : '';
+
+  const cards = `<div class="kpis">
+    ${kpi(L('Выручка за период'), money(k.revenue_period), trendHTML(trend(k.revenue_period, k.revenue_prev)))}
+    ${kpi(L('Выручка всего'), money(k.revenue_total))}
+    ${kpi(L('Сегодня'), money(k.revenue_today))}
+    ${kpi(L('За неделю'), money(k.revenue_week))}
+    ${kpi(L('За месяц'), money(k.revenue_month))}
+    ${kpi(L('За год'), money(k.revenue_year))}
+    ${kpi(L('Заказов'), nf(k.orders), trendHTML(trend(k.orders, k.orders_prev)))}
+    ${kpi(L('Выдано'), nf(k.orders_done))}
+    ${kpi(L('Отменено'), nf(k.orders_cancelled))}
+    ${kpi(L('Активных броней'), nf(k.res_active))}
+    ${kpi(L('Средний чек'), money(k.avg_check), trendHTML(trend(k.avg_check, k.avg_check_prev)))}
+    ${kpi(L('Броней выкуплено'), nf(k.res_conversion) + '%')}
+    ${kpi(L('Новых клиентов'), nf(k.users_new), trendHTML(trend(k.users_new, k.users_new_prev)))}
+    ${kpi(L('Покупали в периоде'), nf(k.users_active))}
+    ${kpi(L('Отзывов'), nf(k.reviews))}
+    ${kpi(L('Средняя оценка'), nf(k.reviews_avg))}
+    ${kpi(L('Заказов с промокодом'), nf(k.promo_used))}
+    ${kpi(L('Сумма скидок'), money(k.discount_total))}
+  </div>`;
+
+  const fmtB = b => String(b).slice(5);
+  const orders = (s.orders || []).map(r => ({ ...r, bucket: fmtB(r.bucket) }));
+  const charts = `
+    ${panel(L('Выручка'), `<div class="panel-body">${lineChart(orders, 'bucket', 'revenue', { money: true })}</div>`)}
+    ${panel(L('Заказы'), `<div class="panel-body">${lineChart(orders, 'bucket', 'orders', {})}</div>`)}
+    ${panel(L('Средний чек'), `<div class="panel-body">${lineChart(orders, 'bucket', 'avg_check', { money: true })}</div>`)}
+    ${panel(L('Новые клиенты'), `<div class="panel-body">${lineChart((s.users || []).map(r => ({ ...r, bucket: fmtB(r.bucket) })), 'bucket', 'users', {})}</div>`)}
+    ${panel(L('Отзывы'), `<div class="panel-body">${lineChart((s.reviews || []).map(r => ({ ...r, bucket: fmtB(r.bucket) })), 'bucket', 'reviews', {})}</div>`)}
+    <div class="dash-2">
+      ${panel(L('Статусы заказов'), `<div class="panel-body">${donut(s.statuses || [], 'status', 'n', RING_COLORS)}</div>`)}
+      ${panel(L('Способы оплаты'), `<div class="panel-body">${donut((s.payments || []).map(r => ({ ...r, label: L(r.pay_way === 'card' ? 'Картой' : 'Наличными') + ' · ' + r.payment_status })), 'label', 'n', RING_COLORS)}</div>`)}
+    </div>
+    <div class="dash-2">
+      ${panel(L('Города'), `<div class="panel-body">${barChart(s.cities || [], 'city', 'revenue', { money: true, label: r => CITY_LABEL[r.city] || r.city })}</div>`)}
+      ${panel(L('Промокоды'), `<div class="panel-body">${barChart(s.promo || [], 'code', 'n')}</div>`)}
+    </div>`;
+
+  const goods = `<div class="dash-2">
+    ${panel(L('Продаётся чаще всего'), `<div class="panel-body">${barChart(p.top_qty || [], 'name', 'qty')}</div>`)}
+    ${panel(L('Приносит больше всего'), `<div class="panel-body">${barChart(p.top_revenue || [], 'name', 'revenue', { money: true })}</div>`)}
+    ${panel(L('Популярные вкусы'), `<div class="panel-body">${barChart(p.top_flavors || [], 'name', 'qty')}</div>`)}
+    ${panel(L('Бренды'), `<div class="panel-body">${barChart(p.by_brand || [], 'brand', 'revenue', { money: true })}</div>`)}
+    ${panel(L('Чаще бронируют'), `<div class="panel-body">${barChart(p.top_reserved || [], 'name', 'n')}</div>`)}
+    ${panel(L('Чаще отменяют'), `<div class="panel-body">${barChart(p.top_cancelled || [], 'name', 'qty')}</div>`)}
+  </div>
+  ${panel(L('Заканчивается'), table([L('Товар'), L('Вкус'), L('Город'), L('Остаток')],
+    (p.low_stock || []).map(r => [esc(r.name), esc(r.flavor || '—'), esc(CITY_LABEL[r.city] || r.city), `<span class="num">${r.qty}</span>`])) ||
+    `<div class="panel-body"><p class="dash-none">${L('Нет данных за период')}</p></div>`)}
+  ${panel(L('Есть в наличии, но не продаётся'), table([L('Товар'), L('Город')],
+    (p.no_sales || []).map(r => [esc(r.name), esc(CITY_LABEL[r.city] || r.city)])) ||
+    `<div class="panel-body"><p class="dash-none">${L('Нет данных за период')}</p></div>`)}`;
+
+  const clients = `<div class="kpis">
+    ${kpi(L('Покупателей'), nf(c.buyers))}
+    ${kpi(L('Покупали повторно'), nf(c.repeat_buyers))}
+    ${kpi(L('Доля повторных'), nf(c.repeat_share) + '%')}
+    ${kpi(L('Заказов на человека'), nf(c.orders_per_user))}
+    ${kpi(L('Средний доход с клиента'), money(c.ltv_avg))}
+  </div>
+  ${panel(L('Самые активные покупатели'), table([L('Клиент'), L('Заказов'), L('Выдано'), L('Сумма')],
+    (c.top || []).map(r => [esc(r.name), `<span class="num">${r.orders}</span>`, `<span class="num">${r.done}</span>`, `<span class="num">${money(r.spent)}</span>`])) ||
+    `<div class="panel-body"><p class="dash-none">${L('Нет данных за период')}</p></div>`)}`;
+
+  const mgrs = panel(L('Менеджеры'),
+    table([L('Telegram ID'), L('Город'), L('Заказов'), L('Выдано'), L('Отменено'), L('Выручка'), L('Среднее время, ч')],
+      (mg.managers || []).map(r => [
+        `<code>${r.telegram_id}</code>`, esc(CITY_LABEL[r.city] || r.city),
+        `<span class="num">${r.orders}</span>`, `<span class="num">${r.done}</span>`,
+        `<span class="num">${r.cancelled}</span>`, `<span class="num">${money(r.revenue)}</span>`,
+        `<span class="num">${r.avg_hours}</span>`])) ||
+    `<div class="panel-body"><p class="dash-none">${L('Нет данных за период')}</p></div>`) +
+    `<p class="hint">${L('Заказы распределяются по городам, поэтому статистика менеджера — это статистика его города.')}</p>`;
+
+  const system = isDev ? panel(L('Система'), `<div class="panel-body">
+    <div class="kpis">
+      ${kpi(L('Размер базы'), esc(sys.db_size || '—'))}
+      ${kpi(L('Версия Postgres'), esc(sys.db_version || '—'))}
+      ${kpi(L('Версия схемы'), esc(sys.schema_version || '—'))}
+      ${kpi(L('Соединений'), nf(sys.connections))}
+      ${kpi(L('Заданий в очереди'), nf(sys.jobs_pending))}
+      ${kpi(L('Ошибок за сутки'), nf(sys.jobs_failed_24h))}
+      ${kpi(L('Рассылок в очереди'), nf(sys.broadcast_queue))}
+      ${kpi(L('Зависших оплат'), nf(sys.orders_stuck))}
+      ${kpi(L('Бот'), sys.bot ? esc(sys.bot.version || '—') : L('нет сигнала'))}
+      ${kpi(L('Бот на связи'), sys.bot ? fdate(sys.bot.beat_at) : '—')}
+      ${kpi(L('Память бота'), sys.bot && sys.bot.rss_mb ? sys.bot.rss_mb + ' MB' : '—')}
+      ${kpi(L('Node'), sys.bot ? esc(sys.bot.node || '—') : '—')}
+    </div>
+    ${barChart(sys.tables || [], 'name', 'bytes', { label: r => r.name + ' · ' + r.size })}
+  </div>`) : '';
+
+  swap(m, panel(L('Дашборд'), `<div class="panel-body">
+      <div class="tools">${ranges}</div>${customRow}
+      ${cards}</div>`) + charts + goods + clients + mgrs + system);
+
+  m.querySelectorAll('[data-range]').forEach(b => b.onclick = () => {
+    dashRange = b.dataset.range;
+    localStorage.setItem('kv_dash_range', dashRange);
+    render();
+  });
+  const apply = document.getElementById('d_apply');
+  if (apply) apply.onclick = () => {
+    dashCustom = { from: document.getElementById('d_from').value, to: document.getElementById('d_to').value };
+    if (!dashCustom.from || !dashCustom.to) return toast(L('Укажите обе даты'), true);
+    render();
+  };
+}
 
 /* ================= промокоды ================= */
 // Правила лежат в базе, скидку считает функция promo_check — панель только заводит условия.
