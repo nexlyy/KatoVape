@@ -3,7 +3,8 @@
 // fetch — каталог, строки products и promo_check.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { priceCart } from '../supabase/functions/_shared/pricing.ts';
+import { priceCart, withCardSurcharge, CARD_SURCHARGE } from '../supabase/functions/_shared/pricing.ts';
+import { CORE_SRC } from './helpers/core-src.mjs';
 
 const TIERS = [{ q: 1, p: 50 }, { q: 3, p: 45 }, { q: 5, p: 40 }, { q: 10, p: 35 }];
 const CATALOG = {
@@ -198,4 +199,21 @@ test('чужой товар в корзине отклоняется', async () 
 
 test('пустой заказ отклоняется', async () => {
   await assert.rejects(() => priceCart(env, { items: [] }), (e) => e.code === 'empty');
+});
+
+// Наценка за карту: покупатель видит её в окне заказа до подтверждения, поэтому списание
+// и записанная сумма обязаны совпасть с тем, что показала витрина.
+test('карта дороже на 10%, сумма и списание не расходятся', async () => {
+  const base = await priceCart(env, { items: [line('plain', '', 7)], delivery: 'inpost' });
+  const card = withCardSurcharge(base);
+  assert.equal(base.total_zl, 222);                       // 7 × 30 + 12 доставка
+  assert.equal(card.total_zl, Math.round(222 * 1.1));      // 244
+  assert.equal(card.amount, card.total_zl * 100);          // списываем ровно записанное
+  assert.equal(base.total_zl, 222, 'исходный расчёт не должен меняться на месте');
+});
+
+test('наценка за карту одна и та же на витрине и на сервере', () => {
+  const front = CORE_SRC.match(/CARD_SURCHARGE\s*=\s*([\d.]+)/);
+  assert.ok(front, 'в core.js не найдена CARD_SURCHARGE');
+  assert.equal(Number(front[1]), CARD_SURCHARGE);
 });

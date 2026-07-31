@@ -146,7 +146,8 @@ const L = {
 
     admNewOrder: '<b>Новый заказ №{id}</b> · {city}',
     admPaidOnline: 'Оплачено онлайн ({provider})',
-    admPayOnPickup: 'Оплата при выдаче',
+    admPayOnPickup: 'Оплата при выдаче, наличными',
+    admPayOnPickupCard: 'Оплата при выдаче, картой (+10%)',
     admResSoon: 'Через час бронь: <b>{name}</b> на {time} ({city}){who}.',
 
     admStatsTitle: '<b>Статистика</b> · {scope}',
@@ -326,7 +327,8 @@ const L = {
 
     admNewOrder: '<b>Нове замовлення №{id}</b> · {city}',
     admPaidOnline: 'Оплачено онлайн ({provider})',
-    admPayOnPickup: 'Оплата при отриманні',
+    admPayOnPickup: 'Оплата при отриманні, готівкою',
+    admPayOnPickupCard: 'Оплата при отриманні, карткою (+10%)',
     admResSoon: 'Через годину бронь: <b>{name}</b> на {time} ({city}){who}.',
 
     admStatsTitle: '<b>Статистика</b> · {scope}',
@@ -506,7 +508,8 @@ const L = {
 
     admNewOrder: '<b>Nowe zamówienie nr {id}</b> · {city}',
     admPaidOnline: 'Opłacone online ({provider})',
-    admPayOnPickup: 'Płatność przy odbiorze',
+    admPayOnPickup: 'Płatność przy odbiorze, gotówką',
+    admPayOnPickupCard: 'Płatność przy odbiorze, kartą (+10%)',
     admResSoon: 'Za godzinę rezerwacja: <b>{name}</b> na {time} ({city}){who}.',
 
     admStatsTitle: '<b>Statystyki</b> · {scope}',

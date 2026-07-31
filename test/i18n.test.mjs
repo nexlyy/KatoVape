@@ -47,6 +47,47 @@ test('в боте не осталось русского текста мимо �
   assert.deepEqual(hits, [], 'строки надо перенести в i18n.mjs');
 });
 
+// n-й аргумент вызова: режем по запятым верхнего уровня, не заглядывая внутрь скобок и строк
+function topLevelArg(args, n) {
+  const parts = [];
+  let depth = 0, quote = null, start = 0;
+  for (let i = 0; i < args.length; i++) {
+    const c = args[i];
+    if (quote) { if (c === quote && args[i - 1] !== '\\') quote = null; continue; }
+    if (c === "'" || c === '"' || c === '`') quote = c;
+    else if ('([{'.includes(c)) depth++;
+    else if (')]}'.includes(c)) depth--;
+    else if (c === ',' && depth === 0) { parts.push(args.slice(start, i)); start = i + 1; }
+  }
+  parts.push(args.slice(start));
+  return parts[n] || '';
+}
+
+// Ключи бот подставляет и через тернарник (tr(lang, card ? 'a' : 'b')), поэтому простой
+// поиск tr(lang, 'ключ') такие места не видит: опечатка там уходит в чат клиента как
+// голое имя ключа. Разбираем аргументы целиком.
+test('все ключи, которые зовёт бот, есть в словаре', () => {
+  const known = new Set(keysOf('ru'));
+  const bad = new Set();
+  for (const m of BOT.matchAll(/\btr\(/g)) {
+    let depth = 1, i = m.index + m[0].length;
+    while (i < BOT.length && depth > 0) {
+      if (BOT[i] === '(') depth++;
+      else if (BOT[i] === ')') depth--;
+      i++;
+    }
+    // ключ — второй аргумент; третий это объект подстановок, литералы оттуда не ключи
+    const args = BOT.slice(m.index + m[0].length, i - 1);
+    const key = topLevelArg(args, 1)
+      // сравнения вида x === 'card' ключами не являются
+      .replace(/[=!]==\s*'[^']*'/g, ' ');
+    for (const lit of key.matchAll(/'([^']*)'/g)) {
+      if (!known.has(lit[1])) bad.add(lit[1]);
+    }
+  }
+  assert.deepEqual([...bad], [], 'этих строк нет в i18n.mjs');
+});
+
 test('язык распознаётся по коду телеграма', () => {
   assert.equal(pickLang('uk-UA'), 'uk');
   assert.equal(pickLang('pl'), 'pl');

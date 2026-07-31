@@ -3,7 +3,7 @@
 // client_secret goes out; the Stripe key stays in STRIPE_SECRET_KEY. Payment is confirmed by
 // the webhook, never by the front end.
 import { cors, json } from "../_shared/cors.ts";
-import { priceCart, type Env } from "../_shared/pricing.ts";
+import { priceCart, withCardSurcharge, type Env } from "../_shared/pricing.ts";
 import { rest, userFromToken } from "../_shared/rest.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -29,9 +29,8 @@ Deno.serve(async (req) => {
   } catch (e) {
     return json({ error: (e && (e as any).code) || "price" }, 400);
   }
-  // Card payment costs 10% more; cash on pickup keeps the plain price.
-  priced.amount = Math.round(priced.amount * 1.1);
-  priced.total_zl = Math.round(priced.total_zl * 1.1);
+  // This path is always a card, so the surcharge always applies.
+  priced = withCardSurcharge(priced);
 
   // Create the order first so the webhook can find it by metadata.order_id.
   const ct = b.contact || {};

@@ -4,7 +4,7 @@
 // Pay and cards work without domain verification. initData is verified so nobody can order
 // under another name, the server computes the amount and the webhook confirms payment.
 import { cors, json } from "../_shared/cors.ts";
-import { priceCart, type Env } from "../_shared/pricing.ts";
+import { priceCart, withCardSurcharge, type Env } from "../_shared/pricing.ts";
 import { verifyInitData } from "../_shared/telegram.ts";
 import { rest, profileIdByTelegram } from "../_shared/rest.ts";
 
@@ -32,9 +32,8 @@ Deno.serve(async (req) => {
   let priced;
   try { priced = await priceCart(env, b); }
   catch (e) { return json({ error: (e && (e as any).code) || "price" }, 400); }
-  // Card payment costs 10% more; cash on pickup keeps the plain price.
-  priced.amount = Math.round(priced.amount * 1.1);
-  priced.total_zl = Math.round(priced.total_zl * 1.1);
+  // This path is always a card, so the surcharge always applies.
+  priced = withCardSurcharge(priced);
 
   // Attach the order to the same account as on the website so reviews link up later.
   const userId = await profileIdByTelegram(tgId);

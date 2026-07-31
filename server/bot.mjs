@@ -861,7 +861,7 @@ async function notifyOrders() {
   // pending (card checkout started but unpaid) is not shown to managers: only cash on
   // pickup (unpaid) and orders already paid online (paid).
   const list = await sbSelect('orders',
-    'manager_notified_at=is.null&payment_status=in.(unpaid,paid)&select=id,city,items,sum,delivery,address,contact,comment,promo,discount,payment_status,payment_provider,profiles(username,telegram_username,telegram_id)').catch(() => []);
+    'manager_notified_at=is.null&payment_status=in.(unpaid,paid)&select=id,city,items,sum,delivery,address,contact,comment,promo,discount,payment_status,payment_provider,pay_way,profiles(username,telegram_username,telegram_id)').catch(() => []);
   for (const o of list || []) {
     const c = o.contact || {};
     const p = o.profiles || {};
@@ -875,9 +875,11 @@ async function notifyOrders() {
         esc(itemsLine(o)),
         '',
         tr(lang, 'admOrderTotal', { sum: o.sum || 0 }) + promoLine(lang, o),
+        // Cash and card at pickup are different sums and different preparation: the manager
+        // needs the terminal ready, so the method is named rather than implied.
         o.payment_status === 'paid'
           ? tr(lang, 'admPaidOnline', { provider: esc(o.payment_provider || 'stripe') })
-          : tr(lang, 'admPayOnPickup'),
+          : tr(lang, o.pay_way === 'card' ? 'admPayOnPickupCard' : 'admPayOnPickup'),
         tr(lang, 'admOrderDeliv', { deliv: esc(delivLine(lang, o)) }),
         o.comment ? tr(lang, 'admOrderComment', { text: esc(o.comment) }) : '',
         who ? '\n' + tr(lang, 'admOrderClient', { who: esc(who) }) : '',

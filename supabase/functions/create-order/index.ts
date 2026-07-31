@@ -4,7 +4,7 @@
 // goods over for it. The cart is now priced by the same priceCart the card payment uses.
 // Two entry paths: the website sends an access token, the mini app a signed initData.
 import { cors, json } from "../_shared/cors.ts";
-import { priceCart, type Env } from "../_shared/pricing.ts";
+import { priceCart, withCardSurcharge, type Env } from "../_shared/pricing.ts";
 import { verifyInitData } from "../_shared/telegram.ts";
 import { rest, userFromToken, profileIdByTelegram } from "../_shared/rest.ts";
 
@@ -63,10 +63,16 @@ Deno.serve(async (req) => {
   const city = CITIES.includes(String(b.city)) ? String(b.city) : "katowice";
   const delivery = DELIVERY.includes(String(b.delivery)) ? String(b.delivery) : "pickup";
 
+  // Paying by card at pickup costs 10% more, and that is the figure the customer confirms in
+  // the dialog. The choice used to be dropped here and every order stored as cash for the
+  // plain price, so the screen promised one number and the manager was handed another.
+  const payWay = String(b.pay_way) === "card" ? "card" : "cash";
+
   // Total, stock, promo and delivery are all computed server-side from our own catalogue.
   let priced;
   try { priced = await priceCart(env, { ...b, city, delivery }); }
   catch (e) { return json({ error: (e && (e as any).code) || "price" }, 400); }
+  if (payWay === "card") priced = withCardSurcharge(priced);
 
   const contact = contactOf(b.contact);
   if (!contact.name || !contact.phone) return json({ error: "contact" }, 400);
@@ -82,7 +88,7 @@ Deno.serve(async (req) => {
       contact, comment: str(b.comment, 500) || null,
       // Codes and discount as they actually applied server-side, not as sent by the client.
       promo: priced.promo.length ? priced.promo : null, discount: priced.discount,
-      pay_way: "cash", status: "new",
+      pay_way: payWay, status: "new",
       // Cash on pickup: no money yet; the bot job shows the order to the manager.
       payment_status: "unpaid",
       amount: priced.amount, currency: priced.currency,

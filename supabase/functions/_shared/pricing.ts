@@ -147,6 +147,17 @@ export interface Priced {
   promo: string[];      // codes that actually applied; these go into the order
 }
 
+// Paying by card costs 10% more, cash on pickup keeps the plain price. The same constant is
+// CARD_SURCHARGE in shared/core.js, which shows the customer the figure before they confirm.
+// Rounding order matters: the zloty total is rounded first and the charge derived from it,
+// exactly like cardTotal() on the front. Scaling the grosz amount separately drifted from the
+// stored sum by up to 50 grosz, so the card was charged 115.50 for an order recorded as 116.
+export const CARD_SURCHARGE = 0.10;
+export function withCardSurcharge(p: Priced): Priced {
+  const total_zl = Math.round(p.total_zl * (1 + CARD_SURCHARGE));
+  return { ...p, total_zl, amount: total_zl * 100 };
+}
+
 // Prices a cart. Throws {code} on an unknown item, missing stock or an empty order.
 export async function priceCart(
   env: Env,
