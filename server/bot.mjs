@@ -98,12 +98,23 @@ const validPaczko = s => /^[A-Z]{3}\d{2,4}[A-Z]{0,2}$/.test(s);
 
 // Any message to the bot means the person started it and can receive broadcasts.
 // opted_in stays out of the payload so the column default applies on insert.
-async function rememberUser(f) {
-  if (!f || !f.id) return;
+//
+// The language is deliberately NOT part of this upsert. It used to be, and since this runs on
+// every message and every button press it overwrote the language chosen in settings with the
+// Telegram client language on the very next tap. The client language is only a starting point,
+// applied once, when the row still has none.
+async function touchUser(f) {
+  if (!f || !f.id) return null;
   await sbUpsert('bot_users', {
-    telegram_id: f.id, username: f.username || null,
-    first_name: f.first_name || null, lang: f.language_code || null
-  }, 'telegram_id');
+    telegram_id: f.id, username: f.username || null, first_name: f.first_name || null
+  }, 'telegram_id').catch(() => {});
+  const st = await botUser(f.id);
+  if (st && !st.lang && f.language_code) {
+    const lang = pickLang(f.language_code);
+    await setBotUser(f.id, { lang });
+    st.lang = lang;
+  }
+  return st;
 }
 async function botUser(id) {
   const r = await sbSelect('bot_users', 'telegram_id=eq.' + id + '&select=*&limit=1').catch(() => null);
@@ -648,8 +659,7 @@ async function handleUpdate(u) {
   const m = u.message; if (!m) return;
   if (!(m.chat && m.chat.type === 'private')) return;
   const f = m.from || {};
-  await rememberUser(f).catch(() => {});
-  let st = await botUser(f.id);
+  let st = await touchUser(f);
   const lang = pickLang((st && st.lang) || f.language_code);
 
   if (m.contact) { await onContact(m, st, lang).catch(() => {}); return; }
@@ -699,8 +709,7 @@ async function handleCallback(q) {
   const selfAnswer = /^[or]:set:/.test(data);
   if (!selfAnswer) await answerCallback(q.id).catch(() => {});
 
-  await rememberUser(f).catch(() => {});
-  const st = await botUser(f.id);
+  const st = await touchUser(f);
   const lang = pickLang((st && st.lang) || f.language_code);
   const city = (st && st.city) || CITIES[0];
   const show = scr => editMessage(chat, mid, scr.text, { reply_markup: scr.markup });
