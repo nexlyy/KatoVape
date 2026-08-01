@@ -115,5 +115,5 @@ test('город из выбора человека не считается ли
   const { api } = claimSandbox({ kv_owner: 'user-A' });
   const owned = [...api.OWNED];
   assert.ok(owned.includes('kv_city_picked'), 'отметка ручного выбора должна сбрасываться');
-  assert.ok(!owned.includes('kv_lang'), 'язык — настройка устройства');
+  assert.ok(!owned.includes('kv_lang'), 'язык: настройка устройства');
 });

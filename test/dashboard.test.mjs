@@ -23,7 +23,7 @@ const box = {
 vm.createContext(box);
 vm.runInContext(
   slice('const DASH_RANGES = [', 'async function renderDash(') +
-  // dashRange объявлен через let, снаружи его не видно — отдаём сеттер из самой песочницы
+  // dashRange объявлен через let, снаружи его не видно, отдаём сеттер из самой песочницы
   '\nout = { dashBounds, trend, lineChart, barChart, donut, money, nf, RING_COLORS,' +
   ' setRange: (r) => { dashRange = r; }, setCustom: (c) => { dashCustom = c; },' +
   ' fillSeries, dashLabel };',
@@ -31,7 +31,7 @@ vm.runInContext(
 );
 const D = box.out;
 
-test('период по умолчанию — 30 дней, границы согласованы', () => {
+test('период по умолчанию: 30 дней, границы согласованы', () => {
   const b = D.dashBounds();
   const from = new Date(b.from), to = new Date(b.to);
   assert.ok(from < to, 'начало периода позже конца');
@@ -52,7 +52,7 @@ test('произвольный диапазон берётся из полей, 
   D.setRange('custom');
   D.setCustom({ from: '2026-01-01', to: '2026-01-31' });
   const b = D.dashBounds();
-  // выбранные даты локальные, а ISO уходит в UTC — сравниваем по смыслу, а не по строке
+  // выбранные даты локальные, а ISO уходит в UTC, сравниваем по смыслу, а не по строке
   const from = new Date(b.from), to = new Date(b.to);
   assert.equal(from.getFullYear() + '-' + String(from.getMonth() + 1).padStart(2, '0') + '-' + String(from.getDate()).padStart(2, '0'), '2026-01-01');
   assert.ok(to > from);
@@ -73,7 +73,7 @@ test('рост считается от предыдущего периода и 
   assert.equal(D.trend(150, 100), 50);
   assert.equal(D.trend(50, 100), -50);
   assert.equal(D.trend(100, 100), 0);
-  assert.equal(D.trend(0, 0), 0, 'ничего не было и не стало — это не падение');
+  assert.equal(D.trend(0, 0), 0, 'ничего не было и не стало, это не падение');
   assert.equal(D.trend(500, 0), null, 'сравнивать не с чем, проценты показывать нельзя');
 });
 

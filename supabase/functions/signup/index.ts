@@ -57,10 +57,16 @@ Deno.serve(async (req) => {
     p_username: username, p_email: email || null, p_phone: phone || null,
   });
   const a = Array.isArray(av) ? av[0] : av;
-  if (a) {
+  if (a && (a.username_taken || a.email_taken || a.phone_taken)) {
+    // A "taken" answer tells the asker that this address or number belongs to a customer of a
+    // vape shop, which is not something to hand out on request. The form still says which
+    // field to change, because a registration that will not say why is unusable, but the
+    // answer costs the same as creating an account, so the hourly cap applies to probing too.
+    // Without this the counter only saw finished signups and the check itself was free.
+    await admin.from("auth_attempts").insert({ key: suKey }).then(() => {}, () => {});
     if (a.username_taken) return json({ error: "takenUser" }, 409);
     if (a.email_taken) return json({ error: "takenEmail" }, 409);
-    if (a.phone_taken) return json({ error: "takenPhone" }, 409);
+    return json({ error: "takenPhone" }, 409);
   }
 
   // Synthetic address on a real TLD so auth.users accepts it.

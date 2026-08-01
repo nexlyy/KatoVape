@@ -16,7 +16,7 @@
 scp server/bot.mjs server/tg.mjs server/i18n.mjs mcr:/opt/katovape/server/
 ssh mcr "systemctl restart katovape-api"
 ```
-Проверка: `ssh mcr "journalctl -u katovape-api -n 20 --no-pager"` — ожидаем
+Проверка: `ssh mcr "journalctl -u katovape-api -n 20 --no-pager"`, ожидаем
 `стартовал`, `menuButton: ok`, `бот: long polling`.
 
 `.env` (`/opt/katovape/.env`, права 600) и папка `data/` при этом не трогаются. В `.env` лежат
@@ -24,25 +24,29 @@ ssh mcr "systemctl restart katovape-api"
 `KV_ADMIN_URL`.
 
 ## Обновить витрину и админку
-`git push` в `main` — Pages пересобирается сам. Настройки фронта лежат в `shared/config.js`
+`git push` в `main`, Pages пересобирается сам. Настройки фронта лежат в `shared/config.js`
 (единственная копия): ссылки городов `CITY_LINKS`, выключатель оплаты `PAYMENTS_CARD_OFF`,
 `ADMIN_URL`, ключи Supabase (публичные) и имя бота.
 
-Важно: браузеры кешируют скрипты по строке `?v=` в подключении. Поменяли `shared/*.js` —
-поднимите номер версии во всех восьми демо (`demos/*/site|app/index.html`), иначе у людей
-останется старый файл. Админка (demos/admin/index.html) подключает config.js своей строкой — её версию поднимайте вместе с остальными.
+Браузеры кешируют скрипты по строке `?v=` в подключении, поэтому после правки `shared/*.js`
+версию надо поднять во всех страницах, которые их подключают. Руками это делать не нужно:
+
+```
+npm run stamp
+```
+
+Скрипт считает хеш содержимого и проставляет его в витрину, мини-апп и админку.
+`npm run stamp:check` проверяет, что ничего не забыто, и годится для проверки перед пушем.
 
 ## Применить миграции базы
-Автоматического `db push` тут нет (проект не слинкован с CLI), миграции применяются вручную:
-Supabase → SQL Editor → New query → вставить файл целиком → Run. Порядок по номерам,
-все миграции идемпотентны (повторный запуск безопасен).
+Проект слинкован с CLI, поэтому миграции катятся командой из корня:
 
-Применены: `0001`–`0016`.
-Ждут применения: `0017_city_roles.sql`, `0018_comments.sql`, `0019_reservation_city_policy.sql`.
+```
+supabase db push
+```
 
-После `0017` менеджеры получают доступ только к своему городу, поэтому применять его нужно
-вместе с `0019` — иначе останется старая политика на брони из `0003`, и статусы чужого города
-всё ещё будут доступны на запись.
+Порядок по номерам, все миграции идемпотентны (повторный запуск безопасен). Что уже
+применено и на что обратить внимание, в `deploy/MIGRATIONS.md`.
 
 ## Обновить edge-функции
 Из корня проекта:
@@ -54,10 +58,10 @@ supabase functions deploy telegram-auth   --no-verify-jwt --project-ref vffqnydx
 supabase functions deploy login           --no-verify-jwt --project-ref vffqnydxofvunwausakv
 supabase functions deploy signup          --no-verify-jwt --project-ref vffqnydxofvunwausakv
 ```
-Подробности по ключам и вебхуку — в `deploy/PAYMENTS_SETUP.md`.
+Подробности по ключам и вебхуку, в `deploy/PAYMENTS_SETUP.md`.
 
 ## Безопасность
 - Токен бота и service-ключ только в `.env` на сервере (600) и в секретах Supabase, в git их нет.
 - Подпись Telegram проверяется бот-токеном на сервере (widget = SHA256, initData = HMAC).
-- Доступ в админку — таблицы `admins` / `admin_users`; раздел «Доступ» открыт только владельцу.
+- Доступ в админку, таблицы `admins` / `admin_users`; раздел «Доступ» открыт только владельцу.
 - Менеджер видит и правит только свой город: это закреплено политиками RLS, а не только интерфейсом.

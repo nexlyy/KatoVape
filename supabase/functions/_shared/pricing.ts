@@ -77,7 +77,7 @@ export interface Env {
 
 // The discount comes from the same promo_check database function the browser cart uses.
 // This used to keep its own list in content.json, so a code created in the panel was
-// invisible to checkout while an old demo code still applied — both ways the charge
+// invisible to checkout while an old demo code still applied, both ways the charge
 // disagreed with what the customer saw.
 // The per-user limit is not enforced here: auth.uid() is empty under service_role, so
 // promo_use counts it after the order.

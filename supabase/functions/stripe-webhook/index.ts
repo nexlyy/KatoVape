@@ -29,6 +29,18 @@ async function patchOrder(id: string | number, patch: Record<string, unknown>) {
   });
 }
 
+// What we asked for when the order was created, in grosz.
+async function orderAmount(id: string | number): Promise<{ amount: number; currency: string } | null> {
+  const res = await fetch(
+    SUPABASE_URL.replace(/\/$/, "") + "/rest/v1/orders?id=eq." + id + "&select=amount,currency",
+    { headers: { apikey: SERVICE_KEY, Authorization: "Bearer " + SERVICE_KEY } },
+  );
+  if (!res.ok) return null;
+  const rows = await res.json().catch(() => null);
+  const o = Array.isArray(rows) ? rows[0] : null;
+  return o ? { amount: Number(o.amount) || 0, currency: String(o.currency || "pln") } : null;
+}
+
 Deno.serve(async (req) => {
   if (req.method !== "POST") return new Response("method", { status: 405 });
   if (!WH_SECRET) return new Response("not configured", { status: 500 });
@@ -51,11 +63,28 @@ Deno.serve(async (req) => {
 
   if ((event.type === "payment_intent.succeeded" ||
        event.type === "checkout.session.completed") && orderId && sessionPaid) {
+    // A signature only proves the message came from Stripe, not that it pays for this order
+    // in full. Compare the money against what the order was created for, so a payment made
+    // for a different, smaller amount cannot flip an order to paid and send the goods out.
+    const paid = Number(obj.amount_total ?? obj.amount_received ?? obj.amount ?? 0);
+    const cur = String(obj.currency || "").toLowerCase();
+    const want = await orderAmount(orderId).catch(() => null);
+    const short = want && want.amount > 0 && paid < want.amount;
+    const wrongCurrency = want && cur && cur !== want.currency.toLowerCase();
+    if (short || wrongCurrency) {
+      // Left as it was, deliberately: the manager sees an order that never turned paid, and
+      // the money is visible in Stripe. Flipping it to failed would hide a real payment.
+      console.error("webhook: amount mismatch on order " + orderId +
+        " paid=" + paid + " " + cur + " expected=" + (want?.amount) + " " + want?.currency);
+      return new Response(JSON.stringify({ received: true, ignored: "amount" }), {
+        status: 200, headers: { "Content-Type": "application/json" },
+      });
+    }
     // Setting paid lets the notifyOrders bot job pick the order up for the manager.
     await patchOrder(orderId, {
       payment_status: "paid",
       paid_at: new Date().toISOString(),
-      amount: obj.amount_total ?? obj.amount_received ?? obj.amount ?? null,
+      amount: paid || null,
       payment_ref: obj.payment_intent || obj.id,
       updated_at: new Date().toISOString(),
     }).catch(() => {});

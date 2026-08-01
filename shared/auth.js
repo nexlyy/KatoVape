@@ -251,7 +251,7 @@ window.KVAuth = (function () {
     if (mount) decorateProfile(mount);
   }
 
-  // иконка профиля в шапке: если есть аватар (из Telegram или загруженный) — показываем его
+  // иконка профиля в шапке: если есть аватар (из Telegram или загруженный), показываем его
   const PROF_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>';
   // фото профиля: сохранённый аватар, иначе живое фото из Telegram (в мини-аппе доступно сразу)
   function tgPhoto() {
@@ -270,7 +270,7 @@ window.KVAuth = (function () {
       const { data } = await c.rpc('admin_role');
       adminRole = data || null;
       admin = !!data;
-    } catch (e) { /* нет связи — считаем, что прав нет */ }
+    } catch (e) { /* нет связи, считаем, что прав нет */ }
   }
   function isAdmin() { return admin; }
   function role() { return adminRole; }
@@ -285,8 +285,8 @@ window.KVAuth = (function () {
     btn.classList.toggle('has-ava', !!av);
   }
 
-  // блок профиля: залогинен — аватар, имя, контакты, выход (и смена фото на сайте);
-  // гость — только кнопка входа. Старый «Гость / Ваше имя / Сохранить» больше не нужен.
+  // блок профиля: залогинен: аватар, имя, контакты, выход (и смена фото на сайте);
+  // гость: только кнопка входа. Старый «Гость / Ваше имя / Сохранить» больше не нужен.
   function decorateProfile(el) {
     if (!el) return;
     const tg = window.Telegram && window.Telegram.WebApp;
@@ -303,7 +303,7 @@ window.KVAuth = (function () {
       if (p.phone) rows.push('<span>' + esc(p.phone) + '</span>');
       if (p.telegram_id) rows.push('<span class="kva-tg">✈ ' + tr('linked') +
         (p.telegram_username ? ' @' + esc(p.telegram_username) : '') + '</span>');
-      // админу — кнопка перехода в панель управления
+      // админу: кнопка перехода в панель управления
       const adminBtn = (isAdmin() && CFG.ADMIN_URL)
         ? '<a class="kva-admin" href="' + esc(CFG.ADMIN_URL) + '" target="_blank" rel="noopener">⚙ ' + tr('adminPanel') + '</a>'
         : '';
@@ -425,7 +425,7 @@ window.KVAuth = (function () {
     s.setAttribute('data-size', 'large');
     s.setAttribute('data-userpic', 'false');
     // без data-request-access=write: виджет делится только именем и фото, не просит
-    // разрешение боту писать и не показывает телефон — так вход не пугает клиента
+    // разрешение боту писать и не показывает телефон, так вход не пугает клиента
     s.setAttribute('data-onauth', 'KVAuth._tgWidget(user)');
     box.appendChild(s);
   }
@@ -708,7 +708,7 @@ window.KVAuth = (function () {
       return !error;
     } catch (e) { return false; }
   }
-  // true/false — функция ответила; 'no_function' — её ещё нет, решает вызывающий
+  // true/false: функция ответила; 'no_function': её ещё нет, решает вызывающий
   async function orderViaFunction(data) {
     if (!CFG.FUNCTIONS_URL) return 'no_function';
     const tg = window.Telegram && window.Telegram.WebApp;
@@ -734,7 +734,7 @@ window.KVAuth = (function () {
     try {
       const c = await client();
       // фильтр по user_id обязателен: RLS пускает админов ко всем заказам (is_admin),
-      // а в личном профиле человек должен видеть только свои — иначе чужие заказы утекают
+      // а в личном профиле человек должен видеть только свои, иначе чужие заказы утекают
       const { data, error } = await c.from('orders').select('*')
         .eq('user_id', user.id).order('created_at', { ascending: false }).limit(30);
       return error ? null : data;

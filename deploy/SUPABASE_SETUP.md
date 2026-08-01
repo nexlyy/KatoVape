@@ -5,9 +5,9 @@
 service_role: рассылки, синк ассортимента, уведомления о поступлении по броням.
 
 ## Что нужно от тебя
-1. **Проект Supabase** — URL, ключ `anon`, ключ `service_role` (Project Settings → API).
+1. **Проект Supabase**: URL, ключ `anon`, ключ `service_role` (Project Settings → API).
 2. **Токен бота** от @BotFather.
-   (Либо дай Supabase access token — заведу проект и накачу схему сам.)
+   (Либо дай Supabase access token, заведу проект и накачу схему сам.)
 
 ## 1. Схема
 В Supabase → SQL Editor выполнить по порядку:
@@ -59,6 +59,6 @@ journalctl -u katovape-api -f      # 'KatoVape bot (Supabase) стартовал
 - **Бот на VPS** poll-ит: Telegram (getUpdates → /start, бронь-диплинки) и Supabase (pending рассылки/синк → выполняет; после синка шлёт уведомления по броням).
 - Сервер ничего веб-facing не держит; MCR Planet не задет.
 
-## Осталось доделать в коде (когда дашь ключи — сделаю и проверю)
+## Осталось доделать в коде (когда дашь ключи: сделаю и проверю)
 - Фронт: бронь/заказ через supabase-js в режиме BACKEND='supabase' (сейчас это только в локальном демо-бэкенде).
 - Админка demos/admin: переключить с локального API на supabase-js (RPC admin_overview/admin_customers + select orders/reservations/demand).

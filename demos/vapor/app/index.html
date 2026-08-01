@@ -154,8 +154,8 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--mint);outline-o
 <button class="cta" id="cta"></button>
 
 <script src="../../../shared/config.js?v=6fff6fa3"></script>
-<script src="../../../shared/core.js?v=c35e81fa"></script>
-<script src="../../../shared/auth.js?v=484ee133"></script>
+<script src="../../../shared/core.js?v=3a229a06"></script>
+<script src="../../../shared/auth.js?v=cc106de7"></script>
 <script src="../../../shared/pay.js?v=8e772f69"></script>
 <script>
 // живой дым: дрейфующее fBm-поле шума (тайлящаяся текстура печётся один раз).
@@ -243,7 +243,7 @@ const CATD={
 function App(){
   const [tick,setTick]=useState(0); const [ready,setReady]=useState(false);
   const [cat,setCat]=useState('all'); const [q,setQ]=useState('');
-  const [view,setView]=useState('cats');   // 'cats' — сетка кубов, 'list' — товары
+  const [view,setView]=useState('cats');   // 'cats': сетка кубов, 'list': товары
   useEffect(()=>{
     const qi=document.getElementById('q');
     qi.addEventListener('input',e=>setQ(e.target.value));
@@ -260,9 +260,9 @@ function App(){
   },[view]);
   const cd = k => (CATD[KV.lang]||CATD.ru)[k];
   const showCats = view==='cats' && !q.trim();
-  // на экране категорий верхняя лента чипов не нужна — прячем её
+  // на экране категорий верхняя лента чипов не нужна, прячем её
   useEffect(()=>{ const s=document.querySelector('.chips'); if(s) s.style.display=showCats?'none':'flex'; },[showCats,tick]);
-  // чипы строит chrome() по текущей категории — перерисовываем при её смене
+  // чипы строит chrome() по текущей категории, перерисовываем при её смене
   useEffect(()=>{ if(ready&&KV.db&&view==='list') chrome(); },[cat,view]);
   function catThumb(c){ const it=c.items.find(i=>KV.status(i)!=='out')||c.items[0]; return it?'../../../data/photos/'+it.id+'.jpg':''; }
   function catCount(c){ return c.items.filter(i=>KV.status(i)!=='out').length+'/'+c.items.length; }

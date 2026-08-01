@@ -6,16 +6,16 @@
 
 ## 1. Компоненты
 
-- **Мини-апп** (готово) — витрина внутри Telegram, 4 стиля, общий `shared/core.js`.
+- **Мини-апп** (готово): витрина внутри Telegram, 4 стиля, общий `shared/core.js`.
   Внутри Telegram человек авторизован сам по `initData`.
-- **Сайт** (готово) — та же витрина в браузере, вход по логину/почте/телефону или Telegram.
-- **Бот** (делаем) — хостит мини-апп (кнопка-меню), шлёт уведомления и рассылки,
+- **Сайт** (готово): та же витрина в браузере, вход по логину/почте/телефону или Telegram.
+- **Бот** (делаем): хостит мини-апп (кнопка-меню), шлёт уведомления и рассылки,
   принимает бронь и заказы.
-- **Backend API** (делаем) — единая точка для сайта, мини-аппа и админки. На демо это
+- **Backend API** (делаем): единая точка для сайта, мини-аппа и админки. На демо это
   локальный `server/` (node:sqlite). В прод переносим на Postgres (Supabase или свой на VPS).
-- **Google Sheets** — заказчик ведёт ассортимент. Синк тянет остатки в БД.
-- **Админка** (делаем) — веб-панель для своих: спрос, заказы, данные клиентов.
-- **Stripe** (позже) — оплата на сайте и в мини-аппе.
+- **Google Sheets**: заказчик ведёт ассортимент. Синк тянет остатки в БД.
+- **Админка** (делаем): веб-панель для своих: спрос, заказы, данные клиентов.
+- **Stripe** (позже): оплата на сайте и в мини-аппе.
 
 ```
 Google Sheets ──sync──> Backend/DB <──── Сайт / Мини-апп
@@ -29,18 +29,18 @@ Google Sheets ──sync──> Backend/DB <──── Сайт / Мини-а�
 
 ## 2. Модель данных (Postgres)
 
-- `users` — уже есть в демо: id, username, email, phone, telegram_id, telegram_username,
+- `users`: уже есть в демо: id, username, email, phone, telegram_id, telegram_username,
   display_name, avatar, created_at.
-- `products` — зеркало Google Sheets: id, city, category, name, brand, price, tiers(jsonb),
+- `products`: зеркало Google Sheets: id, city, category, name, brand, price, tiers(jsonb),
   nic, updated_at, синк перезаписывает.
-- `flavors` — id, product_id, name, qty (или хранить как jsonb в products, как в products.json).
-- `reservations` — id, user_id, product_id, flavor, city, created_at, notified_at(nullable),
+- `flavors`: id, product_id, name, qty (или хранить как jsonb в products, как в products.json).
+- `reservations`: id, user_id, product_id, flavor, city, created_at, notified_at(nullable),
   status (waiting/notified/cancelled). Для «БРОНЬ, оповести когда появится».
-- `orders` — id, user_id, city, items(jsonb), sum, delivery(method+addr), status
+- `orders`: id, user_id, city, items(jsonb), sum, delivery(method+addr), status
   (new/paid/done/cancelled), stripe_session_id(nullable), created_at.
-- `broadcasts` — id, author_admin, text, audience, sent_count, created_at.
-- `bot_users` — telegram_id, opted_in(bool), lang, first_seen. Кто нажал /start, кому можно слать.
-- `admins` — telegram_id, role (owner/manager), добавляется вручную.
+- `broadcasts`: id, author_admin, text, audience, sent_count, created_at.
+- `bot_users`: telegram_id, opted_in(bool), lang, first_seen. Кто нажал /start, кому можно слать.
+- `admins`: telegram_id, role (owner/manager), добавляется вручную.
 
 RLS/доступ: клиент видит только своё (свой профиль, свои заказы, свою бронь).
 Админ-эндпоинты закрыты проверкой telegram_id в `admins` (и отдельным JWT для веб-админки).
@@ -107,7 +107,7 @@ RLS/доступ: клиент видит только своё (свой про
 - Секреты (`TELEGRAM_BOT_TOKEN`, ключ сервис-аккаунта Google, `STRIPE_SECRET`,
   `STRIPE_WEBHOOK_SECRET`) в `/opt/katovape/.env`, права 600, в git не кладём.
 - БД: Postgres на VPS (или Supabase, если хочешь managed). rsync-деплой как у MCR, но помним
-  урок: правки на сервере затираются деплоем, единственный источник — репозиторий.
+  урок: правки на сервере затираются деплоем, единственный источник: репозиторий.
 
 ## 6. Безопасность
 
@@ -115,7 +115,7 @@ RLS/доступ: клиент видит только своё (свой про
 - Подпись Telegram (`initData`, widget) проверяется бот-токеном на бэкенде (алгоритм уже
   написан в `supabase/functions/telegram-auth`).
 - Админ-доступ по allowlist `admins.telegram_id` + серверная проверка на каждом запросе.
-- Stripe webhook — проверка подписи. Пароли — bcrypt/scrypt. Данные клиентов отдаём только
+- Stripe webhook: проверка подписи. Пароли: bcrypt/scrypt. Данные клиентов отдаём только
   админам, обычный пользователь видит лишь своё.
 
 ## 7. Этапы

@@ -3,13 +3,13 @@
 // missing key, not as a Russian sentence leaking into a Polish chat.
 const L = {
   ru: {
-    ageGate: 'KatoVape — магазин для совершеннолетних. Подтвердите, пожалуйста, что Вам исполнилось 18 лет.',
+    ageGate: 'KatoVape: магазин для совершеннолетних. Подтвердите, пожалуйста, что Вам исполнилось 18 лет.',
     ageYes: 'Мне есть 18 лет',
     ageNo: 'Мне нет 18 лет',
     ageDenied: 'К сожалению, магазин доступен только совершеннолетним.',
     onbIntro: 'Чтобы оформлять заказы, заполните профиль. Указывайте настоящие данные: по ним оформляется доставка, ошибка задержит посылку.',
     askName: 'Введите Ваши имя и фамилию.',
-    badName: 'Введите имя и фамилию — минимум два слова.',
+    badName: 'Введите имя и фамилию, минимум два слова.',
     askPhone: 'Отправьте номер телефона кнопкой ниже или введите его вручную.',
     phoneBtn: 'Отправить номер',
     badPhone: 'Проверьте номер телефона и попробуйте снова.',
@@ -186,13 +186,13 @@ const L = {
   },
 
   uk: {
-    ageGate: 'KatoVape — магазин для повнолітніх. Підтвердьте, будь ласка, що Вам виповнилося 18 років.',
+    ageGate: 'KatoVape: магазин для повнолітніх. Підтвердьте, будь ласка, що Вам виповнилося 18 років.',
     ageYes: 'Мені є 18 років',
     ageNo: 'Мені немає 18 років',
     ageDenied: 'На жаль, магазин доступний лише повнолітнім.',
     onbIntro: 'Щоб оформлювати замовлення, заповніть профіль. Вказуйте справжні дані: за ними оформлюється доставка, помилка затримає посилку.',
     askName: 'Введіть Ваші імʼя та прізвище.',
-    badName: 'Введіть імʼя та прізвище — щонайменше два слова.',
+    badName: 'Введіть імʼя та прізвище, щонайменше два слова.',
     askPhone: 'Надішліть номер телефону кнопкою нижче або введіть його вручну.',
     phoneBtn: 'Надіслати номер',
     badPhone: 'Перевірте номер телефону та спробуйте ще раз.',
@@ -375,7 +375,7 @@ const L = {
     ageDenied: 'Niestety, sklep jest dostępny wyłącznie dla osób pełnoletnich.',
     onbIntro: 'Aby składać zamówienia, prosimy uzupełnić profil. Prosimy podawać prawdziwe dane: na ich podstawie realizujemy dostawę, a błąd opóźni przesyłkę.',
     askName: 'Prosimy podać imię i nazwisko.',
-    badName: 'Prosimy podać imię i nazwisko — co najmniej dwa słowa.',
+    badName: 'Prosimy podać imię i nazwisko, co najmniej dwa słowa.',
     askPhone: 'Prosimy wysłać numer telefonu przyciskiem poniżej lub wpisać go ręcznie.',
     phoneBtn: 'Wyślij numer',
     badPhone: 'Prosimy sprawdzić numer telefonu i spróbować ponownie.',

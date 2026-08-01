@@ -9,3 +9,6 @@ server/katovape.db-shm
 server/katovape.db-wal
 
 supabase/.temp/
+
+# локальные настройки Claude Code, в репозитории им делать нечего
+.claude/

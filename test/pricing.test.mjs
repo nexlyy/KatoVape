@@ -1,6 +1,6 @@
 // Серверный расчёт заказа: та же ступень по модели, что и в корзине. Гоняем настоящий
 // pricing.ts (его зовут create-order, create-payment и create-checkout), подменив только
-// fetch — каталог, строки products и promo_check.
+// fetch: каталог, строки products и promo_check.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { priceCart, withCardSurcharge, CARD_SURCHARGE } from '../supabase/functions/_shared/pricing.ts';
@@ -29,7 +29,7 @@ const PRODUCTS = [
 
 let cloudTiers = null;          // «менеджер поправил опт в панели»
 let promos = {};                // код -> ответ promo_check
-let promoStatus = 200;          // 500 — база не ответила
+let promoStatus = 200;          // 500: база не ответила
 const NO_PROMO = { ok: false, discount: 0, reason: 'not_found' };
 
 globalThis.fetch = async (url, opts) => {
@@ -50,7 +50,7 @@ const env = { SUPABASE_URL: 'https://x.supabase.co', SERVICE_KEY: 'k', CATALOG_B
 const line = (id, flavor, n) => ({ id, flavor, n });
 const sum = async (body) => (await priceCart(env, body)).total_zl;
 
-test('десять одинаковых вкусов — оптовая цена', async () => {
+test('десять одинаковых вкусов: оптовая цена', async () => {
   assert.equal(await sum({ items: [line('model-a', 'Strawberry', 10)] }), 350);
 });
 
@@ -60,7 +60,7 @@ test('разные вкусы одной модели складываются',
   }), 350);
 });
 
-test('девять штук — ступень пятёрки', async () => {
+test('девять штук: ступень пятёрки', async () => {
   assert.equal(await sum({ items: [line('model-a', 'Strawberry', 4), line('model-a', 'Mango', 5)] }), 360);
 });
 
@@ -110,7 +110,7 @@ test('скидку по промокоду даёт база, а не файл',
 });
 
 test('несколько кодов складываются, каждый считается от суммы товаров', async () => {
-  // корзина 350: LETO10 — 20 zł фиксом, LETO11 — 10% (35 zł)
+  // корзина 350, LETO10 даёт 20 zł фиксом, LETO11 ещё 10% (35 zł)
   promos = {
     LETO10: { ok: true, discount: 20, reason: null },
     LETO11: { ok: true, discount: 35, reason: null }
@@ -174,12 +174,12 @@ test('общая скидка не превышает корзину', async () 
     BIG1: { ok: true, discount: 300, reason: null },
     BIG2: { ok: true, discount: 300, reason: null }
   };
-  // товаров на 350, доставка 12 — в минус уйти нельзя
+  // товаров на 350, доставка 12: в минус уйти нельзя
   assert.equal(await sum({ items: [line('model-a', 'Strawberry', 10)], promo: ['BIG1', 'BIG2'], delivery: 'inpost' }), 12);
   promos = {};
 });
 
-test('если база не проверила код — оплату не пропускаем', async () => {
+test('если база не проверила код, оплату не пропускаем', async () => {
   promos = { LATO10: { ok: true, discount: 35, reason: null } };
   promoStatus = 500;
   await assert.rejects(

@@ -230,8 +230,8 @@ html[data-theme="light"] .hero h1 span::after{filter:saturate(1.5) brightness(.6
 
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="../../../shared/config.js?v=6fff6fa3"></script>
-<script src="../../../shared/core.js?v=c35e81fa"></script>
-<script src="../../../shared/auth.js?v=484ee133"></script>
+<script src="../../../shared/core.js?v=3a229a06"></script>
+<script src="../../../shared/auth.js?v=cc106de7"></script>
 <script src="../../../shared/pay.js?v=8e772f69"></script>
 <script>
 (function(){
@@ -337,7 +337,7 @@ function App(){
     document.getElementById('fPickup').textContent=KV.pickup();
     document.getElementById('fPay').textContent=KV.t('pay');
     document.getElementById('fWrite').textContent=KV.t('write');
-    // менеджер в подвале — тот же, что у кнопки в шапке: свой на каждый город
+    // менеджер в подвале, тот же, что у кнопки в шапке: свой на каждый город
     const mgr=document.getElementById('fMgr');
     mgr.href=KV.managerLink(); mgr.textContent=KV.managerName();
     document.getElementById('logoImg').src=KV.cityLogo();

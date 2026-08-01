@@ -130,7 +130,7 @@ window.KV = (function () {
       promoWhy_used_by_you: 'Вы уже использовали этот промокод',
       promoWhy_already: 'Этот код уже применён', remove: 'Убрать', hitBadge: 'Хит',
       promoWhy_no_stack: 'Этот код не складывается с другими', reviewEdit: 'Изменить отзыв',
-      payNow: 'Оплатить {n} zł', payInBrowser: 'Оплата открыта в браузере. Завершите её и вернитесь — подтвердим здесь.',
+      payNow: 'Оплатить {n} zł', payInBrowser: 'Оплата открыта в браузере. Завершите её и вернитесь, подтвердим здесь.',
       payWay: 'Способ оплаты', payCash: 'Наличными', payCard: 'Картой', payCardNote: '+10% к сумме', payFail: 'Оплата не прошла, попробуйте ещё раз',
       checkData: 'Проверьте данные:', fioPh: 'Фамилия и имя',
       errFio: 'Укажите фамилию и имя', errPhone2: 'Телефон в формате +48 600 000 000',
@@ -193,7 +193,7 @@ window.KV = (function () {
       promoWhy_used_by_you: 'Ви вже використали цей промокод',
       promoWhy_already: 'Цей код уже застосовано', remove: 'Прибрати', hitBadge: 'Хіт',
       promoWhy_no_stack: 'Цей код не складається з іншими', reviewEdit: 'Змінити відгук',
-      payNow: 'Сплатити {n} zł', payInBrowser: 'Оплата відкрита в браузері. Завершіть її та поверніться — підтвердимо тут.',
+      payNow: 'Сплатити {n} zł', payInBrowser: 'Оплата відкрита в браузері. Завершіть її та поверніться, підтвердимо тут.',
       payWay: 'Спосіб оплати', payCash: 'Готівкою', payCard: 'Карткою', payCardNote: '+10% до суми', payFail: 'Оплата не пройшла, спробуйте ще раз',
       checkData: 'Перевірте дані:', fioPh: 'Прізвище та ім’я',
       errFio: 'Вкажіть прізвище та ім’я', errPhone2: 'Телефон у форматі +48 600 000 000',
@@ -256,7 +256,7 @@ window.KV = (function () {
       promoWhy_used_by_you: 'Ten kod już został przez Ciebie użyty',
       promoWhy_already: 'Ten kod jest już zastosowany', remove: 'Usuń', hitBadge: 'Hit',
       promoWhy_no_stack: 'Tego kodu nie można łączyć z innymi', reviewEdit: 'Zmień opinię',
-      payNow: 'Zapłać {n} zł', payInBrowser: 'Płatność otwarta w przeglądarce. Dokończ ją i wróć — potwierdzimy tutaj.',
+      payNow: 'Zapłać {n} zł', payInBrowser: 'Płatność otwarta w przeglądarce. Dokończ ją i wróć, potwierdzimy tutaj.',
       payWay: 'Sposób płatności', payCash: 'Gotówką', payCard: 'Kartą', payCardNote: '+10% do sumy', payFail: 'Płatność nie przeszła, spróbuj ponownie',
       checkData: 'Sprawdź dane:', fioPh: 'Imię i nazwisko',
       errFio: 'Podaj imię i nazwisko', errPhone2: 'Telefon w formacie +48 600 000 000',
@@ -361,7 +361,7 @@ window.KV = (function () {
   ];
   // слоты времени самовывоза для брони (дефолт; реальные часы подставим из content.json позже)
   const RES_SLOTS = (window.KV_CONFIG && window.KV_CONFIG.RES_SLOTS) || ['10:00', '12:00', '14:00', '16:00', '18:00', '20:00'];
-  // оплата картой дороже на 10% (наличными при выдаче — цена та же). Наценку так же
+  // оплата картой дороже на 10% (наличными при выдаче: цена та же). Наценку так же
   // считает сервер в create-payment/create-checkout, чтобы списанная сумма совпадала.
   const CARD_SURCHARGE = 0.10;
   const cardTotal = () => Math.round(grandTotal() * (1 + CARD_SURCHARGE));
@@ -370,7 +370,7 @@ window.KV = (function () {
   const payTotal = () => (payWay === 'card' ? cardTotal() : grandTotal());
   // Платёж начат и ждёт ответа. Пока флаг поднят, окно заказа не перерисовывается:
   // перерисовка сносит форму Stripe вместе с начатым платежом, человек видит пустое место,
-  // жмёт ещё раз — и в базе остаётся второй заказ в pending.
+  // жмёт ещё раз, и в базе остаётся второй заказ в pending.
   let payBusy = false;
 
   // локализованное значение: объект {ru,uk,pl} -> строка текущего языка
@@ -466,7 +466,7 @@ window.KV = (function () {
 
   // вкусы показываем на английском (решение заказчика): кириллические слова переводим
   // пословно, английские/марочные (Sour Apple, Blue Razz) не трогаем. В ЗАКАЗ и для
-  // сопоставления отзывов уходит .name как есть — тут только отображение.
+  // сопоставления отзывов уходит .name как есть: тут только отображение.
   const GLOS_EN = {
     'арбуз': 'watermelon', 'манго': 'mango', 'лёд': 'ice', 'лед': 'ice', 'виноград': 'grape',
     'мята': 'mint', 'клубника': 'strawberry', 'банан': 'banana', 'черника': 'blueberry',
@@ -485,7 +485,7 @@ window.KV = (function () {
     const raw = typeof f === 'string' ? f : (f && f.name) || '';
     return raw.replace(/[А-Яа-яЁёІіЇїЄєҐґ]+/g, w => {
       const en = GLOS_EN[w.toLowerCase()];
-      if (!en) return w;                                  // нет в словаре — оставляем как есть
+      if (!en) return w;                                  // нет в словаре, оставляем как есть
       return w[0] === w[0].toUpperCase() ? en[0].toUpperCase() + en.slice(1) : en;
     });
   }
@@ -573,12 +573,12 @@ window.KV = (function () {
 
   // оптовые цены: item.tiers = [{q:1,p:50},{q:3,p:45},{q:5,p:40}].
   // Цена за штуку падает с количеством, набранным по всей модели: вкусы считаются вместе,
-  // потому что опт у поставщика тоже на модель. 3 Strawberry + 2 Mango + 5 Cola — это
+  // потому что опт у поставщика тоже на модель. 3 Strawberry + 2 Mango + 5 Cola это
   // десять штук одной модели и десятая цена, а не три отдельные позиции по одной штуке.
   function priceTiers(item) { return item.tiers && item.tiers.length ? item.tiers : null; }
   // Признак, по которому позиции складываются в одну оптовую группу. Сейчас это модель:
-  // разные вкусы одного товара — одна группа, разные товары — разные. Понадобится считать
-  // опт по бренду или категории — меняется только эта строка, остальной расчёт не трогаем.
+  // разные вкусы одного товара идут в одну группу, разные товары в разные. Понадобится
+  // считать опт по бренду или категории: меняется только эта строка, расчёт не трогаем.
   function tierGroupOf(item) { return item.id; }
   function tierPrice(item, n) {
     const ts = priceTiers(item);
@@ -587,7 +587,7 @@ window.KV = (function () {
     for (const t of ts) if (n >= t.q) p = t.p;
     return p;
   }
-  // сколько штук набрано в каждой оптовой группе — по этому числу и берётся ступень
+  // сколько штук набрано в каждой оптовой группе: по этому числу и берётся ступень
   function tierQtyByGroup() {
     const acc = {};
     for (const key in cart) {
@@ -597,7 +597,7 @@ window.KV = (function () {
     }
     return acc;
   }
-  // цена за штуку для модели с учётом того, что уже лежит в корзине (extra — сколько добавляем)
+  // цена за штуку для модели с учётом того, что уже лежит в корзине (extra: сколько добавляем)
   function unitWithCart(item, extra) {
     const have = tierQtyByGroup()[tierGroupOf(item)] || 0;
     return tierPrice(item, have + (extra || 0));
@@ -610,7 +610,7 @@ window.KV = (function () {
     return many;
   }
 
-  // единый формат даты DD-MM-YYYY. Принимает и ISO-строку (2026-07-25 — без сдвига по TZ),
+  // единый формат даты DD-MM-YYYY. Принимает и ISO-строку (2026-07-25: без сдвига по TZ),
   // и таймстамп в мс (created_at/ts заказов)
   function fmtDate(s) {
     if (typeof s === 'string' && /^\d{4}-\d{2}-\d{2}/.test(s)) {
@@ -639,7 +639,7 @@ window.KV = (function () {
     return qty(item);
   }
 
-  // n — сколько добавить (оптовая ступень из карточки), по умолчанию одна штука
+  // n: сколько добавить (оптовая ступень из карточки), по умолчанию одна штука
   function cartAdd(id, fl, n) {
     const key = id + '::' + (fl === undefined ? '' : fl);
     const want = Math.max(1, Math.floor(n || 1));
@@ -758,7 +758,7 @@ window.KV = (function () {
   let orderComment = '';
 
   // крупный опт (больше 10 единиц суммарно) обычным заказом не оформляем: такой заказ
-  // ведёт менеджер города — ему уходит готовый состав корзины
+  // ведёт менеджер города, ему уходит готовый состав корзины
   function bulkOrder() { return cartCount() > 10; }
   function checkout() {
     if (!cartCount()) return;
@@ -862,7 +862,7 @@ window.KV = (function () {
   }
   function renderConfirm() {
     const d = document.getElementById('kvc'); if (!d) return;
-    if (payBusy) return;   // платёж в работе — форму оплаты трогать нельзя
+    if (payBusy) return;   // платёж в работе, форму оплаты трогать нельзя
     const ct = contactOf();
     const cur = currentDelivery();
     const inpost = cur.method === 'inpost';
@@ -890,7 +890,7 @@ window.KV = (function () {
         '<div class="kvc-warn">' + t('dataWarn') + '</div>' +
         '<button class="kvc-apply">' + t('apply') + '</button>';
     } else {
-      // если оплата подключена — показываем кнопки Apple Pay / Google Pay / карта (сайт)
+      // если оплата подключена, показываем кнопки Apple Pay / Google Pay / карта (сайт)
       // или кнопку нативного инвойса (мини-апп); плюс запасной путь «оплата при выдаче»
       const pay = window.KVPay && KVPay.enabled();
       // наценку за карту показываем только когда оплата картой реально работает
@@ -954,7 +954,7 @@ window.KV = (function () {
       city, sum: payTotal(), amount: payTotal() * 100, pay_way: payWay,
       delivery: cur.method, promo: promoCodes(),
       // у самовывоза адреса нет. Раньше сюда попадал cur.addr, оставшийся от прошлого
-      // выбора курьера, и менеджер видел «pickup, Sucha 7b» — будто это доставка
+      // выбора курьера, и менеджер видел «pickup, Sucha 7b»: будто это доставка
       address: cur.method === 'pickup' ? '' : (inpost ? normPaczko(ct.paczkomat) : (cur.addr || '')),
       contact: { name: ct.name.trim(), phone: normPhonePl(ct.phone), email: ct.email.trim(),
         paczkomat: inpost ? normPaczko(ct.paczkomat) : '' },
@@ -970,7 +970,7 @@ window.KV = (function () {
     cart = {};
     orderComment = '';
     // Код засчитываем здесь, а не в оформлении наличными: карточный заказ приходит сюда
-    // же через onSuccess, и раньше его промокод мимо счётчика проходил — лимиты «всего»
+    // же через onSuccess, и раньше его промокод мимо счётчика проходил, лимиты «всего»
     // и «на человека» для оплаты картой не считались вовсе.
     const used = promoCodes();
     if (window.KVAuth && KVAuth.promoUse) used.forEach(c => KVAuth.promoUse(c).catch(() => {}));
@@ -1417,7 +1417,7 @@ window.KV = (function () {
 
   // Город из анкеты в боте. Человек выбирает город при первом запуске бота, а мини-апп
   // открывался с тем городом, что остался в localStorage от прошлой сессии на этом
-  // телефоне — то есть чужим. Профиль главнее, пока человек сам не переключит город
+  // телефоне: то есть чужим. Профиль главнее, пока человек сам не переключит город
   // в шапке: тогда стоит kv_city_picked и мы не спорим с ручным выбором.
   async function adoptCity(id) {
     if (!id || id === city) return;
@@ -1482,10 +1482,10 @@ window.KV = (function () {
   }
 
   // ==== ярлыки товара (10) ====
-  // Реестр ярлыков: у каждого свой ключ, оформление, место в ряду и источник. Источник —
+  // Реестр ярлыков: у каждого свой ключ, оформление, место в ряду и источник. Источник: 
   // единственное место, где решается, показывать ярлык или нет: «Хит» ставит менеджер в
   // панели (products.hit), «мало осталось» считается из остатка. Раньше ярлыки приходили
-  // ещё и из data/meta.json — оттуда брался невидимый в панели «хит» у HQD, а после
+  // ещё и из data/meta.json: оттуда брался невидимый в панели «хит» у HQD, а после
   // включения галочки он же рисовался вторым. Теперь источник один на ярлык, поэтому
   // дубль невозможен по построению.
   // Новый ярлык («Акция», «Новинка») = одна запись в этом списке, рендер и сортировка
@@ -1494,7 +1494,7 @@ window.KV = (function () {
     { key: 'hit', cls: 'hit', rank: 0, label: () => t('hitBadge'), on: it => !!it.hit },
     { key: 'few', cls: 'few', rank: 1, label: () => ui('lastFew'), on: it => { const q = qty(it); return q > 0 && q <= 3; } }
   ];
-  // ярлыки товара в постоянном порядке — общий ответ для сайта, мини-аппа и карточки
+  // ярлыки товара в постоянном порядке, общий ответ для сайта, мини-аппа и карточки
   function badgesOf(item) {
     return BADGES.filter(b => b.on(item)).sort((a, b) => a.rank - b.rank);
   }
@@ -1521,7 +1521,7 @@ window.KV = (function () {
   function flavorColors(name) {
     const n = String(name || '').toLowerCase();
     for (const [re, c] of FLAVOR_HUES) if (re.test(n)) return c;
-    // вкус не узнали — берём стабильный оттенок из названия, чтобы цвет не прыгал
+    // вкус не узнали, берём стабильный оттенок из названия, чтобы цвет не прыгал
     const h = hashId(n) % 360;
     return ['hsl(' + h + ' 78% 68%)', 'hsl(' + h + ' 66% 45%)'];
   }
@@ -1601,7 +1601,7 @@ window.KV = (function () {
     appliedPromos = appliedPromos.filter(p => p.code !== code);
     savePromos();
   }
-  // Добавляет код к уже применённым. Регистр важен: KATOVAPE и katovape — разные коды.
+  // Добавляет код к уже применённым. Регистр важен: KATOVAPE и katovape: разные коды.
   async function applyPromo(code) {
     const raw = String(code || '').trim();
     if (!raw) return { ok: false, reason: 'not_found' };
@@ -1641,11 +1641,11 @@ window.KV = (function () {
     return dropped;
   }
   // Скидку пересчитываем от текущей корзины. Держать число, посчитанное при вводе кода,
-  // нельзя: корзину после этого меняют, а процент обязан идти следом — иначе на витрине
+  // нельзя: корзину после этого меняют, а процент обязан идти следом, иначе на витрине
   // одна сумма, а сервер перед оплатой считает другую. Формула та же, что в promo_check.
   // Несколько кодов складываются, и каждый считается от исходной суммы товаров, а не
   // от остатка после предыдущего: так порядок ввода не влияет на итог. Больше корзины
-  // скидка не бывает — это же ограничение стоит и на сервере.
+  // скидка не бывает: то же ограничение стоит и на сервере.
   function promoValue(p, sub) {
     const v = Number(p.value);
     return p.type === 'percent' && Number.isFinite(v)
@@ -1682,7 +1682,7 @@ window.KV = (function () {
   // ==== уведомить о поступлении (14) ====
   // Заявка «сообщить о поступлении»: пишем её в базу вместе с городом, и бот сам напишет
   // человеку, как только позиция появится в наличии именно в этом городе.
-  // Гостю писать некуда — отправляем его в бота диплинком, там заявка оформится сама.
+  // Гостю писать некуда, отправляем его в бота диплинком, там заявка оформится сама.
   async function notifyRestock(id) {
     const item = find(id); if (!item) return;
     const logged = window.KVAuth && KVAuth.loggedIn && KVAuth.loggedIn();
@@ -1942,7 +1942,7 @@ window.KV = (function () {
   function renderFavs() {
     const d = document.getElementById('kvfav'); if (!d) return;
     d.querySelector('.kvfav-title').textContent = t('favTitle');
-    // товар мог пропасть из каталога (сменили город) — такие строки просто не показываем
+    // товар мог пропасть из каталога (сменили город): такие строки просто не показываем
     const list = favs().map(id => find(id)).filter(Boolean);
     d.querySelector('.kvfav-body').innerHTML = list.length
       ? list.map(it => {
@@ -1983,7 +1983,7 @@ window.KV = (function () {
   }
   // Вкусы этой модели, которые человек реально получал в заказе. Форма отзыва работает
   // по этому списку, а не по вкусу, открытому в карточке: покупатель брал Mint, листал
-  // Watermelon — и магазин отказывал в отзыве на то, что у него на руках.
+  // Watermelon: и магазин отказывал в отзыве на то, что у него на руках.
   function reviewableFlavors(id) {
     if (!reviewables) return [];
     return [...new Set(reviewables.filter(r => r.product_id === id).map(r => r.flavor || ''))];
@@ -2140,9 +2140,9 @@ window.KV = (function () {
 
     // Оптовые цены и выбор количества. Ступени приходят из админки (products.tiers), поэтому
     // набор кнопок любой: 3/5/10 или другой.
-    // Цены на кнопках — те, что человек реально получит: к добавляемому количеству
+    // Цены на кнопках, те, что человек реально получит: к добавляемому количеству
     // прибавляется уже набранное по этой модели. Иначе, положив 8 штук другого вкуса,
-    // он видел бы на «1 шт» розничную цену, а в корзине — оптовую.
+    // он видел бы на «1 шт» розничную цену, а в корзине: оптовую.
     const canAdd = hasFl ? !!(fl && fl.qty > 0) : qty(item) > 0;
     const stock = hasFl ? (fl ? fl.qty : 0) : qty(item);
     const tiers = priceTiers(item);
@@ -2211,7 +2211,7 @@ window.KV = (function () {
     const starPick = [1, 2, 3, 4, 5].map(i =>
       '<button class="kvm-rstar' + (i <= (modal.rate || 0) ? ' on' : '') + '" data-star="' + i + '" type="button">★</button>').join('');
     // Оценивать можно любой полученный вкус этой модели, независимо от того, какой
-    // сейчас открыт в карточке. Когда куплено несколько — даём выбрать в самой форме.
+    // сейчас открыт в карточке. Когда куплено несколько: даём выбрать в самой форме.
     const revFlavors = reviewableFlavors(item.id);
     const revFl = reviewFlavor(item.id, flavorKey);
     const flTitle = n => n ? esc(flavorName({ name: n })) : esc(item.name);
@@ -2248,7 +2248,7 @@ window.KV = (function () {
     const revPick = e.target.closest('[data-rev-fl]');
     if (revPick) { modal.revFl = revPick.dataset.revFl; modal.rate = 0; modal.text = ''; renderModal(); return; }
     const sel = e.target.closest('[data-fl-sel]');
-    // до первого выбора в закрытой строке стоит «Выберите вкус», после — сам вкус
+    // до первого выбора в закрытой строке стоит «Выберите вкус», после: сам вкус
     if (sel) { modal.fl = +sel.dataset.flSel; modal.flPicked = true; modal.flOpen = false; renderModal(); return; }
     const fav = e.target.closest('[data-fav]');
     if (fav) { e.stopPropagation(); toggleFav(fav.dataset.fav); renderModal(); if (hooks.render) hooks.render(); return; }
@@ -2346,7 +2346,7 @@ window.KV = (function () {
     localStorage.setItem('kv_orders', JSON.stringify(log.slice(0, 20)));
   }
   const PROF_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>';
-  // открыть чат менеджера / канал (в мини-аппе — нативно, на сайте — новая вкладка)
+  // открыть чат менеджера / канал (в мини-аппе: нативно, на сайте: новая вкладка)
   function openTg(url) {
     const tg = window.Telegram && window.Telegram.WebApp;
     if (tg && tg.initData) tg.openTelegramLink(url); else window.open(url, '_blank');
@@ -2360,14 +2360,14 @@ window.KV = (function () {
   }
   function managerLink() { return cityLink('manager') || MANAGER; }
   function openManager() { openTg(managerLink()); }
-  // @username менеджера города — для подписей в вёрстке, чтобы страницы не хранили его сами
+  // @username менеджера города, для подписей в вёрстке, чтобы страницы не хранили его сами
   function managerName() {
     const m = String(managerLink()).match(/t\.me\/@?([A-Za-z0-9_]+)/);
     return m ? '@' + m[1] : '';
   }
   function openChannel() {
     const url = cityLink('channel');
-    // для города ссылку ещё не дали — честно говорим об этом и не открываем чужой чат
+    // для города ссылку ещё не дали, честно говорим об этом и не открываем чужой чат
     if (!url) { toast(t('noChannel')); return; }
     openTg(url);
   }
@@ -2388,8 +2388,8 @@ window.KV = (function () {
     prof: '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>',
     fav: '<svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.3 4.7 13a4.6 4.6 0 0 1 6.5-6.5l.8.8.8-.8A4.6 4.6 0 1 1 19.3 13z"/></svg>'
   };
-  // Шапка мини-аппа: справа — менеджер, канал, бургер. Профиль/избранное/язык уезжают в
-  // бургер-меню, чтобы элементы не толпились в строке и не было сдвига (корзина — свой #topCart).
+  // Шапка мини-аппа: справа: менеджер, канал, бургер. Профиль/избранное/язык уезжают в
+  // бургер-меню, чтобы элементы не толпились в строке и не было сдвига (корзина: свой #topCart).
   function mountHeaderExtras() {
     const prof = document.getElementById('profile');
     if (!prof || document.getElementById('kv-hx')) return;
@@ -2397,7 +2397,7 @@ window.KV = (function () {
     prof.style.display = 'none';
     const wrap = document.createElement('div');
     wrap.id = 'kv-hx'; wrap.className = 'kv-hx';
-    // порядок слева направо: избранное, менеджер, канал города, бургер — бургер крайний справа
+    // порядок слева направо: избранное, менеджер, канал города, бургер: бургер крайний справа
     wrap.innerHTML =
       '<button class="kv-hx-b" id="kv-hx-fav" type="button" aria-label="' + t('favTitle') + '">' + HX_ICON.fav + '</button>' +
       '<button class="kv-hx-b" id="kv-hx-mgr" type="button" aria-label="' + t('write') + '">' + HX_ICON.mgr + '</button>' +
@@ -2615,7 +2615,7 @@ window.KV = (function () {
                   ? '<button class="kvp-ord-i" data-goto="' + esc(i.id) + '">' + esc(i.name + (i.flavor ? ' ' + flavorName(i.flavor) : '')) + ' ×' + (i.n || 1) + '</button>'
                   : esc(i.name + (i.flavor ? ' ' + flavorName(i.flavor) : '') + ' ×' + (i.n || 1)))
             ).join(' ') + '</p>' +
-            // выдан — на каждый купленный товар кнопка отзыва (открывает карточку с нужным вкусом)
+            // выдан: на каждый купленный товар кнопка отзыва (открывает карточку с нужным вкусом)
             (o.status === 'done'
               ? '<div class="kvp-revbtns">' + (o.items || []).filter(i => i && i.id).map(i =>
                   '<button class="kvp-review" data-review="' + esc(i.id) + '|' + esc(i.flavor || '') + '">' +
@@ -2629,7 +2629,7 @@ window.KV = (function () {
       ordInner = orders.length
         ? orders.slice(0, 6).map(o => '<div class="kvp-ord"><div class="kvp-ord-h"><span>' +
             fmtDate(o.ts) + '</span><b>' + o.total + ' zł</b></div>' +
-            // старые записи хранят строки, новые — объекты с id: их делаем кликабельными
+            // старые записи хранят строки, новые: объекты с id: их делаем кликабельными
             '<p class="kvp-ord-items">' + (o.items || []).map(i => typeof i === 'string'
               ? esc(i)
               : (i.id && find(i.id)
@@ -3185,7 +3185,7 @@ body.kv-noscroll{overflow:hidden}
     injectCSS();
     try {
       // data/meta.json больше не грузим: ярлыки задаются в панели управления, а других
-      // данных в нём не осталось — лишний запрос на старте
+      // данных в нём не осталось, лишний запрос на старте
       const [prod, c] = await Promise.all([
         loadJSON('data/products.json'), loadJSON('data/content.json')
       ]);
@@ -3196,7 +3196,7 @@ body.kv-noscroll{overflow:hidden}
       return;
     }
     // Восстанавливаем ранее введённые промокоды. Раньше тут лежала одна строка с кодом,
-    // теперь список — старое значение читаем как единственный код.
+    // теперь список: старое значение читаем как единственный код.
     const savedPromo = localStorage.getItem('kv_promo');
     if (savedPromo) {
       let codes = [];

@@ -344,7 +344,7 @@ async function productsScreen(tgId, lang) {
   const inStock = list.filter(p => (p.qty || 0) > 0).length;
   const low = list.filter(p => (p.qty || 0) > 0 && (p.qty || 0) <= 3)
     .slice(0, 12)
-    .map(p => '• ' + esc(p.name || p.id) + (p.flavor ? ', ' + esc(p.flavor) : '') + ' — ' + p.qty);
+    .map(p => '• ' + esc(p.name || p.id) + (p.flavor ? ', ' + esc(p.flavor) : '') + ': ' + p.qty);
   const text = [
     tr(lang, 'admProductsTitle', { city: CITY_LABEL[only] || only }),
     '',
@@ -364,7 +364,7 @@ async function usersScreen(tgId, lang) {
   ]);
   const counts = {};
   for (const b of byCity || []) if (b.city) counts[b.city] = (counts[b.city] || 0) + 1;
-  const cityLines = CITIES.filter(c => counts[c]).map(c => '• ' + CITY_LABEL[c] + ' — ' + counts[c]);
+  const cityLines = CITIES.filter(c => counts[c]).map(c => '• ' + CITY_LABEL[c] + ': ' + counts[c]);
   const recentLines = (recent || []).map(p => '• ' + esc(p.display_name || p.username || '—') + ' · ' + fmtDMY(p.created_at));
   const text = [
     tr(lang, 'admUsersTitle'), '',
@@ -949,7 +949,7 @@ async function doBroadcasts() {
     const users = await sbSelect('bot_users', 'select=telegram_id' + (b.city ? '&city=eq.' + enc(b.city) : '')).catch(() => []);
     let sent = 0, failed = 0, photoWarned = false;
     for (const u of users || []) {
-      // Telegram sometimes rejects a photo (too small, broken) — then at least send the text.
+      // Telegram sometimes rejects a photo (too small, broken): then at least send the text.
       let r = b.photo ? await sendPhoto(u.telegram_id, b.photo, b.text) : null;
       if (!r || !r.ok) {
         if (b.photo && r && !r.ok && !photoWarned) { photoWarned = true; console.error('broadcast: photo rejected -', r.description || r.error); }
