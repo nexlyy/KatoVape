@@ -524,6 +524,34 @@ const DICT = {
     'Слишком много попыток. Подождите четверть часа.': 'Забагато спроб. Зачекайте чверть години.',
     'Панель управления не открывается внутри чужой страницы.': 'Панель керування не відкривається всередині чужої сторінки.',
     'Открыть отдельно': 'Відкрити окремо',
+    'без имени': 'без імені',
+    'заблокирован': 'заблокований',
+    'Контакты': 'Контакти',
+    'Куплено на': 'Куплено на',
+    'Последний': 'Останній',
+    'Метки': 'Мітки',
+    'Карточка заводится сама при первом заказе или брони.': 'Картка заводиться сама при першому замовленні або броні.',
+    'Имя, телефон или почта': 'Імʼя, телефон або пошта',
+    'Метки клиентов': 'Мітки клієнтів',
+    'Новая метка': 'Нова мітка',
+    'Удалить метку': 'Видалити мітку',
+    'Впишите название метки': 'Впишіть назву мітки',
+    'вручную': 'вручну',
+    'магазин': 'магазин',
+    'Карточка клиента': 'Картка клієнта',
+    'Чёрный список': 'Чорний список',
+    'Закрыть': 'Закрити',
+    'Заблокированный клиент не сможет оформить заказ и бронь.': 'Заблокований клієнт не зможе оформити замовлення та бронь.',
+    'Заказы клиента': 'Замовлення клієнта',
+    'Получение': 'Отримання',
+    'Источник': 'Джерело',
+    'Брони клиента': 'Броні клієнта',
+    'Заметки': 'Замітки',
+    'Заметок нет': 'Заміток немає',
+    'Что важно помнить об этом клиенте': 'Що важливо памʼятати про цього клієнта',
+    'Записать': 'Записати',
+    'Заметку видите вы, владелец и разработчик. Другим менеджерам она не показывается.': 'Замітку бачите ви, власник і розробник. Іншим менеджерам вона не показується.',
+    'Напишите заметку': 'Напишіть замітку',
     'Вчера': 'Вчора', '7 дней': '7 днів', '30 дней': '30 днів', 'Квартал': 'Квартал',
     'Год': 'Рік', 'Всё время': 'Увесь час',
     'самовывоз': 'самовивіз', 'курьер': 'курʼєр', 'Картой': 'Карткою', 'Наличными': 'Готівкою',
@@ -703,6 +731,34 @@ const DICT = {
     'Слишком много попыток. Подождите четверть часа.': 'Za dużo prób. Odczekaj kwadrans.',
     'Панель управления не открывается внутри чужой страницы.': 'Panel zarządzania nie otwiera się wewnątrz obcej strony.',
     'Открыть отдельно': 'Otwórz osobno',
+    'без имени': 'bez nazwiska',
+    'заблокирован': 'zablokowany',
+    'Контакты': 'Kontakt',
+    'Куплено на': 'Kupił za',
+    'Последний': 'Ostatni',
+    'Метки': 'Etykiety',
+    'Карточка заводится сама при первом заказе или брони.': 'Karta powstaje sama przy pierwszym zamówieniu lub rezerwacji.',
+    'Имя, телефон или почта': 'Imię, telefon lub e-mail',
+    'Метки клиентов': 'Etykiety klientów',
+    'Новая метка': 'Nowa etykieta',
+    'Удалить метку': 'Usunąć etykietę',
+    'Впишите название метки': 'Wpisz nazwę etykiety',
+    'вручную': 'ręcznie',
+    'магазин': 'sklep',
+    'Карточка клиента': 'Karta klienta',
+    'Чёрный список': 'Czarna lista',
+    'Закрыть': 'Zamknij',
+    'Заблокированный клиент не сможет оформить заказ и бронь.': 'Zablokowany klient nie złoży zamówienia ani rezerwacji.',
+    'Заказы клиента': 'Zamówienia klienta',
+    'Получение': 'Odbiór',
+    'Источник': 'Źródło',
+    'Брони клиента': 'Rezerwacje klienta',
+    'Заметки': 'Notatki',
+    'Заметок нет': 'Brak notatek',
+    'Что важно помнить об этом клиенте': 'Co warto pamiętać o tym kliencie',
+    'Записать': 'Zapisz notatkę',
+    'Заметку видите вы, владелец и разработчик. Другим менеджерам она не показывается.': 'Notatkę widzisz Ty, właściciel i deweloper. Inni menedżerowie jej nie zobaczą.',
+    'Напишите заметку': 'Napisz notatkę',
     'Вчера': 'Wczoraj', '7 дней': '7 dni', '30 дней': '30 dni', 'Квартал': 'Kwartał',
     'Год': 'Rok', 'Всё время': 'Cały czas',
     'самовывоз': 'odbiór osobisty', 'курьер': 'kurier', 'Картой': 'Kartą', 'Наличными': 'Gotówką',
@@ -1116,15 +1172,175 @@ function bindStatus(m, kind, tableName) {
   });
 }
 
+/* ================= клиенты ================= */
+// Карточка на человека, а не на аккаунт: один и тот же покупатель приходит и ботом, и с сайта,
+// и по телефону через менеджера. Список и карточку считает база (crm_*), панель только рисует.
+let cQuery = '', cOpen = null, cTags = [];
+
+async function loadTags() {
+  const { data } = await sb.from('crm_tags').select('*').order('name');
+  cTags = data || [];
+}
+const tagPill = (name, color, extra) =>
+  `<span class="pill ${esc(color || 'muted')}" ${extra || ''}>${esc(name)}</span>`;
+
 async function renderCustomers(m) {
-  const { data } = await sb.rpc('admin_customers');
-  const rows = (data || []).map(u => [
-    esc(u.display_name || u.username || '—') + (u.telegram_username ? `<span class="sub">@${esc(u.telegram_username)}</span>` : ''),
-    esc(u.full_name || '—'), esc(u.phone || '—'), esc(u.email || '—'),
-    u.paczkomat ? esc(u.paczkomat) : '—', `<span class="num">${fdate(u.created_at)}</span>`]);
+  await loadTags();
+  const { data, error } = await sb.rpc('crm_contacts', { p_query: cQuery || null, p_limit: 100 });
+  if (error) return swap(m, panel(L('Ошибка'), `<div class="empty">${esc(error.message)}</div>`));
+  const list = data || [];
+  const tagsOf = c => (c.tags || []).map(t => {
+    const known = cTags.find(x => x.name === t);
+    return tagPill(t, known && known.color);
+  }).join(' ');
+
+  const rows = list.map(c => [
+    `<button class="btn sm" data-copen="${c.id}">${esc(c.full_name || L('без имени'))}</button>` +
+      (c.blocked ? ` <span class="pill danger">${L('заблокирован')}</span>` : ''),
+    esc(c.phone || '—') + (c.telegram_id ? `<span class="sub">tg ${c.telegram_id}</span>` : ''),
+    esc(CITY_LABEL[c.city] || c.city),
+    `<span class="num">${c.orders || 0}</span>`,
+    `<span class="num">${money(c.spent || 0)}</span>`,
+    c.last_order ? `<span class="num">${fdate(c.last_order)}</span>` : '<span class="sub">—</span>',
+    tagsOf(c) || '<span class="sub">—</span>'
+  ]);
+
   swap(m, panel(L('Клиенты'), rows.length
-    ? table([L('Аккаунт'), L('ФИО'), L('Телефон'), L('Почта'), L('Пачкомат'), L('Регистрация')], rows)
-    : empty(L('Клиентов пока нет'), L('Аккаунты появятся, когда люди начнут входить в магазин.'))));
+      ? table([L('Клиент'), L('Контакты'), L('Город'), L('Заказов'), L('Куплено на'), L('Последний'), L('Метки')], rows)
+      : empty(L('Клиентов пока нет'), L('Карточка заводится сама при первом заказе или брони.')),
+      `<input id="cq" placeholder="${L('Имя, телефон или почта')}" style="width:230px" value="${esc(cQuery)}">`) +
+    (canDash() ? tagsEditorHTML() : '') +
+    '<div id="ccard"></div>');
+
+  const q = document.getElementById('cq');
+  if (q) {
+    q.oninput = () => { clearTimeout(q._t); q._t = setTimeout(() => { cQuery = q.value.trim(); render(); }, 400); };
+    if (cQuery) { q.focus(); q.setSelectionRange(q.value.length, q.value.length); }
+  }
+  m.querySelectorAll('[data-copen]').forEach(b => b.onclick = () => openContact(+b.dataset.copen));
+  bindTagsEditor(m);
+  if (cOpen) openContact(cOpen);
+}
+
+// Набор меток и их цвета правит владелец: менеджеру они только показываются.
+const TAG_COLORS = ['muted', 'accent', 'ok', 'live', 'warn', 'danger', 'new'];
+function tagsEditorHTML() {
+  const rows = cTags.map(t =>
+    `<div class="prow"><span>${tagPill(t.name, t.color)}</span>` +
+    `<select data-tagcolor="${esc(t.name)}" style="width:auto">` +
+      TAG_COLORS.map(c => `<option value="${c}" ${c === t.color ? 'selected' : ''}>${c}</option>`).join('') +
+    `</select><button class="btn sm danger" data-tagdel="${esc(t.name)}">${L('Удалить')}</button></div>`).join('');
+  return panel(L('Метки клиентов'), `<div class="panel-body">${rows}
+    <div class="tools" style="margin-top:10px">
+      <input id="newtag" placeholder="${L('Новая метка')}" style="width:180px" maxlength="24">
+      <select id="newtagcolor" style="width:auto">${TAG_COLORS.map(c => `<option value="${c}">${c}</option>`).join('')}</select>
+      <button class="btn" id="addtag">${L('Добавить')}</button>
+    </div></div>`);
+}
+function bindTagsEditor(m) {
+  m.querySelectorAll('[data-tagcolor]').forEach(s => s.onchange = async () => {
+    const { error } = await sb.from('crm_tags').update({ color: s.value }).eq('name', s.dataset.tagcolor);
+    if (error) return toast(error.message, true);
+    toast(L('Сохранено')); render();
+  });
+  m.querySelectorAll('[data-tagdel]').forEach(b => b.onclick = async () => {
+    if (!confirm(L('Удалить метку') + ' ' + b.dataset.tagdel + '?')) return;
+    const { error } = await sb.from('crm_tags').delete().eq('name', b.dataset.tagdel);
+    if (error) return toast(error.message, true);
+    render();
+  });
+  const add = document.getElementById('addtag');
+  if (add) add.onclick = async () => {
+    const name = (document.getElementById('newtag').value || '').trim();
+    if (!name) return toast(L('Впишите название метки'), true);
+    const { error } = await sb.from('crm_tags').insert({ name, color: document.getElementById('newtagcolor').value });
+    if (error) return toast(error.message, true);
+    render();
+  };
+}
+
+async function openContact(id) {
+  cOpen = id;
+  const box = document.getElementById('ccard');
+  if (!box) return;
+  box.innerHTML = loading();
+  const { data, error } = await sb.rpc('crm_contact_card', { p_id: id });
+  if (error || !data) { box.innerHTML = panel(L('Ошибка'), `<div class="empty">${esc((error && error.message) || '')}</div>`); return; }
+  const c = data.contact || {};
+  const orders = data.orders || [], res = data.reservations || [], notes = data.notes || [];
+
+  const tagRow = cTags.map(t => {
+    const on = (c.tags || []).includes(t.name);
+    return `<button class="btn sm ${on ? 'primary' : ''}" data-ctag="${esc(t.name)}">${esc(t.name)}</button>`;
+  }).join('');
+
+  const ordRows = orders.map(o => [
+    `<span class="num">#${o.id}</span>`, `<span class="num">${fdate(o.created_at)}</span>`,
+    pill(o.status), `<span class="num">${money(o.sum || 0)}</span>`,
+    esc(delivLabel(o.delivery)), o.source === 'manual' ? L('вручную') : L('магазин')]);
+  const resRows = res.map(r => [
+    `<span class="num">#${r.id}</span>`, esc(r.product_name || '') + (r.flavor ? `<span class="sub">${esc(r.flavor)}</span>` : ''),
+    pill(r.status), r.reserve_date ? `<span class="num">${fday(r.reserve_date)}</span>` : '—']);
+
+  box.innerHTML =
+    panel(L('Карточка клиента'), `<div class="panel-body">
+      <div class="pform">
+        <label class="f">${L('ФИО')}<input id="c_name" value="${esc(c.full_name || '')}"></label>
+        <label class="f">${L('Телефон')}<input id="c_phone" value="${esc(c.phone || '')}"></label>
+        <label class="f">${L('Почта')}<input id="c_email" value="${esc(c.email || '')}"></label>
+        <label class="f">${L('Город')}<select id="c_city">${citiesAllowed().map(x =>
+          `<option value="${x}" ${x === c.city ? 'selected' : ''}>${CITY_LABEL[x]}</option>`).join('')}</select></label>
+      </div>
+      <div class="tools" style="margin-top:10px">${tagRow}</div>
+      <div class="tools" style="margin-top:10px">
+        <label class="f" style="flex-direction:row;align-items:center;gap:8px">
+          <input type="checkbox" id="c_blocked" ${c.blocked ? 'checked' : ''}> ${L('Чёрный список')}</label>
+        <button class="btn primary" id="c_save">${L('Применить')}</button>
+        <button class="btn quiet" id="c_close">${L('Закрыть')}</button>
+      </div>
+      <p class="hint">${L('Заблокированный клиент не сможет оформить заказ и бронь.')}</p>
+    </div>`) +
+    panel(L('Заказы клиента'), ordRows.length
+      ? table([L('Заказ'), L('Дата'), L('Статус'), L('Сумма'), L('Получение'), L('Источник')], ordRows)
+      : `<div class="panel-body"><p class="dash-none">${L('Заказов пока нет')}</p></div>`) +
+    (resRows.length ? panel(L('Брони клиента'),
+      table([L('Бронь'), L('Товар'), L('Статус'), L('Дата')], resRows)) : '') +
+    panel(L('Заметки'), `<div class="panel-body">
+      ${notes.length ? notes.map(n => `<div class="prow"><span><b>${esc(n.author || '—')}</b>
+        <span class="sub">${fdate(n.created_at)}</span><br>${esc(n.body)}</span></div>`).join('')
+        : `<p class="dash-none">${L('Заметок нет')}</p>`}
+      <div class="tools" style="margin-top:10px">
+        <input id="c_note" placeholder="${L('Что важно помнить об этом клиенте')}" style="flex:1" maxlength="2000">
+        <button class="btn" id="c_noteadd">${L('Записать')}</button>
+      </div>
+      <p class="hint">${L('Заметку видите вы, владелец и разработчик. Другим менеджерам она не показывается.')}</p>
+    </div>`);
+
+  let tags = (c.tags || []).slice();
+  box.querySelectorAll('[data-ctag]').forEach(b => b.onclick = () => {
+    const t = b.dataset.ctag;
+    tags = tags.includes(t) ? tags.filter(x => x !== t) : tags.concat(t);
+    b.classList.toggle('primary');
+  });
+  document.getElementById('c_close').onclick = () => { cOpen = null; box.innerHTML = ''; };
+  document.getElementById('c_save').onclick = async () => {
+    const { error } = await sb.rpc('crm_contact_save', {
+      p_id: id, p_city: document.getElementById('c_city').value,
+      p_name: document.getElementById('c_name').value,
+      p_phone: document.getElementById('c_phone').value,
+      p_email: document.getElementById('c_email').value,
+      p_tags: tags, p_blocked: document.getElementById('c_blocked').checked
+    });
+    if (error) return toast(error.message, true);
+    toast(L('Сохранено')); render();
+  };
+  document.getElementById('c_noteadd').onclick = async () => {
+    const body = (document.getElementById('c_note').value || '').trim();
+    if (!body) return toast(L('Напишите заметку'), true);
+    const { error } = await sb.rpc('crm_note_add', { p_contact: id, p_body: body });
+    if (error) return toast(error.message, true);
+    openContact(id);
+  };
 }
 
 async function renderDemand(m) {
