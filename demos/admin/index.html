@@ -508,6 +508,7 @@ const DICT = {
     'Цена у «': 'Ціна в «', '» не число': '» не число', 'Сохраняем…': 'Зберігаємо…', 'Сохранено: ': 'Збережено: ',
     'Сохранено': 'Збережено',
     'собран': 'зібрано', 'отправлен': 'відправлено',
+    'Слишком много попыток. Подождите четверть часа.': 'Забагато спроб. Зачекайте чверть години.',
     'Вчера': 'Вчора', '7 дней': '7 днів', '30 дней': '30 днів', 'Квартал': 'Квартал',
     'Год': 'Рік', 'Всё время': 'Увесь час',
     'самовывоз': 'самовивіз', 'курьер': 'курʼєр', 'Картой': 'Карткою', 'Наличными': 'Готівкою',
@@ -684,6 +685,7 @@ const DICT = {
     'Цена у «': 'Cena w «', '» не число': '» nie jest liczbą', 'Сохраняем…': 'Zapisujemy…', 'Сохранено: ': 'Zapisano: ',
     'Сохранено': 'Zapisano',
     'собран': 'skompletowane', 'отправлен': 'wysłane',
+    'Слишком много попыток. Подождите четверть часа.': 'Za dużo prób. Odczekaj kwadrans.',
     'Вчера': 'Wczoraj', '7 дней': '7 dni', '30 дней': '30 dni', 'Квартал': 'Kwartał',
     'Год': 'Rok', 'Всё время': 'Cały czas',
     'самовывоз': 'odbiór osobisty', 'курьер': 'kurier', 'Картой': 'Kartą', 'Наличными': 'Gotówką',
@@ -775,6 +777,7 @@ function authView(errText) {
         body: JSON.stringify({ identifier: ident, password: pw })
       });
       const out = await res.json().catch(() => ({}));
+      if (out.error === 'tooMany') throw new Error(L('Слишком много попыток. Подождите четверть часа.'));
       if (!res.ok || !out.access_token) throw new Error(L('Неверный логин или пароль'));
       const { error } = await sb.auth.setSession({ access_token: out.access_token, refresh_token: out.refresh_token });
       if (error) throw error;

@@ -81,7 +81,9 @@ Deno.serve(async (req) => {
   try {
     const rows = await rest("POST", "orders", {
       user_id: userId, telegram_id: tgId,
-      city, items: Array.isArray(b.items) ? b.items : [],
+      // The lines come back from pricing with our own names and sums; the array the browser
+      // sent is only used to say what to price.
+      city, items: priced.lines,
       sum: priced.total_zl,
       // Pickup carries no address, whatever the client sent.
       delivery, address: delivery === "pickup" ? null : (str(b.address, 200) || null),

@@ -1763,9 +1763,9 @@ window.KV = (function () {
         h.steps.map(s => '<div class="kv-step"><span class="kv-step-n">' + s.ic + '</span>' +
           '<b>' + loc(s.t) + '</b><p>' + loc(s.d) + '</p></div>').join('') + '</div></section>' +
       (pc ? '<section class="kv-sec kv-pickup"><h3>' + loc(p.title) + ' · ' + cityName(currentCity) + '</h3>' +
-        '<p class="kv-pick-addr">' + pc.addr + '</p>' +
+        '<p class="kv-pick-addr">' + esc(pc.addr) + '</p>' +
         '<p class="kv-pick-h">' + loc(p.hoursLabel) + ': ' + loc(pc.hours) + '</p>' +
-        '<a class="kv-pick-map" href="' + pc.map + '" target="_blank" rel="noopener">' + loc(p.mapLabel) + ' →</a></section>' : '') +
+        '<a class="kv-pick-map" href="' + esc(pc.map) + '" target="_blank" rel="noopener">' + loc(p.mapLabel) + ' →</a></section>' : '') +
       (a ? '<section class="kv-sec kv-about"><h3>' + loc(a.title) + '</h3><p>' + loc(a.text) + '</p></section>' : '') +
       (f ? '<section class="kv-sec kv-faq"><h3>' + loc(f.title) + '</h3>' +
         f.items.map((q, i) => '<div class="kv-q" data-faq="' + i + '"><button>' + loc(q.q) + '<span>+</span></button>' +
@@ -2125,7 +2125,9 @@ window.KV = (function () {
       '<div class="kvm-desc"><b>' + t('flavorDesc') + '</b><p>' + flavorDesc(item, fl) + '</p></div>' : '';
 
     const spec = specOf(item);
-    const specLine = spec ? '<div class="kvm-spec">' + spec + '</div>' : '';
+    // характеристика собирается из полей товара, а их правит менеджер в панели: без
+    // экранирования разметка из названия или крепости попала бы в страницу покупателя
+    const specLine = spec ? '<div class="kvm-spec">' + esc(spec) + '</div>' : '';
 
     // выбранный вкус отдельной карточкой
     const preview = hasFl ?
@@ -2591,7 +2593,7 @@ window.KV = (function () {
     const resBlock = logged && resList.length
       ? '<div class="kvp-sec"><b>' + t('myRes') + ' · ' + resList.length + '</b>' +
         resList.map(x => '<div class="kvp-ord"><div class="kvp-ord-h"><span>' +
-          esc(x.product_name || x.product_id) + '</span><b>' + (x.reserve_date ? fmtDate(x.reserve_date) + (x.reserve_time ? ' ' + x.reserve_time : '') : '') + '</b></div>' +
+          esc(x.product_name || x.product_id) + '</span><b>' + (x.reserve_date ? fmtDate(x.reserve_date) + (x.reserve_time ? ' ' + esc(x.reserve_time) : '') : '') + '</b></div>' +
           '<p>' + stLabel(x.status) +
           (x.status === 'active' || x.status === 'notified'
             ? ' · <button class="kvp-res-cancel" data-res-cancel="' + x.id + '">' + t('resCancel') + '</button>' : '') +

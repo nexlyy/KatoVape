@@ -212,6 +212,22 @@ test('карта дороже на 10%, сумма и списание не ра
   assert.equal(base.total_zl, 222, 'исходный расчёт не должен меняться на месте');
 });
 
+// Состав заказа менеджер читает глазами и по нему собирает посылку, поэтому строки должны
+// приходить из каталога, а не из запроса: иначе можно назвать дешёвый товар дорогим.
+test('состав заказа собирается из каталога, а не из присланного', async () => {
+  const priced = await priceCart(env, {
+    items: [{ id: 'plain', flavor: '', n: 2, name: 'Elf Bar King 30000 ×10', sum: 9999 }]
+  });
+  assert.equal(priced.lines.length, 1);
+  assert.deepEqual(priced.lines[0], { id: 'plain', name: 'Plain', flavor: '', n: 2, unit: 30, sum: 60 });
+  assert.equal(priced.total_zl, 60);
+});
+
+test('количество в строке уже нормализовано', async () => {
+  const priced = await priceCart(env, { items: [{ id: 'plain', flavor: '', n: 1000 }] });
+  assert.equal(priced.lines[0].n, 99, 'больше 99 штук одной строкой не проходит');
+});
+
 test('наценка за карту одна и та же на витрине и на сервере', () => {
   const front = CORE_SRC.match(/CARD_SURCHARGE\s*=\s*([\d.]+)/);
   assert.ok(front, 'в core.js не найдена CARD_SURCHARGE');

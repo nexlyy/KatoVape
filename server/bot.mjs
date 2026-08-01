@@ -812,7 +812,9 @@ async function confirmReservations() {
     'kind=eq.reserve&confirmed_at=is.null&select=id,product_name,reserve_date,reserve_time,telegram_id,profiles(telegram_id)').catch(() => []);
   for (const r of list || []) {
     const tg = r.telegram_id || (r.profiles && r.profiles.telegram_id);
-    const when = fmtDMY(r.reserve_date) + (r.reserve_time ? ' ' + r.reserve_time : '');
+    // время брони приходит из базы: там его пишет клиент, и в сообщение с разметкой HTML
+    // оно должно уходить экранированным, иначе Telegram отвергнет всё сообщение
+    const when = fmtDMY(r.reserve_date) + (r.reserve_time ? ' ' + esc(r.reserve_time) : '');
     if (tg) { const lang = await langOf(tg); await sendMessage(tg, tr(lang, 'resConfirmed', { name: esc(r.product_name), date: when })).catch(() => {}); }
     await sbUpdate('reservations', 'id=eq.' + r.id, { confirmed_at: new Date().toISOString() }).catch(() => {});
   }

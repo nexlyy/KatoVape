@@ -42,7 +42,7 @@ Deno.serve(async (req) => {
   try {
     const rows = await rest("POST", "orders", {
       user_id: userId, telegram_id: tgId, city: b.city || "katowice",
-      items: Array.isArray(b.items) ? b.items : [], sum: priced.total_zl,
+      items: priced.lines, sum: priced.total_zl,
       delivery: b.delivery || "pickup", address: b.address || null,
       // Comment and payment method are stored like on the cash path; without them a card
       // order shows up as pay-on-pickup and loses the customer's note.

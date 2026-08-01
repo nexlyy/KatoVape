@@ -28,6 +28,7 @@ window.KVAuth = (function () {
       errEmpty: 'Заполните поля', takenUser: 'Такой логин уже занят',
       takenEmail: 'Эта почта уже зарегистрирована', takenPhone: 'Этот телефон уже зарегистрирован',
       noAccount: 'Аккаунт не найден', badCreds: 'Неверный логин или пароль',
+      tooMany: 'Слишком много попыток. Подождите четверть часа и попробуйте снова.',
       noTg: 'Вход через Telegram не настроен', tgFail: 'Не вышло войти через Telegram',
       generic: 'Что-то пошло не так, попробуйте ещё раз', needTg: 'Открой в Telegram для входа',
       changeAvatar: 'Сменить фото', avatarBig: 'Фото слишком большое', hi: 'Привет',
@@ -48,6 +49,7 @@ window.KVAuth = (function () {
       errEmpty: 'Заповніть поля', takenUser: 'Такий логін вже зайнятий',
       takenEmail: 'Ця пошта вже зареєстрована', takenPhone: 'Цей телефон вже зареєстрований',
       noAccount: 'Акаунт не знайдено', badCreds: 'Невірний логін або пароль',
+      tooMany: 'Забагато спроб. Зачекайте чверть години й спробуйте знову.',
       noTg: 'Вхід через Telegram не налаштований', tgFail: 'Не вдалося увійти через Telegram',
       generic: 'Щось пішло не так, спробуйте ще раз', needTg: 'Відкрий у Telegram для входу',
       changeAvatar: 'Змінити фото', avatarBig: 'Фото завелике', hi: 'Привіт',
@@ -68,6 +70,7 @@ window.KVAuth = (function () {
       errEmpty: 'Wypełnij pola', takenUser: 'Ten login jest już zajęty',
       takenEmail: 'Ten e-mail jest już zarejestrowany', takenPhone: 'Ten telefon jest już zarejestrowany',
       noAccount: 'Nie znaleziono konta', badCreds: 'Błędny login lub hasło',
+      tooMany: 'Za dużo prób. Odczekaj kwadrans i spróbuj ponownie.',
       noTg: 'Logowanie przez Telegram nie jest skonfigurowane', tgFail: 'Nie udało się zalogować przez Telegram',
       generic: 'Coś poszło nie tak, spróbuj ponownie', needTg: 'Otwórz w Telegramie, aby się zalogować',
       changeAvatar: 'Zmień zdjęcie', avatarBig: 'Zdjęcie za duże', hi: 'Cześć',
@@ -160,7 +163,10 @@ window.KVAuth = (function () {
       body: JSON.stringify({ identifier: id, password })
     });
     const out = await res.json().catch(() => ({}));
-    if (!res.ok || !out.access_token) throw msg(out.error === 'errEmpty' ? 'errEmpty' : 'badCreds');
+    // «слишком много попыток» надо назвать своим именем: иначе человек, которого притормозил
+    // счётчик, видит «неверный пароль» и уверенно вводит его ещё десять раз
+    if (!res.ok || !out.access_token)
+      throw msg(out.error === 'errEmpty' || out.error === 'tooMany' ? out.error : 'badCreds');
     const c = await client();
     const { error } = await c.auth.setSession({ access_token: out.access_token, refresh_token: out.refresh_token });
     if (error) throw mapErr(error);

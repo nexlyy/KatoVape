@@ -138,6 +138,15 @@ function promoList(v: unknown): string[] {
   return out.slice(0, 10);
 }
 
+export interface PricedLine {
+  id: string;
+  name: string;         // from our catalogue, never from the request
+  flavor: string;
+  n: number;
+  unit: number;
+  sum: number;
+}
+
 export interface Priced {
   amount: number;       // charged amount in grosz (zł * 100)
   total_zl: number;     // charged amount in zloty
@@ -145,6 +154,10 @@ export interface Priced {
   label: string;        // short line for the invoice
   discount: number;     // promo discount in zloty
   promo: string[];      // codes that actually applied; these go into the order
+  // What was actually priced. The order stores this instead of the array the browser sent:
+  // the total was always computed here, but the lines were echoed back, so a request could
+  // name one product and pay for another, and the manager packs by the names.
+  lines: PricedLine[];
 }
 
 // Paying by card costs 10% more, cash on pickup keeps the plain price. The same constant is
@@ -195,13 +208,19 @@ export async function priceCart(
 
   let sub = 0, count = 0;
   const cats = new Set<string>();
+  const outLines: PricedLine[] = [];
   for (const r of rows) {
     // Only check stock when it is actually known, so an honest order never fails on a gap.
     const avail = ov.qtyByKey[r.id + "::" + r.flavor];
     if (avail != null && r.n > avail) throw Object.assign(new Error("out_of_stock"), { code: "out_of_stock", id: r.id });
-    sub += unitPrice(r.item, groupQty[tierGroupOf(r.item)], ov) * r.n;
+    const unit = unitPrice(r.item, groupQty[tierGroupOf(r.item)], ov);
+    sub += unit * r.n;
     count += r.n;
     if (r.item._cat) cats.add(r.item._cat);
+    outLines.push({
+      id: r.id, name: r.item.name || r.id, flavor: r.flavor,
+      n: r.n, unit, sum: unit * r.n,
+    });
   }
 
   const { discount: disc, applied } = await discountFor(env, promoList(body.promo), city, sub, [...cats]);
@@ -220,5 +239,6 @@ export async function priceCart(
     label: "KatoVape · " + count + " " + (count === 1 ? "товар" : "товара/ов"),
     discount: disc,
     promo: applied,
+    lines: outLines,
   };
 }
