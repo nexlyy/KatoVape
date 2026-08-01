@@ -136,7 +136,10 @@ async function profileComplete(tgId) {
   return !!(p && p.full_name && p.phone && p.email && p.paczkomat);
 }
 
-const stLabel = (lang, s) => tr(lang, { new: 'stNew', confirmed: 'stConfirmed', done: 'stDone', cancelled: 'stCancelled' }[s] || 'stNew');
+// packed и shipped пришли с миграцией 0032: их пока никто не ставит, но статус читается из
+// базы, и менеджер не должен увидеть в карточке сырое слово вместо подписи
+const stLabel = (lang, s) => tr(lang, { new: 'stNew', confirmed: 'stConfirmed', packed: 'stPacked',
+  shipped: 'stShipped', done: 'stDone', cancelled: 'stCancelled' }[s] || 'stNew');
 const resLabel = (lang, s) => tr(lang, { active: 'rsActive', notified: 'rsNotified', done: 'rsDone', cancelled: 'rsCancelled', expired: 'rsExpired', waiting: 'rsWaiting' }[s] || 'rsActive');
 const delivLabel = (lang, d) => tr(lang, { pickup: 'dvPickup', inpost: 'dvInpost', courier: 'dvCourier' }[d] || 'dvPickup');
 const payLabel = (lang, p) => tr(lang, { paid: 'pyPaid', pending: 'pyPending', unpaid: 'pyUnpaid', failed: 'pyFailed' }[p] || 'pyUnpaid');

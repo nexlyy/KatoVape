@@ -56,6 +56,8 @@ const L = {
 
     stNew: 'новый',
     stConfirmed: 'подтверждён',
+    stPacked: 'собран',
+    stShipped: 'отправлен',
     stDone: 'выдан',
     stCancelled: 'отменён',
     rsActive: 'активна',
@@ -237,6 +239,8 @@ const L = {
 
     stNew: 'новий',
     stConfirmed: 'підтверджено',
+    stPacked: 'зібрано',
+    stShipped: 'відправлено',
     stDone: 'видано',
     stCancelled: 'скасовано',
     rsActive: 'активна',
@@ -418,6 +422,8 @@ const L = {
 
     stNew: 'nowe',
     stConfirmed: 'potwierdzone',
+    stPacked: 'skompletowane',
+    stShipped: 'wysłane',
     stDone: 'wydane',
     stCancelled: 'anulowane',
     rsActive: 'aktywna',

@@ -151,6 +151,7 @@ window.KV = (function () {
       revNeedBuy: 'Отзыв можно оставить на купленный вкус после выдачи заказа',
       noRevsYet: 'Отзывов пока нет. Ваш будет первым после покупки.',
       stNew: 'оформлен', stConfirmed: 'подтверждён', stDone: 'выдан', stCancelled: 'отменён',
+      stPacked: 'собран', stShipped: 'отправлен',
       stActive: 'активна', stExpired: 'истекла', stNotified: 'ждёт выдачи',
       pickMap: 'Выбрать пачкомат',
       lockerTitle: 'Пачкоматы InPost', lockerSearch: 'Улица, район или код',
@@ -213,6 +214,7 @@ window.KV = (function () {
       revNeedBuy: 'Відгук можна залишити на куплений смак після видачі замовлення',
       noRevsYet: 'Відгуків поки немає. Ваш буде першим після покупки.',
       stNew: 'оформлено', stConfirmed: 'підтверджено', stDone: 'видано', stCancelled: 'скасовано',
+      stPacked: 'зібрано', stShipped: 'відправлено',
       stActive: 'активна', stExpired: 'минула', stNotified: 'чекає видачі',
       pickMap: 'Обрати поштомат',
       lockerTitle: 'Поштомати InPost', lockerSearch: 'Вулиця, район або код',
@@ -275,6 +277,7 @@ window.KV = (function () {
       revNeedBuy: 'Opinię można dodać o kupionym smaku po wydaniu zamówienia',
       noRevsYet: 'Brak opinii. Twoja będzie pierwsza po zakupie.',
       stNew: 'złożone', stConfirmed: 'potwierdzone', stDone: 'wydane', stCancelled: 'anulowane',
+      stPacked: 'skompletowane', stShipped: 'wysłane',
       stActive: 'aktywna', stExpired: 'wygasła', stNotified: 'czeka na odbiór',
       pickMap: 'Wybierz paczkomat',
       lockerTitle: 'Paczkomaty InPost', lockerSearch: 'Ulica, dzielnica lub kod',
@@ -2511,8 +2514,11 @@ window.KV = (function () {
     drawDrawer();
     return true;
   }
+  // packed и shipped завела миграция 0032: их пока никто не проставляет, но статус приходит
+  // из базы, и показывать покупателю сырое английское слово нельзя
   function stLabel(s) {
-    const k = { new: 'stNew', confirmed: 'stConfirmed', done: 'stDone', cancelled: 'stCancelled',
+    const k = { new: 'stNew', confirmed: 'stConfirmed', packed: 'stPacked', shipped: 'stShipped',
+      done: 'stDone', cancelled: 'stCancelled',
       active: 'stActive', expired: 'stExpired', notified: 'stNotified' }[s];
     return k ? t(k) : s || '';
   }
@@ -3115,6 +3121,7 @@ body.kv-noscroll{overflow:hidden}
 .kvp-ct-apply{background:var(--kv-accent);border:none;color:var(--kv-accent-ink);font-weight:800}
 .kvp-st{font-style:normal;font-weight:700}
 .kvp-st-new{color:#d29a2b}.kvp-st-confirmed{color:var(--kv-accent-2,var(--kv-accent))}
+.kvp-st-packed,.kvp-st-shipped{color:var(--kv-accent-2,var(--kv-accent))}
 .kvp-st-done{color:#3dbb6e}.kvp-st-cancelled{color:var(--kv-muted)}
 .kvp-res-cancel{background:none;border:none;color:#ff6a86;font-weight:700;font-size:12px;cursor:pointer;font-family:inherit;padding:0}
 .kvg{position:fixed;inset:0;z-index:180;background:rgba(6,6,10,.8);display:flex;align-items:flex-end;justify-content:center}
