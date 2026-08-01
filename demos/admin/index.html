@@ -581,6 +581,14 @@ const DICT = {
     'недостача': 'нестача',
     'себе': 'собі',
     'другое': 'інше',
+    'активный': 'активний',
+    'Журнал действий': 'Журнал дій',
+    'Когда': 'Коли',
+    'Кто': 'Хто',
+    'Что': 'Що',
+    'Объект': 'Обʼєкт',
+    'Подробности': 'Подробиці',
+    'Записей пока нет': 'Записів поки немає',
     'ч': 'год',
     'в обработке': 'в обробці', 'В обработку': 'В обробку', 'Собран': 'Зібрано', 'Отправлен': 'Відправлено',
     'без имени': 'без імені',
@@ -847,6 +855,14 @@ const DICT = {
     'недостача': 'niedobór',
     'себе': 'na własny użytek',
     'другое': 'inne',
+    'активный': 'aktywny',
+    'Журнал действий': 'Dziennik działań',
+    'Когда': 'Kiedy',
+    'Кто': 'Kto',
+    'Что': 'Co',
+    'Объект': 'Obiekt',
+    'Подробности': 'Szczegóły',
+    'Записей пока нет': 'Brak wpisów',
     'ч': 'godz.',
     'в обработке': 'w realizacji', 'В обработку': 'Do realizacji', 'Собран': 'Skompletowane', 'Отправлен': 'Wysłane',
     'без имени': 'bez nazwiska',
@@ -1607,8 +1623,15 @@ async function renderCustomers(m) {
     return tagPill(t, known && known.color);
   }).join(' ');
 
+  // Активный по определению владельца: минимум три выкупленных заказа и покупка за последние
+  // 60 дней. Считаем по тому, что уже вернул список, отдельного запроса не нужно.
+  const ACTIVE_ORDERS = 3, ACTIVE_DAYS = 60;
+  const isActive = c => (c.orders || 0) >= ACTIVE_ORDERS && c.last_order &&
+    (Date.now() - new Date(c.last_order).getTime()) < ACTIVE_DAYS * 86400000;
+
   const rows = list.map(c => [
     `<button class="btn sm" data-copen="${c.id}">${esc(c.full_name || L('без имени'))}</button>` +
+      (isActive(c) ? ` <span class="pill ok">${L('активный')}</span>` : '') +
       (c.blocked ? ` <span class="pill danger">${L('заблокирован')}</span>` : ''),
     esc(c.phone || '—') + (c.telegram_id ? `<span class="sub">tg ${c.telegram_id}</span>` : ''),
     esc(CITY_LABEL[c.city] || c.city),
@@ -2141,9 +2164,20 @@ async function renderDash(m) {
     ${barChart(sys.tables || [], 'name', 'bytes', { label: r => r.name + ' · ' + r.size })}
   </div>`) : '';
 
+  // Журнал действий: кто менял статус, кто правил цену, кто списывал. Пишут его функции
+  // crm_set_status, supply_post и write_off_add, а бот кладёт свою строку сам.
+  const { data: audit } = await sb.from('audit_log')
+    .select('at,actor_role,action,entity,entity_id,detail').order('at', { ascending: false }).limit(40);
+  const auditPanel = panel(L('Журнал действий'), (audit || []).length
+    ? table([L('Когда'), L('Кто'), L('Что'), L('Объект'), L('Подробности')],
+        (audit || []).map(a => [`<span class="num">${fdate(a.at)}</span>`,
+          esc(a.actor_role || '—'), esc(a.action), esc(a.entity + ' ' + (a.entity_id || '')),
+          `<span class="sub">${esc(JSON.stringify(a.detail || {}).slice(0, 90))}</span>`]))
+    : `<div class="panel-body"><p class="dash-none">${L('Записей пока нет')}</p></div>`);
+
   swap(m, panel(L('Дашборд'), `<div class="panel-body">
       <div class="tools">${ranges}</div>${customRow}
-      ${cards}</div>`) + charts + goods + clients + mgrs + system);
+      ${cards}</div>`) + charts + goods + clients + mgrs + system + auditPanel);
 
   m.querySelectorAll('[data-range]').forEach(b => b.onclick = () => {
     dashRange = b.dataset.range;
