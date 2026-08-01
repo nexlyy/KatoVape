@@ -651,6 +651,9 @@ window.KVAuth = (function () {
   // промокод: проверку и списание делает сервер, клиент только показывает результат
   async function promoCheck(code, city, sum, cats) {
     if (!cloudOn()) return null;
+    // Код проверяет сервер и только вошедшему: иначе промокоды подбираются словарём с одним
+    // публичным ключом. Оформить заказ гость всё равно не может, так что просим войти сразу.
+    if (!user) return { ok: false, reason: 'need_login' };
     try {
       const c = await client();
       const { data, error } = await c.rpc('promo_check', { p_code: code, p_city: city, p_sum: sum, p_categories: cats || null });

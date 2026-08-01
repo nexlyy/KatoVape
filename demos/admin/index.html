@@ -5,6 +5,19 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Откуда панели вообще можно грузить код и куда стучаться. Pages свои заголовки ставить не
+     даёт, поэтому политика идёт метой: браузер всё равно её применяет ко всему, кроме
+     frame-ancestors (этот случай закрывает проверка ниже по файлу). -->
+<meta http-equiv="Content-Security-Policy" content="
+  default-src 'none';
+  script-src 'self' 'unsafe-inline' https://telegram.org https://esm.sh;
+  style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+  font-src https://fonts.gstatic.com data:;
+  img-src 'self' data: https:;
+  connect-src 'self' https://esm.sh https://vffqnydxofvunwausakv.supabase.co;
+  frame-src https://oauth.telegram.org;
+  form-action 'none';
+  base-uri 'none'">
 <title>KatoVape · управление</title>
 <link rel="icon" type="image/png" href="../../data/photos/cat.png">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -509,6 +522,8 @@ const DICT = {
     'Сохранено': 'Збережено',
     'собран': 'зібрано', 'отправлен': 'відправлено',
     'Слишком много попыток. Подождите четверть часа.': 'Забагато спроб. Зачекайте чверть години.',
+    'Панель управления не открывается внутри чужой страницы.': 'Панель керування не відкривається всередині чужої сторінки.',
+    'Открыть отдельно': 'Відкрити окремо',
     'Вчера': 'Вчора', '7 дней': '7 днів', '30 дней': '30 днів', 'Квартал': 'Квартал',
     'Год': 'Рік', 'Всё время': 'Увесь час',
     'самовывоз': 'самовивіз', 'курьер': 'курʼєр', 'Картой': 'Карткою', 'Наличными': 'Готівкою',
@@ -686,6 +701,8 @@ const DICT = {
     'Сохранено': 'Zapisano',
     'собран': 'skompletowane', 'отправлен': 'wysłane',
     'Слишком много попыток. Подождите четверть часа.': 'Za dużo prób. Odczekaj kwadrans.',
+    'Панель управления не открывается внутри чужой страницы.': 'Panel zarządzania nie otwiera się wewnątrz obcej strony.',
+    'Открыть отдельно': 'Otwórz osobno',
     'Вчера': 'Wczoraj', '7 дней': '7 dni', '30 дней': '30 dni', 'Квартал': 'Kwartał',
     'Год': 'Rok', 'Всё время': 'Cały czas',
     'самовывоз': 'odbiór osobisty', 'курьер': 'kurier', 'Картой': 'Kartą', 'Наличными': 'Gotówką',
@@ -711,6 +728,26 @@ function setAdmLang(l) {
   admLang = l; localStorage.setItem('kv_adm_lang', l);
   if (me) shell(); else authView();
 }
+
+// Панель в чужой рамке. У менеджера тут кнопки, которые меняют статус заказа и отзывают
+// доступ, а вошедшую сессию можно обмануть кликом по невидимому фрейму. Правило
+// frame-ancestors браузер из меты не читает, а свои заголовки Pages ставить не даёт, поэтому
+// проверяем сами. Telegram открывает мини-апп именно во фрейме, так что его домены остаются.
+(function guardFrame() {
+  if (window.top === window.self) return;
+  let host = '';
+  try {
+    const anc = location.ancestorOrigins;
+    host = new URL(anc && anc.length ? anc[anc.length - 1] : document.referrer).hostname;
+  } catch (e) { host = ''; }
+  if (/(^|\.)telegram\.org$/.test(host) || /(^|\.)t\.me$/.test(host)) return;
+  document.documentElement.innerHTML =
+    '<body style="font:16px system-ui;padding:40px;background:#0b0f14;color:#e6edf3">' +
+    esc(L('Панель управления не открывается внутри чужой страницы.')) +
+    ' <a style="color:#5ff3d0" href="' + esc(location.href) + '" target="_blank" rel="noopener">' +
+    esc(L('Открыть отдельно')) + '</a></body>';
+  throw new Error('framed');
+})();
 
 if (!CFG.SUPABASE_URL || !CFG.SUPABASE_ANON_KEY) {
   app.innerHTML = '<div class="auth"><div class="auth-box"><h1>' + L('Не задан Supabase') +
