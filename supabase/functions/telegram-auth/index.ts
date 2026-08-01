@@ -2,7 +2,7 @@
 // Handles both the website Login Widget (mode "widget") and the mini app (mode "initdata").
 // After the signature checks out we find or create the user and return a one-time OTP that
 // the front exchanges for a real session.
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.111.0";
 import { cors, json } from "../_shared/cors.ts";
 import { verifyInitDataUser, verifyWidget } from "../_shared/telegram.ts";
 

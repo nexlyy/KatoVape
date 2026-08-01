@@ -86,7 +86,7 @@ window.KVAuth = (function () {
   // ---- клиент supabase (SDK тянем с CDN один раз) ----
   async function client() {
     if (sb) return sb;
-    const mod = await import('https://esm.sh/@supabase/supabase-js@2');
+    const mod = await import('https://esm.sh/@supabase/supabase-js@2.111.0');
     sb = mod.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_ANON_KEY, {
       auth: { persistSession: true, autoRefreshToken: true, storageKey: 'kv_sb_auth', detectSessionInUrl: false }
     });

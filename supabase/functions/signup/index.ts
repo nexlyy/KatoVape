@@ -3,7 +3,7 @@
 // server through service_role, as with the Telegram login. After the availability check we
 // create a confirmed user and return a one-time OTP.
 // telegram_id is untouched here: only the Telegram function sets it, after verifying a signature.
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.111.0";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",

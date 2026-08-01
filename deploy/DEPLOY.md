@@ -60,6 +60,23 @@ supabase functions deploy signup          --no-verify-jwt --project-ref vffqnydx
 ```
 Подробности по ключам и вебхуку, в `deploy/PAYMENTS_SETUP.md`.
 
+## Внешние скрипты
+
+Версии закреплены точно, а не тегом вроде `@18`, и у файлов с unpkg проставлен `integrity`.
+Иначе магазин выполняет то, что CDN отдаёт сегодня. Список: `react`, `react-dom` и
+`@babel/standalone` в обеих витринах, `@supabase/supabase-js` в витрине, панели и трёх
+edge-функциях (`login`, `signup`, `telegram-auth`).
+
+Обновление версии делается руками и осознанно: поменять номер во всех местах, для unpkg
+пересчитать хеш, проверить страницы в браузере, для функций сделать `functions deploy`.
+
+```bash
+curl -sL "https://unpkg.com/react@ВЕРСИЯ/umd/react.production.min.js" | openssl dgst -sha384 -binary | openssl base64 -A
+```
+
+`js.stripe.com` и `telegram.org` закреплять нельзя: оба вендора требуют загружать их живую
+копию, а подмена сломает оплату и вход. Это осознанное исключение, не недосмотр.
+
 ## Безопасность
 - Токен бота и service-ключ только в `.env` на сервере (600) и в секретах Supabase, в git их нет.
 - Подпись Telegram проверяется бот-токеном на сервере (widget = SHA256, initData = HMAC).

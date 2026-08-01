@@ -2,7 +2,7 @@
 // The front used to resolve the address from the login itself, which handed a stranger the
 // customer's real email: guess the login, learn the address. The mapping and the password
 // check now live on the server and only a session goes out.
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.111.0";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
