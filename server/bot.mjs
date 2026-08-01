@@ -19,6 +19,8 @@ const CITY_LINKS = (() => {
 const cityLink = (city, kind) => (CITY_LINKS[city] || {})[kind] || '';
 
 const PAGE = 6;
+// за сколько минут до брони предупредить менеджера (владелец просил полтора часа)
+const RES_REMIND_MIN = 90;
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const esc = s => String(s == null ? '' : s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
 const enc = encodeURIComponent;
@@ -138,6 +140,15 @@ async function profileComplete(tgId) {
 
 // packed и shipped пришли с миграцией 0032: их пока никто не ставит, но статус читается из
 // базы, и менеджер не должен увидеть в карточке сырое слово вместо подписи
+// Порядок работы с заказом, тот же, что в панели: ключи ведут в словарь бота.
+const FLOW_NEXT = {
+  new:       [['confirmed', 'admBtnProcess']],
+  confirmed: [['packed', 'admBtnPacked']],
+  packed:    [['shipped', 'admBtnShipped'], ['done', 'admBtnDone']],
+  shipped:   [['done', 'admBtnDone']]
+};
+const CAN_CANCEL = ['new', 'confirmed', 'packed', 'shipped'];
+
 const stLabel = (lang, s) => tr(lang, { new: 'stNew', confirmed: 'stConfirmed', packed: 'stPacked',
   shipped: 'stShipped', done: 'stDone', cancelled: 'stCancelled' }[s] || 'stNew');
 const resLabel = (lang, s) => tr(lang, { active: 'rsActive', notified: 'rsNotified', done: 'rsDone', cancelled: 'rsCancelled', expired: 'rsExpired', waiting: 'rsWaiting' }[s] || 'rsActive');
@@ -462,24 +473,42 @@ async function orderCard(tgId, lang, id, mode = 'active') {
     (c.name || c.phone) ? '\n' + tr(lang, 'admOrderClient', { who: esc([c.name, c.phone, c.email].filter(Boolean).join(', ')) }) : ''
   ].filter(Boolean).join('\n');
 
-  const acts = [];
-  if (o.status === 'new') acts.push(btn(tr(lang, 'admBtnConfirm'), 'o:set:' + o.id + ':confirmed:' + mode));
-  if (o.status === 'new' || o.status === 'confirmed') {
-    acts.push(btn(tr(lang, 'admBtnDone'), 'o:set:' + o.id + ':done:' + mode));
-    acts.push(btn(tr(lang, 'admBtnCancel'), 'o:set:' + o.id + ':cancelled:' + mode));
-  }
+  // Тот же порядок, что в панели. «Отправлен» пропускаем у самовывоза: он никуда не едет.
+  const acts = (FLOW_NEXT[o.status] || [])
+    .filter(([to]) => to !== 'shipped' || o.delivery !== 'pickup')
+    .map(([to, key]) => btn(tr(lang, key), 'o:set:' + o.id + ':' + to + ':' + mode));
+  if (CAN_CANCEL.includes(o.status)) acts.push(btn(tr(lang, 'admBtnCancel'), 'o:rsn:' + o.id + ':' + mode));
   return { text, markup: rows(acts.slice(0, 2), acts.slice(2), back) };
 }
 
-async function setOrderStatus(tgId, lang, id, status) {
+// Список причин отказа держит база, менеджер выбирает из него кнопкой.
+async function cancelReasonsScreen(lang, id, mode) {
+  const list = await sbSelect('cancel_reasons', 'active=is.true&select=id,name&order=id').catch(() => []) || [];
+  const kb = (list).map(r => [btn(r.name, 'o:cx:' + id + ':' + r.id + ':' + mode)]);
+  return {
+    text: tr(lang, 'admWhyCancel', { id }),
+    markup: rows(...kb, [btn(tr(lang, 'btnBack'), 'o:card:' + id + ':' + mode)])
+  };
+}
+
+async function setOrderStatus(tgId, lang, id, status, reason) {
   const only = await cityFilterFor(tgId);
-  const list = await sbSelect('orders', 'id=eq.' + Number(id) + '&select=id,city,status').catch(() => []);
+  const list = await sbSelect('orders', 'id=eq.' + Number(id) + '&select=id,city,status,delivery').catch(() => []);
   const o = list && list[0];
   if (!o) return tr(lang, 'admOrderNotFound');
   if (only && o.city !== only) return tr(lang, 'admOrderOtherCity');
-  if (!['confirmed', 'done', 'cancelled'].includes(status)) return tr(lang, 'admBadStatus');
+  if (!['confirmed', 'packed', 'shipped', 'done', 'cancelled'].includes(status)) return tr(lang, 'admBadStatus');
+  if (status === 'cancelled' && !reason) return tr(lang, 'admNeedReason');
   try {
-    await sbUpdate('orders', 'id=eq.' + Number(id), { status, updated_at: new Date().toISOString() });
+    const patch = { status, updated_at: new Date().toISOString() };
+    if (status === 'cancelled') patch.cancel_reason_id = Number(reason);
+    await sbUpdate('orders', 'id=eq.' + Number(id), patch);
+    // Панель пишет в журнал через crm_set_status, а бот ходит под служебным ключом, где
+    // auth.uid() пуст: строку журнала он кладёт сам, иначе действия из бота нигде не видно.
+    await sbInsert('audit_log', {
+      actor_role: 'bot', action: 'status', entity: 'order', entity_id: String(id),
+      detail: { from: o.status, to: status, reason: reason ? Number(reason) : null, by_telegram_id: tgId }
+    }).catch(() => {});
     return tr(lang, 'admStatusSet', { id, status: stLabel(lang, status) });
   } catch { return tr(lang, 'admStatusFail'); }
 }
@@ -784,6 +813,16 @@ async function handleCallback(q) {
     if (action === 'card') {
       return void await show(isOrder ? await orderCard(f.id, lang, a, b || 'active') : await resCard(f.id, lang, a, b || 'active'));
     }
+    // спросить причину перед отменой заказа
+    if (action === 'rsn' && isOrder) {
+      return void await show(await cancelReasonsScreen(lang, a, b || 'active'));
+    }
+    // причина выбрана: o:cx:<id>:<reasonId>:<mode>
+    if (action === 'cx' && isOrder) {
+      const note = await setOrderStatus(f.id, lang, a, 'cancelled', b);
+      await answerCallback(q.id, note);
+      return void await show(await orderCard(f.id, lang, a, c || 'active'));
+    }
     if (action === 'set') {
       const note = isOrder ? await setOrderStatus(f.id, lang, a, b) : await setResStatus(f.id, lang, a, b);
       await answerCallback(q.id, note);
@@ -848,7 +887,7 @@ async function remindManagers() {
     '&select=id,product_name,reserve_time,city,telegram_id,profiles(telegram_username,username)').catch(() => []);
   for (const r of list || []) {
     const [rh, rm] = String(r.reserve_time).split(':').map(Number);
-    if (nowMin < (rh || 0) * 60 + (rm || 0) - 60) continue;
+    if (nowMin < (rh || 0) * 60 + (rm || 0) - RES_REMIND_MIN) continue;
     const p = r.profiles || {};
     const who = p.telegram_username ? '@' + p.telegram_username : (p.username || '');
     for (const mid of await managersFor(r.city)) {
@@ -901,7 +940,7 @@ async function notifyOrderStatus() {
   // filtered away in the query. Without a limit this would scan the whole order history
   // every ten seconds, so only the recent tail is read.
   const list = await sbSelect('orders',
-    'status=in.(confirmed,done,cancelled)&select=id,status,client_notified_status,profiles(telegram_id)' +
+    'status=in.(confirmed,packed,shipped,done,cancelled)&select=id,status,client_notified_status,profiles(telegram_id)' +
     '&order=id.desc&limit=200').catch(() => []);
   for (const o of list || []) {
     if (o.client_notified_status === o.status) continue;
@@ -910,6 +949,8 @@ async function notifyOrderStatus() {
       const lang = await langOf(tg);
       let text, extra = {};
       if (o.status === 'confirmed') text = tr(lang, 'statusConfirmed', { id: o.id });
+      else if (o.status === 'packed') text = tr(lang, 'statusPacked', { id: o.id });
+      else if (o.status === 'shipped') text = tr(lang, 'statusShipped', { id: o.id });
       else if (o.status === 'done') {
         text = tr(lang, 'statusDone', { id: o.id });
         if (MINIAPP_URL) extra = { reply_markup: rows([{ text: tr(lang, 'reviewBtn'), web_app: { url: MINIAPP_URL + (MINIAPP_URL.includes('?') ? '&' : '?') + 'review=' + o.id } }]) };

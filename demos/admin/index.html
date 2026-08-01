@@ -524,6 +524,8 @@ const DICT = {
     'Слишком много попыток. Подождите четверть часа.': 'Забагато спроб. Зачекайте чверть години.',
     'Панель управления не открывается внутри чужой страницы.': 'Панель керування не відкривається всередині чужої сторінки.',
     'Открыть отдельно': 'Відкрити окремо',
+    'ч': 'год',
+    'в обработке': 'в обробці', 'В обработку': 'В обробку', 'Собран': 'Зібрано', 'Отправлен': 'Відправлено',
     'без имени': 'без імені',
     'заблокирован': 'заблокований',
     'Контакты': 'Контакти',
@@ -731,6 +733,8 @@ const DICT = {
     'Слишком много попыток. Подождите четверть часа.': 'Za dużo prób. Odczekaj kwadrans.',
     'Панель управления не открывается внутри чужой страницы.': 'Panel zarządzania nie otwiera się wewnątrz obcej strony.',
     'Открыть отдельно': 'Otwórz osobno',
+    'ч': 'godz.',
+    'в обработке': 'w realizacji', 'В обработку': 'Do realizacji', 'Собран': 'Skompletowane', 'Отправлен': 'Wysłane',
     'без имени': 'bez nazwiska',
     'заблокирован': 'zablokowany',
     'Контакты': 'Kontakt',
@@ -1048,10 +1052,24 @@ function table(head, rows) {
 // статусы: русский текст в словаре, перевод накладываем при выводе через L() в pill()
 // packed и shipped завела миграция 0032, их пока никто не проставляет, но список статусов
 // в базе их допускает, и сырое слово в таблице выглядело бы ошибкой
-const ST = { new: ['новый', 'new'], confirmed: ['подтверждён', 'live'], packed: ['собран', 'live'],
+const ST = { new: ['новый', 'new'], confirmed: ['в обработке', 'live'], packed: ['собран', 'live'],
   shipped: ['отправлен', 'live'], done: ['выдан', 'ok'],
   cancelled: ['отменён', 'off'], active: ['активна', 'live'], notified: ['напомнили', 'live'],
   expired: ['истекла', 'off'], waiting: ['ждёт', 'new'] };
+
+// Порядок работы с заказом. Самовывоз не отправляют, поэтому «отправлен» появляется только
+// у доставки. Владелец хочет видеть, сколько заказ пролежал нетронутым, отсюда SLA_MIN.
+const SLA_MIN = 60;
+const FLOW_NEXT = {
+  new:       [['confirmed', 'В обработку']],
+  confirmed: [['packed', 'Собран']],
+  packed:    [['shipped', 'Отправлен'], ['done', 'Выдан']],
+  shipped:   [['done', 'Выдан']]
+};
+const CAN_CANCEL = ['new', 'confirmed', 'packed', 'shipped'];
+// сколько минут заказ ждёт первого действия менеджера
+const waitingMin = o => o.status !== 'new' ? 0
+  : Math.floor((Date.now() - new Date(o.created_at).getTime()) / 60000);
 const pill = s => { const x = ST[s] || [s, '']; return `<span class="pill ${x[1]}">${esc(L(x[0]))}</span>`; };
 
 function itemsStr(items) {
@@ -1114,11 +1132,14 @@ async function renderOrders(m) {
   const rows = (data || []).map(o => {
     const c = o.contact || {};
     const who = [c.name, c.phone, c.email, c.paczkomat ? L('пачкомат ') + c.paczkomat : ''].filter(Boolean).map(esc).join('<br>');
-    const acts = o.status === 'new'
-      ? btn('ost', o.id, 'confirmed', L('Подтвердить'), 'primary') + btn('ost', o.id, 'cancelled', L('Отказ'), 'danger')
-      : o.status === 'confirmed'
-        ? btn('ost', o.id, 'done', L('Выдан'), 'primary') + btn('ost', o.id, 'cancelled', L('Отказ'), 'danger') : '';
-    return [`<span class="num">#${o.id}</span><span class="sub">${fdate(o.created_at)}</span>`,
+    // «отправлен» показываем только доставке: самовывоз никуда не едет
+    const next = (FLOW_NEXT[o.status] || [])
+      .filter(([to]) => to !== 'shipped' || o.delivery !== 'pickup');
+    const acts = next.map(([to, label]) => btn('ost', o.id, to, L(label), 'primary')).join('') +
+      (CAN_CANCEL.includes(o.status) ? btn('ost', o.id, 'cancelled', L('Отказ'), 'danger') : '');
+    const wait = waitingMin(o);
+    return [`<span class="num">#${o.id}</span><span class="sub">${fdate(o.created_at)}</span>` +
+      (wait >= SLA_MIN ? `<span class="pill danger">${L('ждёт')} ${Math.floor(wait / 60)} ${L('ч')}</span>` : ''),
       esc(itemsStr(o.items)) +
         `<span class="sub">${esc(CITY_LABEL[o.city] || o.city)} · ${esc(delivLabel(o.delivery))}${o.address ? ' · ' + esc(o.address) : ''}</span>` +
         (o.comment ? `<span class="sub">${L('Комментарий')}: ${esc(o.comment)}</span>` : ''),
@@ -1156,11 +1177,49 @@ async function renderReservations(m) {
 function btn(kind, id, st, label, cls) {
   return `<button class="btn sm ${cls || ''}" data-${kind}="${st}" data-id="${id}">${label}</button>`;
 }
+// Причины отказа держит база: владелец правит список, отчёт «почему теряем заказы» строится
+// по нему. Без причины отменить заказ нельзя, это правило crm_set_status.
+let cancelReasons = [];
+async function loadCancelReasons() {
+  if (cancelReasons.length) return cancelReasons;
+  const { data } = await sb.from('cancel_reasons').select('*').eq('active', true).order('id');
+  cancelReasons = data || [];
+  return cancelReasons;
+}
+async function askCancel(btnEl, orderId) {
+  const box = btnEl.closest('.tools');
+  if (!box) return;
+  const reasons = await loadCancelReasons();
+  box.innerHTML =
+    `<select class="rsn" style="width:auto">${reasons.map(r =>
+      `<option value="${r.id}">${esc(r.name)}</option>`).join('')}</select>` +
+    `<button class="btn sm danger rsn-go">${L('Отказ')}</button>` +
+    `<button class="btn sm quiet rsn-no">${L('Отмена')}</button>`;
+  box.querySelector('.rsn-no').onclick = () => render();
+  box.querySelector('.rsn-go').onclick = async () => {
+    const reason = +box.querySelector('.rsn').value;
+    const { error } = await sb.rpc('crm_set_status', { p_order: orderId, p_status: 'cancelled', p_reason: reason });
+    if (error) return toast(error.message, true);
+    toast(L('Статус обновлён'));
+    await refreshOverview();
+    render();
+  };
+}
 function bindStatus(m, kind, tableName) {
   m.querySelectorAll('[data-' + kind + ']').forEach(b => b.onclick = async () => {
+    const to = b.dataset[kind === 'ost' ? 'ost' : 'rst'];
+    // Отмена заказа обязана нести причину, поэтому сначала спрашиваем её
+    if (tableName === 'orders' && to === 'cancelled') return askCancel(b, +b.dataset.id);
     b.disabled = true;
-    const patch = { status: b.dataset[kind === 'ost' ? 'ost' : 'rst'] };
-    if (tableName === 'orders') patch.updated_at = new Date().toISOString();
+    if (tableName === 'orders') {
+      // через crm_set_status: он проверяет город и пишет в журнал действий
+      const { error } = await sb.rpc('crm_set_status', { p_order: +b.dataset.id, p_status: to, p_reason: null });
+      if (error) { b.disabled = false; return toast(error.message, true); }
+      toast(L('Статус обновлён'));
+      await refreshOverview();
+      return render();
+    }
+    const patch = { status: to };
     // select() возвращает изменённые строки: если RLS не пустила (чужой город), их будет ноль,
     // и молчаливого «обновлено» быть не должно
     const { data, error } = await sb.from(tableName).update(patch).eq('id', +b.dataset.id).select('id');
