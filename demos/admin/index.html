@@ -589,6 +589,28 @@ const DICT = {
     'Объект': 'Обʼєкт',
     'Подробности': 'Подробиці',
     'Записей пока нет': 'Записів поки немає',
+    'Менеджер': 'Менеджер',
+    'Ставка сейчас': 'Ставка зараз',
+    'База': 'База',
+    'Заработал': 'Заробив',
+    'Ставки ещё не заданы': 'Ставки ще не задані',
+    'со всей суммы': 'з усієї суми',
+    'с прибыли': 'з прибутку',
+    'Доля менеджеров за период': 'Частка менеджерів за період',
+    'Ставки': 'Ставки',
+    'Считать': 'Рахувати',
+    'Ставок пока нет': 'Ставок поки немає',
+    'Задать ставку': 'Задати ставку',
+    'Прежняя ставка остаётся в истории: заказы до этой даты считаются по ней.': 'Попередня ставка лишається в історії: замовлення до цієї дати рахуються за нею.',
+    'Процент от 0 до 100': 'Відсоток від 0 до 100',
+    'Сначала выдайте менеджеру доступ по Telegram ID': 'Спершу видайте менеджеру доступ за Telegram ID',
+    'На эту дату ставка уже задана': 'На цю дату ставку вже задано',
+    'Ставка задана': 'Ставку задано',
+    'Удалить ставку': 'Видалити ставку',
+    'Доход': 'Дохід',
+    'Доля менеджеров': 'Частка менеджерів',
+    'Доход это выданные заказы, наличные и карта вместе. Прибыль остаётся после доли продавца, закупки и расходов.': 'Дохід це видані замовлення, готівка й картка разом. Прибуток лишається після частки продавця, закупівлі та витрат.',
+    'Менеджеру': 'Менеджеру',
     'ч': 'год',
     'в обработке': 'в обробці', 'В обработку': 'В обробку', 'Собран': 'Зібрано', 'Отправлен': 'Відправлено',
     'без имени': 'без імені',
@@ -863,6 +885,28 @@ const DICT = {
     'Объект': 'Obiekt',
     'Подробности': 'Szczegóły',
     'Записей пока нет': 'Brak wpisów',
+    'Менеджер': 'Menedżer',
+    'Ставка сейчас': 'Stawka teraz',
+    'База': 'Podstawa',
+    'Заработал': 'Zarobił',
+    'Ставки ещё не заданы': 'Stawki nie zostały jeszcze ustawione',
+    'со всей суммы': 'od całej kwoty',
+    'с прибыли': 'od zysku',
+    'Доля менеджеров за период': 'Udział menedżerów za okres',
+    'Ставки': 'Stawki',
+    'Считать': 'Liczyć',
+    'Ставок пока нет': 'Brak stawek',
+    'Задать ставку': 'Ustaw stawkę',
+    'Прежняя ставка остаётся в истории: заказы до этой даты считаются по ней.': 'Poprzednia stawka zostaje w historii: zamówienia sprzed tej daty liczą się według niej.',
+    'Процент от 0 до 100': 'Procent od 0 do 100',
+    'Сначала выдайте менеджеру доступ по Telegram ID': 'Najpierw nadaj menedżerowi dostęp po Telegram ID',
+    'На эту дату ставка уже задана': 'Na tę datę stawka już istnieje',
+    'Ставка задана': 'Stawka ustawiona',
+    'Удалить ставку': 'Usunąć stawkę',
+    'Доход': 'Przychód',
+    'Доля менеджеров': 'Udział menedżerów',
+    'Доход это выданные заказы, наличные и карта вместе. Прибыль остаётся после доли продавца, закупки и расходов.': 'Przychód to wydane zamówienia, gotówka i karta razem. Zysk zostaje po udziale sprzedawcy, zakupie i wydatkach.',
+    'Менеджеру': 'Menedżerowi',
     'ч': 'godz.',
     'в обработке': 'w realizacji', 'В обработку': 'Do realizacji', 'Собран': 'Skompletowane', 'Отправлен': 'Wysłane',
     'без имени': 'bez nazwiska',
@@ -1515,15 +1559,90 @@ async function openSupply(id) {
 
 /* ================= финансы ================= */
 let finFrom = '', finTo = '';
+
+// Доля продавца. Процент живёт в базе и правится тут, потому что он у каждого свой и время
+// от времени меняется. Новая ставка не переписывает старую, а начинает действовать со своей
+// даты: иначе отчёт за прошлый месяц завтра пересчитался бы и разошёлся с выплаченным.
+function payoutsPanel(rep, rates, admins) {
+  const pays = (rep && rep.payouts) || [];
+  const who = tg => {
+    const a = (admins || []).find(x => String(x.ident) === String(tg));
+    return a ? a.who : String(tg);
+  };
+  const paid = pays.length
+    ? table([L('Менеджер'), L('Город'), L('Ставка сейчас'), L('База'), L('Заказов'), L('Заработал')],
+        pays.map(p => [esc(who(p.telegram_id)) + `<span class="sub">tg ${p.telegram_id}</span>`,
+          esc(CITY_LABEL[p.city] || p.city),
+          `<span class="num">${p.percent_now == null ? '—' : p.percent_now + ' %'}</span>`,
+          `<span class="num">${money(p.base_sum)}</span>`,
+          `<span class="num">${p.orders}</span>`,
+          `<span class="num">${money(p.payout)}</span>`]))
+    : `<div class="panel-body"><p class="dash-none">${L('Ставки ещё не заданы')}</p></div>`;
+
+  const hist = (rates || []).map(r => [
+    esc(who(r.telegram_id)), esc(CITY_LABEL[r.city] || r.city),
+    `<span class="num">${r.percent} %</span>`,
+    r.base === 'revenue' ? L('со всей суммы') : L('с прибыли'),
+    `<span class="num">${fday(r.from_date)}</span>`,
+    esc(r.note || ''),
+    `<button class="btn sm danger" data-ratedel="${r.id}">×</button>`]);
+
+  return panel(L('Доля менеджеров за период'), paid) +
+    panel(L('Ставки'), `<div class="panel-body">
+      ${hist.length ? table([L('Менеджер'), L('Город'), L('Процент'), L('Считать'), L('Действует с'), L('Заметка'), ''], hist)
+        : `<p class="dash-none">${L('Ставок пока нет')}</p>`}
+      <div class="tools" style="margin-top:10px">
+        <select id="r_tg" style="width:auto">${(admins || [])
+          .filter(a => a.kind === 'telegram')
+          .map(a => `<option value="${esc(a.ident)}">${esc(a.who)} (${esc(a.ident)})</option>`).join('')}</select>
+        <select id="r_city" style="width:auto">${CITIES.map(c =>
+          `<option value="${c}">${CITY_LABEL[c]}</option>`).join('')}</select>
+        <input id="r_pct" placeholder="%" style="width:80px" inputmode="decimal">
+        <select id="r_base" style="width:auto">
+          <option value="gross">${L('с прибыли')}</option>
+          <option value="revenue">${L('со всей суммы')}</option>
+        </select>
+        <input type="date" id="r_from" value="${new Date().toISOString().slice(0, 10)}">
+        <input id="r_note" placeholder="${L('Заметка')}" style="width:150px">
+        <button class="btn primary" id="r_add">${L('Задать ставку')}</button>
+      </div>
+      <p class="hint">${L('Прежняя ставка остаётся в истории: заказы до этой даты считаются по ней.')}</p>
+    </div>`);
+}
+function bindRates(m) {
+  const add = document.getElementById('r_add');
+  if (add) add.onclick = async () => {
+    const pct = Number((document.getElementById('r_pct').value || '').replace(',', '.'));
+    if (!Number.isFinite(pct) || pct < 0 || pct > 100) return toast(L('Процент от 0 до 100'), true);
+    const tg = document.getElementById('r_tg').value;
+    if (!tg) return toast(L('Сначала выдайте менеджеру доступ по Telegram ID'), true);
+    const { error } = await sb.from('manager_rates').insert({
+      telegram_id: Number(tg), city: document.getElementById('r_city').value,
+      percent: pct, base: document.getElementById('r_base').value,
+      from_date: document.getElementById('r_from').value,
+      note: (document.getElementById('r_note').value || '').trim() || null
+    });
+    if (error) return toast(error.code === '23505' ? L('На эту дату ставка уже задана') : error.message, true);
+    toast(L('Ставка задана')); render();
+  };
+  m.querySelectorAll('[data-ratedel]').forEach(b => b.onclick = async () => {
+    if (!confirm(L('Удалить ставку') + '?')) return;
+    const { error } = await sb.from('manager_rates').delete().eq('id', +b.dataset.ratedel);
+    if (error) return toast(error.message, true);
+    render();
+  });
+}
 async function renderFinance(m) {
   const today = new Date();
   if (!finTo) finTo = today.toISOString().slice(0, 10);
   if (!finFrom) finFrom = new Date(today.getTime() - 29 * 86400000).toISOString().slice(0, 10);
 
-  const [{ data: rep, error }, { data: cats }, { data: exp }] = await Promise.all([
+  const [{ data: rep, error }, { data: cats }, { data: exp }, { data: rates }, { data: admins }] = await Promise.all([
     sb.rpc('fin_report', { p_from: finFrom, p_to: finTo }),
     sb.from('expense_categories').select('*').eq('active', true).order('id'),
-    sb.from('expenses').select('*').gte('at', finFrom).lte('at', finTo).order('at', { ascending: false }).limit(100)
+    sb.from('expenses').select('*').gte('at', finFrom).lte('at', finTo).order('at', { ascending: false }).limit(100),
+    sb.from('manager_rates').select('*').order('city').order('from_date', { ascending: false }),
+    sb.rpc('admin_access_list')
   ]);
   if (error) return swap(m, panel(L('Ошибка'), `<div class="empty">${esc(error.message)}</div>`));
   const byCity = (rep && rep.by_city) || [];
@@ -1540,22 +1659,25 @@ async function renderFinance(m) {
         <button class="btn sm primary" id="f_go">${L('Показать')}</button>
       </div>
       <div class="kpis" style="margin-top:12px">
-        ${kpi(L('Выручка'), money(sum('revenue')))}
+        ${kpi(L('Доход'), money(sum('revenue')))}
         ${kpi(L('Себестоимость'), money(sum('cogs')))}
         ${kpi(L('Валовая прибыль'), money(sum('gross')))}
+        ${kpi(L('Доля менеджеров'), money(sum('payout')))}
         ${kpi(L('Расходы'), money(sum('expenses') + shared))}
         ${kpi(L('Списано'), money(sum('write_offs')))}
         ${kpi(L('Прибыль'), money(totalProfit))}
       </div>
-      <p class="hint">${L('Выручка считается по выданным заказам, наличные и карта вместе.')}</p>
+      <p class="hint">${L('Доход это выданные заказы, наличные и карта вместе. Прибыль остаётся после доли продавца, закупки и расходов.')}</p>
     </div>`) +
     panel(L('По городам'), table(
-      [L('Город'), L('Заказов'), L('Выручка'), L('Себестоимость'), L('Валовая'), L('Расходы'), L('Списано'), L('Прибыль')],
+      [L('Город'), L('Заказов'), L('Доход'), L('Себестоимость'), L('Валовая'), L('Менеджеру'), L('Расходы'), L('Списано'), L('Прибыль')],
       byCity.map(c => [esc(CITY_LABEL[c.city] || c.city), `<span class="num">${c.orders}</span>`,
         `<span class="num">${money(c.revenue)}</span>`, `<span class="num">${money(c.cogs)}</span>`,
-        `<span class="num">${money(c.gross)}</span>`, `<span class="num">${money(c.expenses)}</span>`,
+        `<span class="num">${money(c.gross)}</span>`, `<span class="num">${money(c.payout)}</span>`,
+        `<span class="num">${money(c.expenses)}</span>`,
         `<span class="num">${money(c.write_offs)}</span>`, `<span class="num">${money(c.profit)}</span>`])) +
       (shared ? `<p class="hint">${L('Общие расходы без города')}: <b>${money(shared)}</b></p>` : '')) +
+    payoutsPanel(rep, rates, admins) +
     panel(L('Расходы'), `<div class="panel-body">
       <div class="tools">
         <select id="e_city" style="width:auto"><option value="">${L('общий, без города')}</option>
@@ -1599,6 +1721,7 @@ async function renderFinance(m) {
     if (error) return toast(error.message, true);
     render();
   });
+  bindRates(m);
 }
 
 /* ================= клиенты ================= */
