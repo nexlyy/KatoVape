@@ -901,6 +901,53 @@ async function remindManagers() {
   }
 }
 
+// Напоминание, заведённое человеком: срок пришёл, значит пора сказать.
+async function dueTasks() {
+  const now = new Date().toISOString();
+  const list = await sbSelect('tasks',
+    'done=is.false&notified_at=is.null&due_at=lte.' + now +
+    '&select=id,city,telegram_id,title,body,order_id,kind&order=due_at.asc&limit=50').catch(() => []);
+  for (const t of list || []) {
+    const to = t.telegram_id ? [Number(t.telegram_id)] : await managersFor(t.city);
+    for (const mid of to) {
+      const lang = await langOf(mid);
+      await sendMessage(mid, tr(lang, 'taskDue', {
+        title: esc(t.title),
+        body: t.body ? '\n' + esc(t.body) : '',
+        order: t.order_id ? '\n' + tr(lang, 'taskOrder', { id: t.order_id }) : ''
+      })).catch(() => {});
+    }
+    await sbUpdate('tasks', 'id=eq.' + t.id, { notified_at: new Date().toISOString() }).catch(() => {});
+  }
+}
+
+// Заказ собран, но до конца дня так и не выдан. В 23:00 по Варшаве менеджер города получает
+// список таких заказов: до полуночи ещё есть время закрыть день. Напоминание пишется в
+// задачи, поэтому второй раз за тот же день оно не придёт.
+async function stuckOrders() {
+  const w = warsaw();
+  if (w.hour < 23) return;
+  const list = await sbSelect('orders',
+    'status=eq.packed&select=id,city,sum,contact,delivery,created_at&order=id.desc&limit=50').catch(() => []);
+  for (const o of list || []) {
+    const marker = await sbSelect('tasks',
+      'kind=eq.order_stuck&order_id=eq.' + o.id + '&due_at=gte.' + w.date + 'T00:00:00Z&select=id&limit=1').catch(() => []);
+    if (marker && marker.length) continue;
+    const c = o.contact || {};
+    for (const mid of await managersFor(o.city)) {
+      const lang = await langOf(mid);
+      await sendMessage(mid, tr(lang, 'orderStuck', {
+        id: o.id, city: esc(CITY_LABEL[o.city] || o.city), sum: o.sum || 0,
+        who: esc([c.name, c.phone].filter(Boolean).join(', ') || '—')
+      })).catch(() => {});
+    }
+    await sbInsert('tasks', {
+      city: o.city, title: '#' + o.id, kind: 'order_stuck',
+      order_id: o.id, due_at: new Date().toISOString(), notified_at: new Date().toISOString()
+    }).catch(() => {});
+  }
+}
+
 async function notifyOrders() {
   // pending (card checkout started but unpaid) is not shown to managers: only cash on
   // pickup (unpaid) and orders already paid online (paid).
@@ -1090,6 +1137,8 @@ async function jobsLoop() {
       await doBroadcasts();
       await doSyncJobs();
       await notifyRestocks();
+      await dueTasks();
+      await stuckOrders();
       await heartbeat();
     } catch {}
     await sleep(JOBS_MS);

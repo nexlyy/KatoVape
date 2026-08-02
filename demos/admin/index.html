@@ -14,8 +14,8 @@
   style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
   font-src https://fonts.gstatic.com data:;
   img-src 'self' data: https:;
-  connect-src 'self' https://esm.sh https://vffqnydxofvunwausakv.supabase.co;
-  frame-src https://oauth.telegram.org;
+  connect-src 'self' https://esm.sh https://vffqnydxofvunwausakv.supabase.co https://telegram.org https://oauth.telegram.org;
+  frame-src https://oauth.telegram.org https://telegram.org;
   form-action 'none';
   base-uri 'none'">
 <title>KatoVape · управление</title>
@@ -635,6 +635,14 @@ const DICT = {
     'Причина': 'Причина',
     'Уникальный': 'Унікальний',
     'Ждём поступления': 'Чекаємо надходження',
+    'оплачен': 'оплачений',
+    'ждёт оплаты': 'чекає оплати',
+    'при выдаче': 'при отриманні',
+    'оплата не прошла': 'оплата не пройшла',
+    'Кнопка Telegram не загрузилась': 'Кнопка Telegram не завантажилася',
+    'Войдите логином и паролем или проверьте домен бота у BotFather.': 'Увійдіть логіном і паролем або перевірте домен бота у BotFather.',
+    'скрипт Telegram недоступен': 'скрипт Telegram недоступний',
+    'Telegram не ответил': 'Telegram не відповів',
     'ч': 'год',
     'в обработке': 'в обробці', 'В обработку': 'В обробку', 'Собран': 'Зібрано', 'Отправлен': 'Відправлено',
     'без имени': 'без імені',
@@ -955,6 +963,14 @@ const DICT = {
     'Причина': 'Powód',
     'Уникальный': 'Unikat',
     'Ждём поступления': 'Czekamy na dostawę',
+    'оплачен': 'opłacone',
+    'ждёт оплаты': 'czeka na płatność',
+    'при выдаче': 'przy odbiorze',
+    'оплата не прошла': 'płatność nieudana',
+    'Кнопка Telegram не загрузилась': 'Przycisk Telegram się nie wczytał',
+    'Войдите логином и паролем или проверьте домен бота у BotFather.': 'Zaloguj się loginem i hasłem albo sprawdź domenę bota w BotFather.',
+    'скрипт Telegram недоступен': 'skrypt Telegrama niedostępny',
+    'Telegram не ответил': 'Telegram nie odpowiedział',
     'ч': 'godz.',
     'в обработке': 'w realizacji', 'В обработку': 'Do realizacji', 'Собран': 'Skompletowane', 'Отправлен': 'Wysłane',
     'без имени': 'bez nazwiska',
@@ -1114,7 +1130,19 @@ function authView(errText) {
     s.setAttribute('data-size', 'large');
     s.setAttribute('data-onauth', 'onTgAuth(user)');
     s.setAttribute('data-request-access', 'write');
-    document.getElementById('tgwrap').appendChild(s);
+    const wrap = document.getElementById('tgwrap');
+    // Виджет молча не появляется сразу по нескольким причинам: домен не привязан к боту через
+    // BotFather, скрипт не загрузился, политика безопасности не пустила. Пустое место в этом
+    // случае выглядит как «вход сломан», поэтому говорим, что произошло, и оставляем путь
+    // через логин с паролем.
+    const widgetFailed = why => {
+      if (wrap.querySelector('iframe')) return;
+      wrap.innerHTML = `<div class="msg err">${esc(L('Кнопка Telegram не загрузилась'))}. ` +
+        `${esc(why)}. ${esc(L('Войдите логином и паролем или проверьте домен бота у BotFather.'))}</div>`;
+    };
+    s.onerror = () => widgetFailed(L('скрипт Telegram недоступен'));
+    wrap.appendChild(s);
+    setTimeout(() => widgetFailed(L('Telegram не ответил')), 6000);
   }
 }
 function showErr(text) {
@@ -1310,6 +1338,11 @@ const CAN_CANCEL = ['new', 'confirmed', 'packed', 'shipped'];
 // сколько минут заказ ждёт первого действия менеджера
 const waitingMin = o => o.status !== 'new' ? 0
   : Math.floor((Date.now() - new Date(o.created_at).getTime()) / 60000);
+// Подписи статуса и оплаты берут словарь: в диаграммах раньше показывались сырые ключи
+// из базы вроде «done» и «unpaid».
+const PAY_ST = { paid: 'оплачен', pending: 'ждёт оплаты', unpaid: 'при выдаче', failed: 'оплата не прошла' };
+const stName  = s => L((ST[s] || [s])[0]);
+const payName = s => L(PAY_ST[s] || s);
 const pill = s => { const x = ST[s] || [s, '']; return `<span class="pill ${x[1]}">${esc(L(x[0]))}</span>`; };
 
 function itemsStr(items) {
@@ -2436,8 +2469,10 @@ async function renderDash(m) {
     ${panel(L('Средний чек'), `<div class="panel-body">${lineChart(ordersS, 'avg_check', { money: true })}</div>`)}
     ${panel(L('Новые клиенты'), `<div class="panel-body">${lineChart(usersS, 'users', {})}</div>`)}
     ${panel(L('Отзывы'), `<div class="panel-body">${lineChart(reviewsS, 'reviews', {})}</div>`)}
-    ${panel(L('Статусы заказов'), `<div class="panel-body">${donut(s.statuses || [], 'status', 'n', RING_COLORS)}</div>`)}
-    ${panel(L('Способы оплаты'), `<div class="panel-body">${donut((s.payments || []).map(r => ({ ...r, label: L(r.pay_way === 'card' ? 'Картой' : 'Наличными') + ' · ' + r.payment_status })), 'label', 'n', RING_COLORS)}</div>`)}
+    ${panel(L('Статусы заказов'), `<div class="panel-body">${donut(
+      (s.statuses || []).map(r => ({ ...r, label: stName(r.status) })), 'label', 'n', RING_COLORS)}</div>`)}
+    ${panel(L('Способы оплаты'), `<div class="panel-body">${donut((s.payments || []).map(r => ({ ...r,
+      label: L(r.pay_way === 'card' ? 'Картой' : 'Наличными') + ' · ' + payName(r.payment_status) })), 'label', 'n', RING_COLORS)}</div>`)}
     ${panel(L('Города'), `<div class="panel-body">${barChart(s.cities || [], 'city', 'revenue', { money: true, label: r => CITY_LABEL[r.city] || r.city })}</div>`)}
     ${panel(L('Промокоды'), `<div class="panel-body">${barChart(s.promo || [], 'code', 'n')}</div>`)}
   </div>`;
