@@ -214,6 +214,18 @@ td .sub{display:block;color:var(--muted);font-size:11.5px;margin-top:2px}
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .kpi-v{font-size:19px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
 .kpi-t{font-size:11.5px;font-weight:700}
+.dash-g{margin-top:18px}
+.dash-g-t{font-size:13px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:8px}
+.kpis-hero .kpi{background:var(--surface-2);border-color:var(--accent)}
+.kpis-hero .kpi-v{font-size:26px}
+.fold{margin-top:14px;border:1px solid var(--line);border-radius:14px;background:var(--surface);overflow:hidden}
+.fold>summary{cursor:pointer;padding:14px 18px;font-weight:700;font-size:14px;list-style:none;user-select:none}
+.fold>summary::-webkit-details-marker{display:none}
+.fold>summary::before{content:"▸";display:inline-block;margin-right:9px;color:var(--muted);transition:transform .15s}
+.fold[open]>summary::before{transform:rotate(90deg)}
+.fold>summary:hover{background:var(--surface-2)}
+.fold .panel{margin:0 12px 12px;border:none;background:none}
+@media(max-width:700px){.dash-g-t{font-size:12px}.kpis-hero .kpi-v{font-size:22px}}
 .kpi-t.up{color:var(--ok)}.kpi-t.down{color:var(--danger)}.kpi-t.flat{color:var(--muted)}
 .dash-2{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:16px}
 .dash-none{color:var(--muted);font-size:13px;padding:14px 0;text-align:center}
@@ -643,6 +655,39 @@ const DICT = {
     'Войдите логином и паролем или проверьте домен бота у BotFather.': 'Увійдіть логіном і паролем або перевірте домен бота у BotFather.',
     'скрипт Telegram недоступен': 'скрипт Telegram недоступний',
     'Telegram не ответил': 'Telegram не відповів',
+    'Напоминания': 'Нагадування',
+    'Что нужно не забыть. Когда придёт срок, бот напишет в Telegram.': 'Що треба не забути. Коли прийде час, бот напише в Telegram.',
+    'просрочено': 'протерміновано',
+    'отправлено': 'надіслано',
+    'Выполнено': 'Виконано',
+    'Выполненные': 'Виконані',
+    'Открытые напоминания': 'Відкриті нагадування',
+    'Что сделать': 'Що зробити',
+    'Напоминаний нет': 'Нагадувань немає',
+    'Заведите первое формой ниже: бот сам напомнит в срок.': 'Створіть перше формою нижче: бот сам нагадає вчасно.',
+    'Открытые': 'Відкриті',
+    'Новое напоминание': 'Нове нагадування',
+    'Позвонить клиенту': 'Зателефонувати клієнту',
+    'Уточнить адрес': 'Уточнити адресу',
+    'Связаться повторно': 'Звʼязатися повторно',
+    'Другое': 'Інше',
+    'Время': 'Час',
+    'Заказ, если есть': 'Замовлення, якщо є',
+    'Что важно помнить': 'Що важливо памʼятати',
+    'Поставить напоминание': 'Поставити нагадування',
+    'Бот напишет менеджерам города в указанное время. Отдельно он сам напомнит про заказы, которые собраны, но не выданы до конца дня.': 'Бот напише менеджерам міста у вказаний час. Окремо він сам нагадає про замовлення, які зібрані, але не видані до кінця дня.',
+    'Впишите, что сделать': 'Впишіть, що зробити',
+    'Укажите дату и время': 'Вкажіть дату й час',
+    'Напоминание поставлено': 'Нагадування поставлено',
+    'Новых заказов': 'Нових замовлень',
+    'Ждут поступления': 'Чекають надходження',
+    'Деньги за период': 'Гроші за період',
+    'Заказы за период': 'Замовлення за період',
+    'Клиенты за период': 'Клієнти за період',
+    'Выручка нарастающим итогом': 'Виторг наростаючим підсумком',
+    'Всего': 'Усього',
+    'Динамика': 'Динаміка',
+    'Товары': 'Товари',
     'ч': 'год',
     'в обработке': 'в обробці', 'В обработку': 'В обробку', 'Собран': 'Зібрано', 'Отправлен': 'Відправлено',
     'без имени': 'без імені',
@@ -971,6 +1016,39 @@ const DICT = {
     'Войдите логином и паролем или проверьте домен бота у BotFather.': 'Zaloguj się loginem i hasłem albo sprawdź domenę bota w BotFather.',
     'скрипт Telegram недоступен': 'skrypt Telegrama niedostępny',
     'Telegram не ответил': 'Telegram nie odpowiedział',
+    'Напоминания': 'Przypomnienia',
+    'Что нужно не забыть. Когда придёт срок, бот напишет в Telegram.': 'O czym trzeba pamiętać. Gdy nadejdzie termin, bot napisze na Telegramie.',
+    'просрочено': 'po terminie',
+    'отправлено': 'wysłane',
+    'Выполнено': 'Zrobione',
+    'Выполненные': 'Zrobione',
+    'Открытые напоминания': 'Otwarte przypomnienia',
+    'Что сделать': 'Co zrobić',
+    'Напоминаний нет': 'Brak przypomnień',
+    'Заведите первое формой ниже: бот сам напомнит в срок.': 'Utwórz pierwsze formularzem poniżej: bot przypomni w terminie.',
+    'Открытые': 'Otwarte',
+    'Новое напоминание': 'Nowe przypomnienie',
+    'Позвонить клиенту': 'Zadzwonić do klienta',
+    'Уточнить адрес': 'Potwierdzić adres',
+    'Связаться повторно': 'Odezwać się ponownie',
+    'Другое': 'Inne',
+    'Время': 'Godzina',
+    'Заказ, если есть': 'Zamówienie, jeśli jest',
+    'Что важно помнить': 'Co warto pamiętać',
+    'Поставить напоминание': 'Ustaw przypomnienie',
+    'Бот напишет менеджерам города в указанное время. Отдельно он сам напомнит про заказы, которые собраны, но не выданы до конца дня.': 'Bot napisze do menedżerów miasta o wskazanej godzinie. Osobno sam przypomni o zamówieniach skompletowanych, ale niewydanych do końca dnia.',
+    'Впишите, что сделать': 'Wpisz, co zrobić',
+    'Укажите дату и время': 'Podaj datę i godzinę',
+    'Напоминание поставлено': 'Przypomnienie ustawione',
+    'Новых заказов': 'Nowych zamówień',
+    'Ждут поступления': 'Czekają na dostawę',
+    'Деньги за период': 'Pieniądze za okres',
+    'Заказы за период': 'Zamówienia za okres',
+    'Клиенты за период': 'Klienci za okres',
+    'Выручка нарастающим итогом': 'Przychód narastająco',
+    'Всего': 'Łącznie',
+    'Динамика': 'Dynamika',
+    'Товары': 'Produkty',
     'ч': 'godz.',
     'в обработке': 'w realizacji', 'В обработку': 'Do realizacji', 'Собран': 'Skompletowane', 'Отправлен': 'Wysłane',
     'без имени': 'bez nazwiska',
@@ -1208,6 +1286,7 @@ const TABS = () => [
   ['stock', L('Склад'), null],
   ['finance', L('Финансы'), null],
   ['managers', L('Менеджеры'), null],
+  ['tasks', L('Напоминания'), ov => ov.tasks_open],
   ['customers', L('Клиенты'), null],
   ['demand', L('Спрос'), null],
   ['broadcast', L('Рассылка'), null],
@@ -1360,6 +1439,7 @@ async function render() {
     stock: [L('Склад'), L('Поставка приходует товар и заводит партию со своей закупочной ценой.')],
     finance: [L('Финансы'), L('Выручка, себестоимость и расходы. По городам и в сумме.')],
     managers: [L('Менеджеры'), L('Кто с каким городом работает и сколько получает с продажи.')],
+    tasks: [L('Напоминания'), L('Что нужно не забыть. Когда придёт срок, бот напишет в Telegram.')],
     customers: [L('Клиенты'), L('Те, кто заводил аккаунт в магазине.')],
     demand: [L('Спрос'), L('Что чаще всего смотрят и бронируют.')],
     broadcast: [L('Рассылка'), L('Сообщение уйдёт всем, кто общался с ботом.')],
@@ -1379,6 +1459,7 @@ async function render() {
     else if (tab === 'products') await renderProducts(m);
     else if (tab === 'stock') await renderStock(m);
     else if (tab === 'managers') await renderManagers(m);
+    else if (tab === 'tasks') await renderTasks(m);
     else if (tab === 'finance') await renderFinance(m);
     else if (tab === 'customers') await renderCustomers(m);
     else if (tab === 'demand') await renderDemand(m);
@@ -1680,6 +1761,86 @@ async function openSupply(id) {
     if (error) return toast(error.message, true);
     toast(L('Поставка проведена'));
     render();
+  };
+}
+
+/* ================= напоминания ================= */
+// Задача с датой и временем: когда срок придёт, бот напишет менеджеру города или конкретному
+// человеку. Заказ можно привязать, тогда в сообщении будет его номер.
+const TASK_KINDS = [['call', 'Позвонить клиенту'], ['address', 'Уточнить адрес'],
+                    ['follow_up', 'Связаться повторно'], ['custom', 'Другое']];
+let tasksDone = false;
+
+async function renderTasks(m) {
+  const { data, error } = await sb.from('tasks').select('*')
+    .eq('done', tasksDone).order('due_at', { ascending: true }).limit(200);
+  if (error) return swap(m, panel(L('Ошибка'), `<div class="empty">${esc(error.message)}</div>`));
+  const list = data || [];
+  const kindName = k => L((TASK_KINDS.find(x => x[0] === k) || [0, k])[1]);
+  const overdue = t => !t.done && new Date(t.due_at) < new Date();
+
+  const rows = list.map(t => [
+    esc(t.title) + (t.body ? `<span class="sub">${esc(t.body)}</span>` : ''),
+    kindName(t.kind),
+    `<span class="num">${fdate(t.due_at)}</span>` +
+      (overdue(t) ? `<span class="pill warn">${L('просрочено')}</span>` : ''),
+    t.order_id ? `<span class="num">#${t.order_id}</span>` : '—',
+    esc(CITY_LABEL[t.city] || t.city),
+    t.notified_at ? `<span class="pill ok">${L('отправлено')}</span>` : `<span class="pill new">${L('ждёт')}</span>`,
+    (t.done ? '' : `<button class="btn sm primary" data-tdone="${t.id}">${L('Выполнено')}</button>`) +
+      `<button class="btn sm danger" data-tdel="${t.id}">×</button>`
+  ]);
+
+  const now = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString();
+  swap(m, panel(tasksDone ? L('Выполненные') : L('Открытые напоминания'), rows.length
+      ? table([L('Что сделать'), L('Тип'), L('Когда'), L('Заказ'), L('Город'), L('Бот'), ''], rows)
+      : empty(L('Напоминаний нет'), L('Заведите первое формой ниже: бот сам напомнит в срок.')),
+      `<button class="btn sm ${tasksDone ? '' : 'primary'}" id="t_open">${L('Открытые')}</button>
+       <button class="btn sm ${tasksDone ? 'primary' : ''}" id="t_done">${L('Выполненные')}</button>`) +
+    panel(L('Новое напоминание'), `<div class="panel-body">
+      <div class="pform">
+        <label class="f">${L('Что сделать')}<input id="t_title" maxlength="200" placeholder="${L('Позвонить клиенту')}"></label>
+        <label class="f">${L('Тип')}<select id="t_kind">${TASK_KINDS.map(([v, n]) =>
+          `<option value="${v}">${L(n)}</option>`).join('')}</select></label>
+        <label class="f">${L('Дата')}<input type="date" id="t_date" value="${now.slice(0, 10)}"></label>
+        <label class="f">${L('Время')}<input type="time" id="t_time" value="${now.slice(11, 16)}"></label>
+        <label class="f">${L('Город')}<select id="t_city">${citiesAllowed().map(c =>
+          `<option value="${c}">${CITY_LABEL[c]}</option>`).join('')}</select></label>
+        <label class="f">${L('Заказ, если есть')}<input id="t_order" inputmode="numeric" placeholder="#"></label>
+        <label class="f pform-wide">${L('Подробности')}<input id="t_body" maxlength="2000" placeholder="${L('Что важно помнить')}"></label>
+      </div>
+      <div class="tools" style="margin-top:12px"><button class="btn primary" id="t_add">${L('Поставить напоминание')}</button></div>
+      <p class="hint">${L('Бот напишет менеджерам города в указанное время. Отдельно он сам напомнит про заказы, которые собраны, но не выданы до конца дня.')}</p>
+    </div>`));
+
+  document.getElementById('t_open').onclick = () => { tasksDone = false; render(); };
+  document.getElementById('t_done').onclick = () => { tasksDone = true; render(); };
+  m.querySelectorAll('[data-tdone]').forEach(b => b.onclick = async () => {
+    const { error } = await sb.from('tasks').update({ done: true }).eq('id', +b.dataset.tdone);
+    if (error) return toast(error.message, true);
+    toast(L('Выполнено')); render();
+  });
+  m.querySelectorAll('[data-tdel]').forEach(b => b.onclick = async () => {
+    const { error } = await sb.from('tasks').delete().eq('id', +b.dataset.tdel);
+    if (error) return toast(error.message, true);
+    render();
+  });
+  document.getElementById('t_add').onclick = async () => {
+    const title = (document.getElementById('t_title').value || '').trim();
+    if (!title) return toast(L('Впишите, что сделать'), true);
+    const d = document.getElementById('t_date').value, t = document.getElementById('t_time').value;
+    if (!d || !t) return toast(L('Укажите дату и время'), true);
+    const orderRaw = (document.getElementById('t_order').value || '').replace('#', '').trim();
+    const { error } = await sb.from('tasks').insert({
+      city: document.getElementById('t_city').value,
+      title, body: (document.getElementById('t_body').value || '').trim() || null,
+      kind: document.getElementById('t_kind').value,
+      due_at: new Date(d + 'T' + t).toISOString(),
+      order_id: orderRaw ? Number(orderRaw) : null,
+      created_by: me.id
+    });
+    if (error) return toast(error.message, true);
+    toast(L('Напоминание поставлено')); render();
   };
 }
 
@@ -2423,11 +2584,12 @@ async function renderDash(m) {
     sb.rpc('dash_kpi', args), sb.rpc('dash_series', { ...args, p_bucket: bucket }),
     sb.rpc('dash_products', args), sb.rpc('dash_customers', args), sb.rpc('dash_managers', args)
   ];
+  calls.push(sb.rpc('fin_report', { p_from: from.slice(0, 10), p_to: to.slice(0, 10) }));
   if (isDev) calls.push(sb.rpc('dash_system'));
   const res = await Promise.all(calls);
   const err = res.find(r => r.error);
   if (err) { swap(m, panel(L('Ошибка'), `<div class="empty">${esc(err.error.message)}</div>`)); return; }
-  const [k, s, p, c, mg, sys] = res.map(r => r.data || {});
+  const [k, s, p, c, mg, rep, sys] = res.map(r => r.data || {});
 
   const ranges = DASH_RANGES.map(([key, label]) =>
     `<button class="btn sm ${key === dashRange ? 'primary' : ''}" data-range="${key}">${L(label)}</button>`).join('') +
@@ -2439,26 +2601,51 @@ async function renderDash(m) {
         <button class="btn sm primary" id="d_apply">${L('Показать')}</button></div>`
     : '';
 
-  const cards = `<div class="kpis">
-    ${kpi(L('Выручка за период'), money(k.revenue_period), trendHTML(trend(k.revenue_period, k.revenue_prev)))}
-    ${kpi(L('Выручка всего'), money(k.revenue_total))}
+  // Деньги считает fin_report: в дашборде их не было, а прибыль это первое, что хотят видеть.
+  const fin = (rep && rep.by_city) || [];
+  const finSum = key => fin.reduce((a, c) => a + Number(c[key] || 0), 0);
+  const sharedExp = Number((rep && rep.shared_expenses) || 0);
+
+  // Верхняя строка: сегодняшняя выручка и то, что ждёт человека прямо сейчас.
+  const todayRow = `<div class="kpis kpis-hero">
     ${kpi(L('Сегодня'), money(k.revenue_today))}
-    ${kpi(L('За неделю'), money(k.revenue_week))}
-    ${kpi(L('За месяц'), money(k.revenue_month))}
-    ${kpi(L('За год'), money(k.revenue_year))}
-    ${kpi(L('Заказов'), nf(k.orders), trendHTML(trend(k.orders, k.orders_prev)))}
-    ${kpi(L('Выдано'), nf(k.orders_done))}
-    ${kpi(L('Отменено'), nf(k.orders_cancelled))}
+    ${kpi(L('Новых заказов'), nf((overview || {}).orders_new), (overview || {}).orders_new > 0 ? '<span class="kpi-t up">!</span>' : '')}
     ${kpi(L('Активных броней'), nf(k.res_active))}
-    ${kpi(L('Средний чек'), money(k.avg_check), trendHTML(trend(k.avg_check, k.avg_check_prev)))}
-    ${kpi(L('Броней выкуплено'), nf(k.res_conversion) + '%')}
-    ${kpi(L('Новых клиентов'), nf(k.users_new), trendHTML(trend(k.users_new, k.users_new_prev)))}
-    ${kpi(L('Покупали в периоде'), nf(k.users_active))}
-    ${kpi(L('Отзывов'), nf(k.reviews))}
-    ${kpi(L('Средняя оценка'), nf(k.reviews_avg))}
-    ${kpi(L('Заказов с промокодом'), nf(k.promo_used))}
-    ${kpi(L('Сумма скидок'), money(k.discount_total))}
+    ${kpi(L('Ждут поступления'), nf((overview || {}).waiting))}
   </div>`;
+
+  const group = (title, body) => `<div class="dash-g"><h3 class="dash-g-t">${esc(title)}</h3>${body}</div>`;
+
+  const cards = todayRow +
+    group(L('Деньги за период'), `<div class="kpis">
+      ${kpi(L('Доход'), money(k.revenue_period), trendHTML(trend(k.revenue_period, k.revenue_prev)))}
+      ${kpi(L('Себестоимость'), money(finSum('cogs')))}
+      ${kpi(L('Валовая прибыль'), money(finSum('gross')))}
+      ${kpi(L('Доля менеджеров'), money(finSum('payout')))}
+      ${kpi(L('Расходы'), money(finSum('expenses') + sharedExp))}
+      ${kpi(L('Прибыль'), money(finSum('profit') - sharedExp))}
+      ${kpi(L('Средний чек'), money(k.avg_check), trendHTML(trend(k.avg_check, k.avg_check_prev)))}
+      ${kpi(L('Сумма скидок'), money(k.discount_total))}
+    </div>`) +
+    group(L('Заказы за период'), `<div class="kpis">
+      ${kpi(L('Заказов'), nf(k.orders), trendHTML(trend(k.orders, k.orders_prev)))}
+      ${kpi(L('Выдано'), nf(k.orders_done))}
+      ${kpi(L('Отменено'), nf(k.orders_cancelled))}
+      ${kpi(L('Броней выкуплено'), nf(k.res_conversion) + '%')}
+      ${kpi(L('Заказов с промокодом'), nf(k.promo_used))}
+    </div>`) +
+    group(L('Клиенты за период'), `<div class="kpis">
+      ${kpi(L('Новых клиентов'), nf(k.users_new), trendHTML(trend(k.users_new, k.users_new_prev)))}
+      ${kpi(L('Покупали в периоде'), nf(k.users_active))}
+      ${kpi(L('Отзывов'), nf(k.reviews))}
+      ${kpi(L('Средняя оценка'), nf(k.reviews_avg))}
+    </div>`) +
+    group(L('Выручка нарастающим итогом'), `<div class="kpis">
+      ${kpi(L('За неделю'), money(k.revenue_week))}
+      ${kpi(L('За месяц'), money(k.revenue_month))}
+      ${kpi(L('За год'), money(k.revenue_year))}
+      ${kpi(L('Всего'), money(k.revenue_total))}
+    </div>`);
 
   const ordersS = fillSeries(s.orders || [], from, to, bucket, ['orders', 'done', 'revenue', 'avg_check']);
   const usersS = fillSeries(s.users || [], from, to, bucket, ['users']);
@@ -2542,9 +2729,18 @@ async function renderDash(m) {
           `<span class="sub">${esc(JSON.stringify(a.detail || {}).slice(0, 90))}</span>`]))
     : `<div class="panel-body"><p class="dash-none">${L('Записей пока нет')}</p></div>`);
 
+  const fold = (title, body, open) =>
+    `<details class="fold" ${open ? 'open' : ''}><summary>${esc(title)}</summary>${body}</details>`;
+
   swap(m, panel(L('Дашборд'), `<div class="panel-body">
       <div class="tools">${ranges}</div>${customRow}
-      ${cards}</div>`) + charts + goods + clients + mgrs + system + auditPanel);
+      ${cards}</div>`) +
+    fold(L('Динамика'), charts, true) +
+    fold(L('Товары'), goods) +
+    fold(L('Клиенты'), clients) +
+    fold(L('Менеджеры'), mgrs) +
+    (system ? fold(L('Система'), system) : '') +
+    fold(L('Журнал действий'), auditPanel));
 
   m.querySelectorAll('[data-range]').forEach(b => b.onclick = () => {
     dashRange = b.dataset.range;
