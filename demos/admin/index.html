@@ -3245,9 +3245,31 @@ async function tgAuthFromHash() {
   }
 }
 
+// Отпечаток этой сборки, его проставляет npm run stamp.
+const BUILD = '40f85a26';
+
+// Браузер держит саму страницу панели в кеше, и человек видит вчерашний интерфейс, считая,
+// что правки не приехали. Отпечаток рядом лежащего version.json читается мимо кеша: разошлось
+// с нашим, значит копия старая. Перезагружаемся один раз, метка в sessionStorage не даёт
+// зациклиться, если version.json почему-то новее навсегда.
+async function checkBuild() {
+  try {
+    const r = await fetch('version.json?t=' + Date.now(), { cache: 'no-store' });
+    if (!r.ok) return;
+    const { build } = await r.json();
+    if (!build || !BUILD || build === BUILD) { sessionStorage.removeItem('kv_reloaded'); return; }
+    if (sessionStorage.getItem('kv_reloaded')) return;
+    sessionStorage.setItem('kv_reloaded', '1');
+    location.reload();
+  } catch (e) {
+    // нет связи: работаем с тем, что уже загружено
+  }
+}
+
 (async function () {
   const tg = window.Telegram && window.Telegram.WebApp;
   if (tg) { try { tg.ready(); tg.expand(); } catch (e) {} }
+  checkBuild();
   if (await tgAuthFromHash()) return;
   const { data: { session } } = await sb.auth.getSession();
   if (session) {

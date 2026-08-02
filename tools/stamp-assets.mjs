@@ -43,6 +43,25 @@ for (const page of PAGES) {
   console.log((check ? 'устарело: ' : 'обновлено: ') + page);
 }
 
+// Отпечаток самой страницы панели.
+//
+// Скрипты обновляются сами, потому что у них в адресе хеш. С самой страницей так нельзя: её
+// адрес фиксирован, а GitHub Pages отдаёт её с Cache-Control на десять минут, и браузер потом
+// ещё долго держит копию. Отсюда повторяющееся «изменений нет»: человек смотрит на вчерашнюю
+// панель. Поэтому рядом лежит version.json, который панель читает мимо кеша и сравнивает со
+// своим отпечатком: не совпало, значит копия старая, и страница перезагружает себя один раз.
+const PANEL = 'demos/admin/index.html';
+const panelBody = read(PANEL).replace(/const BUILD = '[^']*'/, "const BUILD = ''");
+const build = createHash('sha256').update(panelBody).digest('hex').slice(0, 8);
+
+const stampedPanel = read(PANEL).replace(/const BUILD = '[^']*'/, "const BUILD = '" + build + "'");
+if (stampedPanel !== read(PANEL)) {
+  changed++;
+  if (!check) writeFileSync(new URL(PANEL, ROOT), stampedPanel);
+  console.log((check ? 'устарело: ' : 'обновлено: ') + PANEL + ' (отпечаток сборки)');
+}
+if (!check) writeFileSync(new URL('demos/admin/version.json', ROOT), JSON.stringify({ build }) + '\n');
+
 if (!changed) {
   console.log('версии скриптов актуальны');
 } else if (check) {
