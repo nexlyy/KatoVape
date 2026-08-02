@@ -611,6 +611,25 @@ const DICT = {
     'Доля менеджеров': 'Частка менеджерів',
     'Доход это выданные заказы, наличные и карта вместе. Прибыль остаётся после доли продавца, закупки и расходов.': 'Дохід це видані замовлення, готівка й картка разом. Прибуток лишається після частки продавця, закупівлі та витрат.',
     'Менеджеру': 'Менеджеру',
+    'Менеджеры': 'Менеджери',
+    'Кто с каким городом работает и сколько получает с продажи.': 'Хто з яким містом працює і скільки отримує з продажу.',
+    'все остальные': 'усі інші',
+    'позиций': 'позицій',
+    'с': 'з',
+    'не задана': 'не задана',
+    'управляющий': 'керуючий',
+    'У этой роли доступ ко всем городам, ставка не задаётся.': 'Ця роль має доступ до всіх міст, ставка не задається.',
+    'Способ входа': 'Спосіб входу',
+    'Процент с продажи': 'Відсоток з продажу',
+    'Новые проценты начнут действовать с сегодняшнего дня, прошлые заказы не пересчитываются.': 'Нові відсотки почнуть діяти від сьогодні, минулі замовлення не перераховуються.',
+    'Имя или Telegram ID': 'Імʼя або Telegram ID',
+    'все роли': 'усі ролі',
+    'Показано': 'Показано',
+    'Никого не нашлось': 'Нікого не знайшлося',
+    'Измените поиск или выдайте доступ во вкладке «Доступ».': 'Змініть пошук або видайте доступ у вкладці «Доступ».',
+    'Ставка задаётся тем, кто входит через Telegram': 'Ставка задається тим, хто входить через Telegram',
+    'Ставки сохранены': 'Ставки збережено',
+    'Ассортимент назначен': 'Асортимент призначено',
     'ч': 'год',
     'в обработке': 'в обробці', 'В обработку': 'В обробку', 'Собран': 'Зібрано', 'Отправлен': 'Відправлено',
     'без имени': 'без імені',
@@ -907,6 +926,25 @@ const DICT = {
     'Доля менеджеров': 'Udział menedżerów',
     'Доход это выданные заказы, наличные и карта вместе. Прибыль остаётся после доли продавца, закупки и расходов.': 'Przychód to wydane zamówienia, gotówka i karta razem. Zysk zostaje po udziale sprzedawcy, zakupie i wydatkach.',
     'Менеджеру': 'Menedżerowi',
+    'Менеджеры': 'Menedżerowie',
+    'Кто с каким городом работает и сколько получает с продажи.': 'Kto pracuje z którym miastem i ile dostaje ze sprzedaży.',
+    'все остальные': 'pozostałe',
+    'позиций': 'pozycji',
+    'с': 'od',
+    'не задана': 'nie ustawiona',
+    'управляющий': 'zarządzający',
+    'У этой роли доступ ко всем городам, ставка не задаётся.': 'Ta rola ma dostęp do wszystkich miast, stawki się nie ustawia.',
+    'Способ входа': 'Sposób logowania',
+    'Процент с продажи': 'Procent ze sprzedaży',
+    'Новые проценты начнут действовать с сегодняшнего дня, прошлые заказы не пересчитываются.': 'Nowe procenty działają od dziś, wcześniejsze zamówienia nie są przeliczane.',
+    'Имя или Telegram ID': 'Imię lub Telegram ID',
+    'все роли': 'wszystkie role',
+    'Показано': 'Pokazano',
+    'Никого не нашлось': 'Nikogo nie znaleziono',
+    'Измените поиск или выдайте доступ во вкладке «Доступ».': 'Zmień wyszukiwanie lub nadaj dostęp w zakładce «Dostęp».',
+    'Ставка задаётся тем, кто входит через Telegram': 'Stawkę ustawia się osobom logującym się przez Telegram',
+    'Ставки сохранены': 'Stawki zapisane',
+    'Ассортимент назначен': 'Asortyment przypisany',
     'ч': 'godz.',
     'в обработке': 'w realizacji', 'В обработку': 'Do realizacji', 'Собран': 'Skompletowane', 'Отправлен': 'Wysłane',
     'без имени': 'bez nazwiska',
@@ -1114,9 +1152,16 @@ async function afterLogin() {
 // Русский тут исходник, а не готовая подпись: L() применяется при выводе. Обернуть его
 // прямо здесь нельзя, константа считается один раз при загрузке, и переключатель языка
 // оставил бы роли на том языке, с которым панель открыли.
-const ROLE_RU = { owner: 'владелец', dev: 'разработчик', manager: 'менеджер' };
+const ROLE_RU = { owner: 'владелец', owner_manager: 'управляющий', dev: 'разработчик', manager: 'менеджер' };
+// Полный доступ: всё, что видит владелец. Раздача прав сюда не входит, её отдельно
+// разрешает overview.can_grant, и только владельцу.
+const FULL_ROLES = ['owner', 'owner_manager', 'dev'];
 // подписи считаем на каждый рендер: иначе переключатель языка их не обновит
-const canDash = () => !!(overview && ['owner', 'dev'].includes(overview.role));
+const isFull = () => !!(overview && FULL_ROLES.includes(overview.role));
+// Дашборд, склад, финансы и раздел менеджеров закрыты от рядового менеджера: там закупочные
+// цены, чужие города и деньги. Проверка в интерфейсе только прячет пункт, доступ закрывают
+// политики базы.
+const canDash = isFull;
 const TABS = () => [
   ['dash', L('Дашборд'), null],
   ['orders', L('Заказы'), ov => ov.orders_new],
@@ -1124,12 +1169,21 @@ const TABS = () => [
   ['products', L('Ассортимент'), null],
   ['stock', L('Склад'), null],
   ['finance', L('Финансы'), null],
+  ['managers', L('Менеджеры'), null],
   ['customers', L('Клиенты'), null],
   ['demand', L('Спрос'), null],
   ['broadcast', L('Рассылка'), null],
   ['promo', L('Промокоды'), null],
   ['access', L('Доступ'), null]
 ];
+
+// Кто какой раздел видит. Одна таблица на весь интерфейс: и меню, и переключение вкладки
+// спрашивают её, поэтому набраться расхождению негде.
+const TAB_ACCESS = {
+  dash: isFull, stock: isFull, finance: isFull, managers: isFull,
+  access: () => !!(overview && overview.can_grant)
+};
+const tabAllowed = k => !TAB_ACCESS[k] || TAB_ACCESS[k]();
 
 function closeMenu() {
   document.body.classList.remove('menu-open');
@@ -1156,8 +1210,7 @@ function shell() {
         <div class="brand"><img src="../../data/photos/cat.png" alt=""><div>
           <b>KatoVape</b><span>${L('управление')}</span></div></div>
         <nav class="nav" id="nav">
-          ${TABS().filter(([k]) => (k !== 'access' || (overview && overview.can_grant))
-              && (k !== 'dash' || canDash()) && (k !== 'finance' || canDash())).map(([k, label, badge]) => {
+          ${TABS().filter(([k]) => tabAllowed(k)).map(([k, label, badge]) => {
             const n = badge && overview ? badge(overview) : 0;
             return `<button data-t="${k}" class="${k === tab ? 'on' : ''}">${label}
               ${n ? `<i class="count">${n}</i>` : ''}</button>`;
@@ -1263,6 +1316,7 @@ async function render() {
     products: [L('Ассортимент'), L('Правки видны на витрине сразу после сохранения.')],
     stock: [L('Склад'), L('Поставка приходует товар и заводит партию со своей закупочной ценой.')],
     finance: [L('Финансы'), L('Выручка, себестоимость и расходы. По городам и в сумме.')],
+    managers: [L('Менеджеры'), L('Кто с каким городом работает и сколько получает с продажи.')],
     customers: [L('Клиенты'), L('Те, кто заводил аккаунт в магазине.')],
     demand: [L('Спрос'), L('Что чаще всего смотрят и бронируют.')],
     broadcast: [L('Рассылка'), L('Сообщение уйдёт всем, кто общался с ботом.')],
@@ -1273,12 +1327,16 @@ async function render() {
   const slot = () => m.querySelector('.panel');
 
   try {
-    if (tab === 'dash') { if (!canDash()) { tab = 'orders'; return shell(); } await renderDash(m); }
+    // Вкладку можно выставить и мимо меню (сохранённая, из кода, из адреса), поэтому право
+    // проверяется здесь ещё раз. База всё равно ничего не отдаст, но и пустого экрана не надо.
+    if (!tabAllowed(tab)) { tab = 'orders'; return shell(); }
+    if (tab === 'dash') await renderDash(m);
     else if (tab === 'orders') await renderOrders(m);
     else if (tab === 'reservations') await renderReservations(m);
     else if (tab === 'products') await renderProducts(m);
     else if (tab === 'stock') await renderStock(m);
-    else if (tab === 'finance') { if (!canDash()) { tab = 'orders'; return shell(); } await renderFinance(m); }
+    else if (tab === 'managers') await renderManagers(m);
+    else if (tab === 'finance') await renderFinance(m);
     else if (tab === 'customers') await renderCustomers(m);
     else if (tab === 'demand') await renderDemand(m);
     else if (tab === 'broadcast') await renderBroadcast(m);
@@ -1555,6 +1613,122 @@ async function openSupply(id) {
     toast(L('Поставка проведена'));
     render();
   };
+}
+
+/* ================= менеджеры ================= */
+// Кто с каким городом работает, какой у него ассортимент и сколько он получает с продажи.
+// Проценты задаются по категориям товара и берутся из справочника, а не из списка в коде:
+// добавится категория, здесь сама появится строка.
+let mgrQuery = '', mgrRole = '', mgrCity = '';
+
+async function renderManagers(m) {
+  const [{ data: access }, { data: rates }, { data: cats }, { data: prods }] = await Promise.all([
+    sb.rpc('admin_access_list'),
+    sb.from('manager_rates').select('*').order('from_date', { ascending: false }),
+    sb.from('product_categories').select('*').eq('active', true).neq('id', '').order('sort'),
+    sb.from('products').select('id,city,category')
+  ]);
+  const catList = cats || [];
+  const catName = c => admLang === 'uk' ? c.name_uk : admLang === 'pl' ? c.name_pl : c.name_ru;
+
+  // сколько позиций в городе менеджера и по каким категориям
+  const byCity = {};
+  for (const p of prods || []) {
+    const c = (byCity[p.city] = byCity[p.city] || { total: 0, cats: {} });
+    c.total++;
+    if (p.category) c.cats[p.category] = (c.cats[p.category] || 0) + 1;
+  }
+
+  const q = mgrQuery.toLowerCase();
+  const list = (access || []).filter(a =>
+    (!q || (a.who || '').toLowerCase().includes(q) || String(a.ident).includes(q)) &&
+    (!mgrRole || a.role === mgrRole) &&
+    (!mgrCity || a.city === mgrCity));
+
+  // действующая ставка: последняя по дате для этой пары менеджер+категория
+  const rateOf = (tg, city, cat) => (rates || [])
+    .filter(r => String(r.telegram_id) === String(tg) && r.city === city &&
+                 r.category === cat)
+    .sort((a, b) => (a.from_date < b.from_date ? 1 : -1))[0];
+
+  const cards = list.map(a => {
+    const city = a.city;
+    const stock = city ? (byCity[city] || { total: 0, cats: {} }) : null;
+    const rows = city
+      ? [{ id: '', label: L('все остальные') }].concat(catList.map(c => ({ id: c.id, label: catName(c) })))
+        .map(c => {
+          const r = rateOf(a.ident, city, c.id);
+          const n = c.id ? (stock.cats[c.id] || 0) : stock.total;
+          return `<div class="prow"><span>${esc(c.label)}
+              <span class="sub">${n} ${L('позиций')}</span></span>
+            <input class="mr-pct" data-cat="${esc(c.id)}" data-tg="${esc(String(a.ident))}"
+                   data-city="${esc(city)}" style="width:90px" inputmode="decimal"
+                   value="${r ? r.percent : ''}" placeholder="%">
+            <span class="sub">${r ? L('с') + ' ' + fday(r.from_date) : L('не задана')}</span></div>`;
+        }).join('')
+      : `<p class="dash-none">${L('У этой роли доступ ко всем городам, ставка не задаётся.')}</p>`;
+
+    return panel(esc(a.who || String(a.ident)), `<div class="panel-body">
+      <div class="prow"><span>${L('Роль')}</span><span class="pill ${a.role === 'manager' ? '' : 'ok'}">${esc(L(ROLE_RU[a.role] || a.role))}</span></div>
+      <div class="prow"><span>${L('Город')}</span><span>${city ? esc(CITY_LABEL[city] || city) : L('все города')}</span></div>
+      <div class="prow"><span>${L('Ассортимент')}</span><span>${stock ? stock.total + ' ' + L('позиций') : '—'}</span></div>
+      <div class="prow"><span>${L('Способ входа')}</span><span>${a.kind === 'telegram' ? 'Telegram' : L('Пароль')}</span></div>
+      ${city ? `<div class="prow"><span><b>${L('Процент с продажи')}</b></span>
+        <select class="mr-base" data-tg="${esc(String(a.ident))}" data-city="${esc(city)}" style="width:auto">
+          <option value="gross">${L('с прибыли')}</option>
+          <option value="revenue">${L('со всей суммы')}</option>
+        </select></div>` : ''}
+      ${rows}
+      ${city ? `<div class="tools" style="margin-top:10px">
+        <button class="btn primary mr-save" data-tg="${esc(String(a.ident))}" data-city="${esc(city)}">${L('Применить')}</button>
+        <span class="hint" style="margin:0">${L('Новые проценты начнут действовать с сегодняшнего дня, прошлые заказы не пересчитываются.')}</span>
+      </div>` : ''}
+    </div>`);
+  }).join('');
+
+  swap(m, panel(L('Менеджеры'), `<div class="panel-body"><div class="tools">
+      <input id="mq" placeholder="${L('Имя или Telegram ID')}" style="width:210px" value="${esc(mgrQuery)}">
+      <select id="mrole" style="width:auto"><option value="">${L('все роли')}</option>
+        ${ROLE_OPTS.map(r => `<option value="${r}" ${r === mgrRole ? 'selected' : ''}>${L(ROLE_RU[r])}</option>`).join('')}</select>
+      <select id="mcity" style="width:auto"><option value="">${L('все города')}</option>
+        ${CITIES.map(c => `<option value="${c}" ${c === mgrCity ? 'selected' : ''}>${CITY_LABEL[c]}</option>`).join('')}</select>
+    </div>
+    <p class="hint">${L('Показано')}: ${list.length}</p></div>`) +
+    (cards || empty(L('Никого не нашлось'), L('Измените поиск или выдайте доступ во вкладке «Доступ».'))));
+
+  const mq = document.getElementById('mq');
+  if (mq) {
+    mq.oninput = () => { clearTimeout(mq._t); mq._t = setTimeout(() => { mgrQuery = mq.value.trim(); render(); }, 400); };
+    if (mgrQuery) { mq.focus(); mq.setSelectionRange(mq.value.length, mq.value.length); }
+  }
+  document.getElementById('mrole').onchange = e => { mgrRole = e.target.value; render(); };
+  document.getElementById('mcity').onchange = e => { mgrCity = e.target.value; render(); };
+
+  m.querySelectorAll('.mr-save').forEach(b => b.onclick = async () => {
+    const tg = Number(b.dataset.tg), city = b.dataset.city;
+    if (!Number.isFinite(tg)) return toast(L('Ставка задаётся тем, кто входит через Telegram'), true);
+    const base = m.querySelector(`.mr-base[data-tg="${b.dataset.tg}"][data-city="${city}"]`).value;
+    const today = new Date().toISOString().slice(0, 10);
+    const rows = [];
+    m.querySelectorAll(`.mr-pct[data-tg="${b.dataset.tg}"][data-city="${city}"]`).forEach(i => {
+      const v = (i.value || '').trim();
+      if (v === '') return;
+      const pct = Number(v.replace(',', '.'));
+      if (!Number.isFinite(pct) || pct < 0 || pct > 100) { rows.bad = true; return; }
+      const cur = rateOf(tg, city, i.dataset.cat);
+      // не плодим одинаковые строки: пишем только то, что реально изменилось
+      if (cur && Number(cur.percent) === pct && cur.base === base) return;
+      rows.push({ telegram_id: tg, city, category: i.dataset.cat || '', percent: pct, base, from_date: today });
+    });
+    if (rows.bad) return toast(L('Процент от 0 до 100'), true);
+    if (!rows.length) return toast(L('Изменений нет'));
+    b.disabled = true;
+    const { error } = await sb.from('manager_rates').upsert(rows, { onConflict: 'telegram_id,city,category,from_date' });
+    b.disabled = false;
+    if (error) return toast(error.message, true);
+    toast(L('Ставки сохранены'));
+    render();
+  });
 }
 
 /* ================= финансы ================= */
@@ -2012,7 +2186,7 @@ async function watchBroadcast(id) {
   if (res) res.textContent = L('Бот пока не забрал очередь. Проверьте, что он запущен на сервере.');
 }
 
-const ROLE_OPTS = ['manager', 'dev', 'owner'];
+const ROLE_OPTS = ['manager', 'owner_manager', 'dev', 'owner'];
 const roleSelect = (id, val) => `<select id="${id}" style="width:auto">` +
   ROLE_OPTS.map(r => `<option value="${r}" ${r === val ? 'selected' : ''}>${L(ROLE_RU[r])}</option>`).join('') + '</select>';
 // город нужен только менеджеру: у владельца и разработчика доступ ко всем городам
