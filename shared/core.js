@@ -130,6 +130,7 @@ window.KV = (function () {
       promoWhy_used_by_you: 'Вы уже использовали этот промокод',
       promoWhy_need_login: 'Войдите, чтобы применить промокод',
       promoWhy_already: 'Этот код уже применён', remove: 'Убрать', hitBadge: 'Хит',
+      uniqueBadge: 'Уникальный', restockBadge: 'Ждём поступления',
       promoWhy_no_stack: 'Этот код не складывается с другими', reviewEdit: 'Изменить отзыв',
       payNow: 'Оплатить {n} zł', payInBrowser: 'Оплата открыта в браузере. Завершите её и вернитесь, подтвердим здесь.',
       payWay: 'Способ оплаты', payCash: 'Наличными', payCard: 'Картой', payCardNote: '+10% к сумме', payFail: 'Оплата не прошла, попробуйте ещё раз',
@@ -194,6 +195,7 @@ window.KV = (function () {
       promoWhy_used_by_you: 'Ви вже використали цей промокод',
       promoWhy_need_login: 'Увійдіть, щоб застосувати промокод',
       promoWhy_already: 'Цей код уже застосовано', remove: 'Прибрати', hitBadge: 'Хіт',
+      uniqueBadge: 'Унікальний', restockBadge: 'Чекаємо надходження',
       promoWhy_no_stack: 'Цей код не складається з іншими', reviewEdit: 'Змінити відгук',
       payNow: 'Сплатити {n} zł', payInBrowser: 'Оплата відкрита в браузері. Завершіть її та поверніться, підтвердимо тут.',
       payWay: 'Спосіб оплати', payCash: 'Готівкою', payCard: 'Карткою', payCardNote: '+10% до суми', payFail: 'Оплата не пройшла, спробуйте ще раз',
@@ -258,6 +260,7 @@ window.KV = (function () {
       promoWhy_used_by_you: 'Ten kod już został przez Ciebie użyty',
       promoWhy_need_login: 'Zaloguj się, aby użyć kodu',
       promoWhy_already: 'Ten kod jest już zastosowany', remove: 'Usuń', hitBadge: 'Hit',
+      uniqueBadge: 'Unikat', restockBadge: 'Czekamy na dostawę',
       promoWhy_no_stack: 'Tego kodu nie można łączyć z innymi', reviewEdit: 'Zmień opinię',
       payNow: 'Zapłać {n} zł', payInBrowser: 'Płatność otwarta w przeglądarce. Dokończ ją i wróć, potwierdzimy tutaj.',
       payWay: 'Sposób płatności', payCash: 'Gotówką', payCard: 'Kartą', payCardNote: '+10% do sumy', payFail: 'Płatność nie przeszła, spróbuj ponownie',
@@ -431,7 +434,7 @@ window.KV = (function () {
     if (!(cfg.SUPABASE_URL && cfg.SUPABASE_ANON_KEY) || cfg.BACKEND !== 'supabase') return null;
     try {
       const res = await fetch(cfg.SUPABASE_URL.replace(/\/$/, '') + '/rest/v1/products?city=eq.' +
-        encodeURIComponent(city) + '&select=id,flavor,price,qty,tiers,hit', {
+        encodeURIComponent(city) + '&select=id,flavor,price,qty,tiers,hit,labels', {
         headers: { apikey: cfg.SUPABASE_ANON_KEY }, cache: 'no-store'
       });
       if (!res.ok) return null;
@@ -464,6 +467,8 @@ window.KV = (function () {
       const trw = rs.find(x => x.tiers && x.tiers.length);
       if (trw) it.tiers = trw.tiers;
       it.hit = rs.some(x => x.hit);
+      // метки товара: hit оставлен ради старых данных, набор меток главнее
+      it.labels = [...new Set([].concat(...rs.map(x => x.labels || [])))];
     }));
   }
 
@@ -1494,8 +1499,13 @@ window.KV = (function () {
   // Новый ярлык («Акция», «Новинка») = одна запись в этом списке, рендер и сортировка
   // подхватят его сами.
   const BADGES = [
-    { key: 'hit', cls: 'hit', rank: 0, label: () => t('hitBadge'), on: it => !!it.hit },
-    { key: 'few', cls: 'few', rank: 1, label: () => ui('lastFew'), on: it => { const q = qty(it); return q > 0 && q <= 3; } }
+    { key: 'hit', cls: 'hit', rank: 0, label: () => t('hitBadge'),
+      on: it => !!it.hit || (it.labels || []).includes('hit') },
+    { key: 'unique', cls: 'unique', rank: 1, label: () => t('uniqueBadge'),
+      on: it => (it.labels || []).includes('unique') },
+    { key: 'restock', cls: 'restock', rank: 2, label: () => t('restockBadge'),
+      on: it => (it.labels || []).includes('restock') },
+    { key: 'few', cls: 'few', rank: 3, label: () => ui('lastFew'), on: it => { const q = qty(it); return q > 0 && q <= 3; } }
   ];
   // ярлыки товара в постоянном порядке, общий ответ для сайта, мини-аппа и карточки
   function badgesOf(item) {
@@ -2829,6 +2839,8 @@ window.KV = (function () {
 .kv-badge.hit{background:#ff5c3322;color:#ff6a3d}
 .kv-badge.choice{background:#8f6bff22;color:#9a7bff}
 .kv-badge.few{background:#ffb02022;color:#e0920f}
+.kv-badge.unique{background:#ff5c7a22;color:#ff5c7a}
+.kv-badge.restock{background:#3dbb6e22;color:#3dbb6e}
 .kv-rev{font-size:12.5px;line-height:1.5;padding:7px 0;border-top:1px solid var(--kv-line)}
 .kv-rev-h{display:block;font-weight:700}.kv-rev-h em{color:#ffb020;font-style:normal;font-size:11px}
 .kv-rel{margin-top:12px}.kv-rel>b{font-size:12px;color:var(--kv-muted);display:block;margin-bottom:7px}

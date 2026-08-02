@@ -630,6 +630,11 @@ const DICT = {
     'Ставка задаётся тем, кто входит через Telegram': 'Ставка задається тим, хто входить через Telegram',
     'Ставки сохранены': 'Ставки збережено',
     'Ассортимент назначен': 'Асортимент призначено',
+    'Закупка zł': 'Закупівля zł',
+    'Закупочная цена за штуку': 'Закупівельна ціна за штуку',
+    'Причина': 'Причина',
+    'Уникальный': 'Унікальний',
+    'Ждём поступления': 'Чекаємо надходження',
     'ч': 'год',
     'в обработке': 'в обробці', 'В обработку': 'В обробку', 'Собран': 'Зібрано', 'Отправлен': 'Відправлено',
     'без имени': 'без імені',
@@ -945,6 +950,11 @@ const DICT = {
     'Ставка задаётся тем, кто входит через Telegram': 'Stawkę ustawia się osobom logującym się przez Telegram',
     'Ставки сохранены': 'Stawki zapisane',
     'Ассортимент назначен': 'Asortyment przypisany',
+    'Закупка zł': 'Zakup zł',
+    'Закупочная цена за штуку': 'Cena zakupu za sztukę',
+    'Причина': 'Powód',
+    'Уникальный': 'Unikat',
+    'Ждём поступления': 'Czekamy na dostawę',
     'ч': 'godz.',
     'в обработке': 'w realizacji', 'В обработку': 'Do realizacji', 'Собран': 'Skompletowane', 'Отправлен': 'Wysłane',
     'без имени': 'bez nazwiska',
@@ -1282,8 +1292,8 @@ function table(head, rows) {
 // статусы: русский текст в словаре, перевод накладываем при выводе через L() в pill()
 // packed и shipped завела миграция 0032, их пока никто не проставляет, но список статусов
 // в базе их допускает, и сырое слово в таблице выглядело бы ошибкой
-const ST = { new: ['новый', 'new'], confirmed: ['в обработке', 'live'], packed: ['собран', 'live'],
-  shipped: ['отправлен', 'live'], done: ['выдан', 'ok'],
+const ST = { new: ['новый', 'ok'], confirmed: ['в обработке', 'warn'], packed: ['собран', 'ok'],
+  shipped: ['отправлен', 'ok'], done: ['выдан', 'ok'],
   cancelled: ['отменён', 'off'], active: ['активна', 'live'], notified: ['напомнили', 'live'],
   expired: ['истекла', 'off'], waiting: ['ждёт', 'new'] };
 
@@ -1371,11 +1381,10 @@ async function renderOrders(m) {
   const rows = (data || []).map(o => {
     const c = o.contact || {};
     const who = [c.name, c.phone, c.email, c.paczkomat ? L('пачкомат ') + c.paczkomat : ''].filter(Boolean).map(esc).join('<br>');
-    // «отправлен» показываем только доставке: самовывоз никуда не едет
-    const next = (FLOW_NEXT[o.status] || [])
-      .filter(([to]) => to !== 'shipped' || o.delivery !== 'pickup');
-    const acts = next.map(([to, label]) => btn('ost', o.id, to, L(label), 'primary')).join('') +
-      (CAN_CANCEL.includes(o.status) ? btn('ost', o.id, 'cancelled', L('Отказ'), 'danger') : '');
+    // Статус ставится из списка, а не цепочкой подтверждений: менеджер видит, где заказ,
+    // и переводит его туда, куда нужно, одним движением. «Отправлен» доступен только
+    // доставке, самовывоз никуда не едет.
+    const acts = statusSelect(o);
     const wait = waitingMin(o);
     return [`<span class="num">#${o.id}</span><span class="sub">${fdate(o.created_at)}</span>` +
       (wait >= SLA_MIN ? `<span class="pill danger">${L('ждёт')} ${Math.floor(wait / 60)} ${L('ч')}</span>` : ''),
@@ -1394,6 +1403,7 @@ async function renderOrders(m) {
     ? table([L('Заказ'), L('Состав'), L('Клиент'), L('Сумма'), L('Статус'), ''], rows)
     : empty(L('Заказов пока нет'), L('Как только кто-то оформит заказ на витрине, он появится здесь.'))));
   bindStatus(m, 'ost', 'orders');
+  bindStatusSelect(m);
 }
 
 async function renderReservations(m) {
@@ -1413,6 +1423,19 @@ async function renderReservations(m) {
     : empty(L('Броней нет'), L('Здесь появятся брони с витрины и заявки «сообщить о поступлении».'))));
   bindStatus(m, 'rst', 'reservations');
 }
+// Выпадающий статус заказа. Отмена уходит через выбор причины, поэтому её в списке нет:
+// для неё отдельная кнопка, иначе причина потерялась бы.
+const STATUS_FLOW = ['new', 'confirmed', 'packed', 'shipped', 'done'];
+function statusSelect(o) {
+  const opts = STATUS_FLOW
+    .filter(st => st !== 'shipped' || o.delivery !== 'pickup')
+    .map(st => `<option value="${st}" ${st === o.status ? 'selected' : ''}>${esc(L(ST[st][0]))}</option>`).join('');
+  const cancelled = o.status === 'cancelled'
+    ? `<option value="cancelled" selected>${esc(L(ST.cancelled[0]))}</option>` : '';
+  return `<select class="ost-sel pill-${ST[o.status] ? ST[o.status][1] : ''}" data-osel="${o.id}" style="width:auto">${cancelled}${opts}</select>` +
+    (o.status !== 'cancelled' ? `<button class="btn sm danger" data-ost="cancelled" data-id="${o.id}">${L('Отказ')}</button>` : '');
+}
+
 function btn(kind, id, st, label, cls) {
   return `<button class="btn sm ${cls || ''}" data-${kind}="${st}" data-id="${id}">${label}</button>`;
 }
@@ -1443,6 +1466,18 @@ async function askCancel(btnEl, orderId) {
     await refreshOverview();
     render();
   };
+}
+function bindStatusSelect(m) {
+  m.querySelectorAll('[data-osel]').forEach(sel => sel.onchange = async () => {
+    const id = +sel.dataset.osel, to = sel.value;
+    sel.disabled = true;
+    const { error } = await sb.rpc('crm_set_status', { p_order: id, p_status: to, p_reason: null });
+    sel.disabled = false;
+    if (error) { toast(error.message, true); return render(); }
+    toast(L('Статус обновлён'));
+    await refreshOverview();
+    render();
+  });
 }
 function bindStatus(m, kind, tableName) {
   m.querySelectorAll('[data-' + kind + ']').forEach(b => b.onclick = async () => {
@@ -2678,11 +2713,18 @@ function grantErr(error) {
 let bcPhoto = null;   // картинка рассылки, data:URL
 let bcCity = '';      // город рассылки, пусто = всем городам
 let groups = [], cityNow = 'katowice';
+// Что человек уже настроил в редакторе: поиск и прокрутка переживают перерисовку, иначе
+// после удаления вкуса и «Применить» список возвращался к началу и всё приходилось искать снова.
+let prodQuery = '', prodScroll = 0;
 
 // Изменения считаем сравнением полей с тем, что пришло из базы. Прежний список
 // «грязных» строк врал: правка одного товара помечала все его вкусы, а возврат
 // значения обратно флаг не снимал, и сохранение всё равно считало заново.
 // оптовые ступени: цена за штуку при 3/5/10 шт (q=1: базовая цена товара)
+// Метки товара. Хит поднимает позицию в каталоге, «уникальный» и «ждём поступления» это
+// пометки для покупателя. Новая метка добавляется строкой здесь и в реестре витрины.
+const LABELS = [['hit', 'Хит'], ['unique', 'Уникальный'], ['restock', 'Ждём поступления']];
+
 function tierP(tiers, q) { const t = (tiers || []).find(x => +x.q === q); return t && t.p != null ? t.p : ''; }
 // Нормализованная подпись ступеней: «3:36|5:33|10:30». База отдаёт jsonb со своим порядком
 // ключей ({"p":40,"q":1}), поэтому сравнивать JSON-строки нельзя, панель несохранённых
@@ -2717,13 +2759,18 @@ function changedItems() {
     const card = m.querySelector('.item[data-g="' + gi + '"]'); if (!card) return;
     const gv = k => card.querySelector('[data-p="' + k + '"]').value.trim();
     const name = gv('name'), brand = gv('brand'), category = gv('category'), nic = gv('nic');
+    const costRaw = gv('cost');
+    const cost = costRaw === '' ? null : Number(costRaw.replace(',', '.'));
     const priceRaw = gv('price');
     const price = priceRaw === '' ? null : Number(priceRaw);
-    const hit = !!card.querySelector('[data-p="hit"]').checked;
+    const labels = LABELS.map(([id]) => id).filter(id => card.querySelector('[data-lb="' + id + '"]').checked);
+    const hit = labels.includes('hit');
     const tiers = buildTiers(price, gv('t3'), gv('t5'), gv('t10'));
     const tiersChanged = tiersKey(tiers) !== tiersKey(g.head.tiers);
     const headChanged = name !== (g.head.name || '') || brand !== (g.head.brand || '')
-      || category !== (g.head.category || '') || nic !== (g.head.nic || '') || price !== g.head.price || tiersChanged || hit !== !!g.head.hit;
+      || category !== (g.head.category || '') || nic !== (g.head.nic || '') || price !== g.head.price || tiersChanged
+      || labels.join(',') !== (g.head.labels || []).slice().sort().join(',')
+      || cost !== (g.head.cost == null ? null : Number(g.head.cost));
     const rows = [];
     g.items.forEach((r, ri) => {
       const row = card.querySelector('.flav[data-f="' + gi + ':' + ri + '"]'); if (!row) return;
@@ -2733,7 +2780,8 @@ function changedItems() {
       if (headChanged || qty !== r.qty) rows.push({ r, qty });
     });
     card.classList.toggle('dirty', headChanged);
-    if (rows.length) out.push({ g, name, brand, category, nic, price, tiers, hit, rows, bad: priceRaw !== '' && !Number.isFinite(price) });
+    if (rows.length) out.push({ g, name, brand, category, nic, price, tiers, hit, labels, cost, rows,
+      bad: (priceRaw !== '' && !Number.isFinite(price)) || (costRaw !== '' && !Number.isFinite(cost)) });
   });
   return out;
 }
@@ -2768,13 +2816,14 @@ async function renderProducts(m) {
   groups.forEach(g => {
     g.head = Object.assign({}, g.head, {
       hit: g.items.some(r => r.hit),
+      labels: [...new Set([].concat(...g.items.map(r => r.labels || [])))].sort(),
       tiers: (g.items.find(r => r.tiers && r.tiers.length) || {}).tiers || null
     });
   });
   // менеджеру показываем только его город, владельцу и разработчику: все
   const cities = citiesAllowed();
   const tools = cities.map(c => `<button class="btn sm ${c === cityNow ? 'primary' : ''}" data-city="${c}">${c}</button>`).join('') +
-    `<input id="pq" placeholder="${L('Найти товар')}" style="width:190px">`;
+    `<input id="pq" placeholder="${L('Найти товар')}" style="width:190px" value="${esc(prodQuery)}">`;
 
   const body = groups.length ? groups.map((g, gi) => `
     <div class="item" data-g="${gi}" data-search="${esc(((g.head.name || '') + ' ' + g.id).toLowerCase())}">
@@ -2784,10 +2833,12 @@ async function renderProducts(m) {
         <input class="i-cat" data-p="category" value="${esc(g.head.category || '')}" placeholder="${L('Категория')}">
         <input class="i-nic" data-p="nic" value="${esc(g.head.nic || '')}" placeholder="${L('Крепость')}">
         <input class="i-price" data-p="price" value="${g.head.price == null ? '' : g.head.price}" placeholder="${L('Цена zł')}" inputmode="numeric">
+        <input class="i-price" data-p="cost" value="${g.head.cost == null ? '' : g.head.cost}" placeholder="${L('Закупка zł')}" inputmode="decimal" title="${L('Закупочная цена за штуку')}">
         <input class="i-tier" data-p="t3" value="${tierP(g.head.tiers, 3)}" placeholder="3 ${L('шт')}" inputmode="numeric" title="${L('Цена за штуку при')} 3 ${L('шт')}">
         <input class="i-tier" data-p="t5" value="${tierP(g.head.tiers, 5)}" placeholder="5 ${L('шт')}" inputmode="numeric" title="${L('Цена за штуку при')} 5 ${L('шт')}">
         <input class="i-tier" data-p="t10" value="${tierP(g.head.tiers, 10)}" placeholder="10 ${L('шт')}" inputmode="numeric" title="${L('Цена за штуку при')} 10 ${L('шт')}">
-        <label class="i-hit"><input type="checkbox" data-p="hit" ${g.head.hit ? 'checked' : ''}> ${L('Хит')}</label>
+        ${LABELS.map(([id, name]) => `<label class="i-hit"><input type="checkbox" data-lb="${id}"
+          ${(g.head.labels || []).includes(id) ? 'checked' : ''}> ${L(name)}</label>`).join('')}
         <button class="btn sm danger" data-delp="${gi}">${L('Удалить товар')}</button>
       </div>
       <div class="item-id">${esc(g.id)}</div>
@@ -2829,12 +2880,18 @@ function bindProducts(m) {
     clearDirty(); cityNow = b.dataset.city; render();
   });
   const pq = document.getElementById('pq');
-  if (pq) pq.oninput = () => {
-    const v = pq.value.trim().toLowerCase();
+  const applyFilter = () => {
+    const v = prodQuery.toLowerCase();
     m.querySelectorAll('.item').forEach(it => {
       it.style.display = !v || it.dataset.search.indexOf(v) >= 0 ? '' : 'none';
     });
   };
+  if (pq) {
+    pq.oninput = () => { prodQuery = pq.value.trim(); applyFilter(); };
+    if (prodQuery) { applyFilter(); pq.focus(); pq.setSelectionRange(pq.value.length, pq.value.length); }
+  }
+  // возвращаем прокрутку туда, где человек работал
+  if (prodScroll) { const y = prodScroll; prodScroll = 0; requestAnimationFrame(() => window.scrollTo(0, y)); }
   // пересчитываем при каждом вводе: вернул значение обратно: панель сама уходит
   m.querySelectorAll('.item').forEach(card => {
     card.addEventListener('change', e => { if (e.target.dataset.p === 'hit') updateSaveBar(); });
@@ -2862,7 +2919,7 @@ function bindProducts(m) {
       <input class="wq" placeholder="${L('штук')}" style="width:80px" inputmode="numeric">
       <select class="wr" style="width:auto">${WOFF.map(([v, n]) =>
         `<option value="${v}">${L(n)}</option>`).join('')}</select>
-      <input class="wn" placeholder="${L('Заметка')}" style="width:150px">
+      <input class="wn" placeholder="${L('Причина')}" style="width:150px">
       <button class="btn sm danger wgo">${L('Списать')}</button>
       <button class="btn sm quiet wno">${L('Отмена')}</button>`;
     row.querySelector('.wno').onclick = () => render();
@@ -2893,7 +2950,7 @@ function bindProducts(m) {
     const { error } = await sb.from('products').upsert([{
       id: g.id, city: cityNow, flavor: fl, name: h.name, brand: h.brand, category: h.category,
       // новый вкус наследует ярлык и ступени товара, иначе строки одного товара разъедутся
-      nic: h.nic, price: h.price, tiers: h.tiers || null, hit: !!h.hit,
+      nic: h.nic, price: h.price, cost: h.cost, tiers: h.tiers || null, labels: h.labels || [],
       qty: +qv || 0, updated_at: new Date().toISOString()
     }], { onConflict: 'id,city,flavor' });
     if (error) return toast(productsErr(error), true);
@@ -2918,6 +2975,7 @@ function bindProducts(m) {
 }
 
 async function saveProducts() {
+  prodScroll = window.scrollY;
   const btn = document.getElementById('sb-apply');
   // сохраняем ровно то, что панель посчитала изменённым, чтобы счётчик и запись
   // не расходились между собой
@@ -2928,7 +2986,7 @@ async function saveProducts() {
   changed.forEach(x => x.rows.forEach(({ r, qty }) => out.push({
     id: r.id, city: r.city, flavor: r.flavor, name: x.name || r.id,
     brand: x.brand || null, category: x.category || null, nic: x.nic || null,
-    price: x.price, tiers: x.tiers, hit: x.hit, qty: Number.isFinite(qty) ? qty : 0, updated_at: new Date().toISOString()
+    price: x.price, cost: x.cost, tiers: x.tiers, labels: x.labels, qty: Number.isFinite(qty) ? qty : 0, updated_at: new Date().toISOString()
   })));
   if (!out.length) { clearDirty(); return toast(L('Изменений нет')); }
   btn.disabled = true; btn.textContent = L('Сохраняем…');
