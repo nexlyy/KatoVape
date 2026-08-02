@@ -400,7 +400,7 @@ window.KVAuth = (function () {
     }
     const tg = window.Telegram && window.Telegram.WebApp;
     const inTg = !!(tg && tg.initData);
-    const realWidget = !!CFG.TELEGRAM_BOT && !inTg;   // виджет только на реальном домене бота
+    const realWidget = !!CFG.TELEGRAM_BOT_ID && !inTg;   // на сайте, вне мини-аппа
     // На десктопе даём и логин/пароль, и виджет Telegram (он реально логинит браузер;
     // ссылка на бота сессию сайта не авторизует). В мини-аппе вход идёт сам по initData.
     let tgBlock = '';
@@ -415,19 +415,33 @@ window.KVAuth = (function () {
   }
   // демо-вход через Telegram для локального показа (реальный виджет требует публичный домен).
   // Заводит стабильный демо-аккаунт с аватаром, чтобы показать поток и аватарку в шапке.
+  // Своя кнопка вместо виджета Telegram. Скрипт виджета строит кнопку только тогда, когда
+  // страница подключает его так, как написано в его сниппете; вставленный из кода, он молча
+  // оставлял пустое место, и вход через Telegram выглядел сломанным. Здесь та же авторизация
+  // напрямую на странице Telegram: он возвращает подписанные данные в адресной строке.
+  // Права на переписку не просим, поэтому человек отдаёт только имя и фото.
   function mountTgWidget() {
     const box = document.getElementById('kva-tg-widget'); if (!box) return;
-    box.innerHTML = '';
-    const s = document.createElement('script');
-    s.async = true;
-    s.src = 'https://telegram.org/js/telegram-widget.js?22';
-    s.setAttribute('data-telegram-login', CFG.TELEGRAM_BOT);
-    s.setAttribute('data-size', 'large');
-    s.setAttribute('data-userpic', 'false');
-    // без data-request-access=write: виджет делится только именем и фото, не просит
-    // разрешение боту писать и не показывает телефон, так вход не пугает клиента
-    s.setAttribute('data-onauth', 'KVAuth._tgWidget(user)');
-    box.appendChild(s);
+    if (!CFG.TELEGRAM_BOT_ID) { box.innerHTML = ''; return; }
+    box.innerHTML = '<button class="kva-tg-open" type="button">' + tr('tgLogin') + '</button>';
+    box.querySelector('button').onclick = () => {
+      location.href = 'https://oauth.telegram.org/auth?bot_id=' + encodeURIComponent(CFG.TELEGRAM_BOT_ID) +
+        '&origin=' + encodeURIComponent(location.origin) +
+        '&return_to=' + encodeURIComponent(location.origin + location.pathname);
+    };
+  }
+
+  // Возврат с той страницы: данные лежат в якоре адреса.
+  async function tgAuthFromHash() {
+    const m = /tgAuthResult=([A-Za-z0-9_\-=]+)/.exec(location.hash || '');
+    if (!m) return false;
+    history.replaceState(null, '', location.pathname + location.search);
+    try {
+      const json = atob(m[1].replace(/-/g, '+').replace(/_/g, '/'));
+      await telegramExchange({ mode: 'widget', payload: JSON.parse(json) });
+      if (window.KV) KV.toast(tr('welcome'));
+      return true;
+    } catch (e) { lastTgError = (e && e.message) || tr('tgFail'); return false; }
   }
   function readForm() {
     const d = document.getElementById('kva'), f = {};
@@ -531,6 +545,7 @@ window.KVAuth = (function () {
   async function init() {
     injectCSS();
     if (!configured()) { ready = true; updateAll(); return; }
+    if (await tgAuthFromHash()) { ready = true; updateAll(); return; }
     try {
       const c = await client();
       const s = await c.auth.getSession();

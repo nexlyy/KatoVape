@@ -73,8 +73,8 @@ select:focus{outline:none;border-color:var(--accent)}
 .auth-box{width:min(380px,100%)}
 .auth-mark{display:flex;align-items:center;gap:10px;margin-bottom:22px}
 .auth-mark img{width:34px;height:34px;border-radius:9px}
-.auth-mark b{font-size:16px;font-weight:600}
-.auth-mark span{color:var(--muted);font-size:13px}
+.auth-mark b{font-size:16px;font-weight:600;display:block;line-height:1.2}
+.auth-mark span{display:block;color:var(--muted);font-size:13px}
 .auth h1{font-size:19px;font-weight:600;margin-bottom:6px}
 .auth p.lead{color:var(--muted);font-size:13px;margin-bottom:20px}
 .auth form{display:flex;flex-direction:column;gap:12px}
@@ -82,6 +82,8 @@ select:focus{outline:none;border-color:var(--accent)}
 .sep{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:12px;margin:18px 0 14px}
 .sep::before,.sep::after{content:"";flex:1;height:1px;background:var(--line)}
 .tgwrap{display:flex;justify-content:center;min-height:40px}
+.btn.tg{width:100%;background:#2aabee;border-color:#2aabee;color:#fff;font-weight:600}
+.btn.tg:hover{filter:brightness(1.06)}
 .msg{border-radius:var(--r);padding:9px 12px;font-size:12.5px;line-height:1.45;margin-top:12px}
 .msg.err{background:rgba(251,113,133,.1);border:1px solid rgba(251,113,133,.35);color:#ffa7b5}
 
@@ -349,7 +351,7 @@ td .sub{display:block;color:var(--muted);font-size:11.5px;margin-top:2px}
 <div class="toast" id="toast"></div>
 
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
-<script src="../../shared/config.js?v=6fff6fa3"></script>
+<script src="../../shared/config.js?v=ed39e448"></script>
 <script type="module">
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.111.0';
 
@@ -688,6 +690,7 @@ const DICT = {
     'Всего': 'Усього',
     'Динамика': 'Динаміка',
     'Товары': 'Товари',
+    'Войти через Telegram': 'Увійти через Telegram',
     'ч': 'год',
     'в обработке': 'в обробці', 'В обработку': 'В обробку', 'Собран': 'Зібрано', 'Отправлен': 'Відправлено',
     'без имени': 'без імені',
@@ -1049,6 +1052,7 @@ const DICT = {
     'Всего': 'Łącznie',
     'Динамика': 'Dynamika',
     'Товары': 'Produkty',
+    'Войти через Telegram': 'Zaloguj przez Telegram',
     'ч': 'godz.',
     'в обработке': 'w realizacji', 'В обработку': 'Do realizacji', 'Собран': 'Skompletowane', 'Отправлен': 'Wysłane',
     'без имени': 'bez nazwiska',
@@ -1201,26 +1205,20 @@ function authView(errText) {
     }
   };
 
-  if (CFG.TELEGRAM_BOT) {
-    const s = document.createElement('script');
-    s.async = true; s.src = 'https://telegram.org/js/telegram-widget.js?22';
-    s.setAttribute('data-telegram-login', CFG.TELEGRAM_BOT);
-    s.setAttribute('data-size', 'large');
-    s.setAttribute('data-onauth', 'onTgAuth(user)');
-    s.setAttribute('data-request-access', 'write');
+  // Вход через Telegram идёт прямо на его страницу авторизации, без виджета. Виджет строит
+  // кнопку только когда страница подключает его скрипт так, как написано в его же сниппете;
+  // вставленный из кода, он оставлял пустое место. Здесь та же авторизация, но своей кнопкой:
+  // Telegram возвращает подписанные данные в адресной строке, подпись проверяет функция
+  // telegram-auth тем же способом, что и раньше.
+  if (CFG.TELEGRAM_BOT_ID) {
     const wrap = document.getElementById('tgwrap');
-    // Виджет молча не появляется сразу по нескольким причинам: домен не привязан к боту через
-    // BotFather, скрипт не загрузился, политика безопасности не пустила. Пустое место в этом
-    // случае выглядит как «вход сломан», поэтому говорим, что произошло, и оставляем путь
-    // через логин с паролем.
-    const widgetFailed = why => {
-      if (wrap.querySelector('iframe')) return;
-      wrap.innerHTML = `<div class="msg err">${esc(L('Кнопка Telegram не загрузилась'))}. ` +
-        `${esc(why)}. ${esc(L('Войдите логином и паролем или проверьте домен бота у BotFather.'))}</div>`;
+    wrap.innerHTML = `<button class="btn tg" id="tglogin">${L('Войти через Telegram')}</button>`;
+    document.getElementById('tglogin').onclick = () => {
+      const ret = location.origin + location.pathname;
+      location.href = 'https://oauth.telegram.org/auth?bot_id=' + encodeURIComponent(CFG.TELEGRAM_BOT_ID) +
+        '&origin=' + encodeURIComponent(location.origin) +
+        '&request_access=write&return_to=' + encodeURIComponent(ret);
     };
-    s.onerror = () => widgetFailed(L('скрипт Telegram недоступен'));
-    wrap.appendChild(s);
-    setTimeout(() => widgetFailed(L('Telegram не ответил')), 6000);
   }
 }
 function showErr(text) {
@@ -3230,9 +3228,27 @@ async function saveProducts() {
 }
 
 /* ================= старт ================= */
+// Telegram возвращает подписанные данные в якоре адреса: #tgAuthResult=<base64 json>.
+// Забираем их до всего остального и сразу меняем на сессию.
+async function tgAuthFromHash() {
+  const m = /tgAuthResult=([A-Za-z0-9_\-=]+)/.exec(location.hash || '');
+  if (!m) return false;
+  history.replaceState(null, '', location.pathname);   // не оставляем данные в адресе
+  try {
+    const json = atob(m[1].replace(/-/g, '+').replace(/_/g, '/'));
+    await exchangeTg({ mode: 'widget', payload: JSON.parse(json) });
+    await afterLogin();
+    return true;
+  } catch (e) {
+    authView((e && e.message) || L('ошибка входа'));
+    return true;
+  }
+}
+
 (async function () {
   const tg = window.Telegram && window.Telegram.WebApp;
   if (tg) { try { tg.ready(); tg.expand(); } catch (e) {} }
+  if (await tgAuthFromHash()) return;
   const { data: { session } } = await sb.auth.getSession();
   if (session) {
     const { data: ov } = await sb.rpc('admin_overview');

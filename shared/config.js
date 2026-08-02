@@ -21,6 +21,11 @@ window.KV_CONFIG = {
   PAYMENTS_CURRENCY: 'pln',
 
   TELEGRAM_BOT: 'KatoVape_bot',   // bot username: reservation deep links and mini-app login
+  // Numeric id of the same bot, the public half of its token. Telegram's own login page wants
+  // this rather than the username, and going there directly is what replaced the login widget:
+  // the widget script only builds its button when the page loads it the way its own snippet
+  // does, and injecting it after the fact left an empty space where the button should be.
+  TELEGRAM_BOT_ID: 8858523403,
 
   // City links live here and nowhere else. The channel button, the manager contact, the
   // subscribe popup and the footer all read them through KV.cityLink(), so adding a city or
