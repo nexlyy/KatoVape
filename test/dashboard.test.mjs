@@ -6,6 +6,7 @@ import { repoFile } from './helpers/core-src.mjs';
 const PANEL = repoFile('demos/admin/index.html');
 const MIG = repoFile('supabase/migrations/0030_dashboard.sql');
 const FIX = repoFile('supabase/migrations/0031_dashboard_guard_fix.sql');
+const ROLES = repoFile('supabase/migrations/0041_roles_and_stock.sql');
 
 // Chart maths and the period picker come straight out of the panel source.
 function slice(from, to) {
@@ -140,13 +141,30 @@ test('каждая функция дашборда закрыта проверк
 });
 
 test('проверка роли не возвращает null, иначе guard пропускается', () => {
-  assert.match(FIX, /coalesce\(public\.admin_role\(\) in \('owner', 'dev'\), false\)/);
+  // 0031 закрыл трёхзначную логику, 0041 расширил набор ролей. coalesce обязан остаться:
+  // без него admin_role() = null у постороннего снова проходит мимо guard.
+  assert.match(FIX, /coalesce\(public\.admin_role\(\) in \(/);
+  const full = ROLES.slice(ROLES.indexOf('function public.is_full_admin'));
+  assert.match(full, /coalesce\(public\.admin_role\(\) in \('owner', 'owner_manager', 'dev'\), false\)/);
+  assert.match(ROLES, /function public\.can_grant[\s\S]{0,400}?admin_role\(\) = 'owner'/,
+    'права раздаёт только владелец');
 });
 
-test('вкладка дашборда скрыта от роли менеджера', () => {
-  assert.match(PANEL, /const canDash = \(\) => !!\(overview && \['owner', 'dev'\]\.includes\(overview\.role\)\)/);
-  assert.match(PANEL, /k !== 'dash' \|\| canDash\(\)/, 'вкладка не отфильтрована');
-  assert.match(PANEL, /if \(!canDash\(\)\) \{ tab = 'orders'; return shell\(\); \}/, 'переход на вкладку не перекрыт');
+test('полный доступ это три роли, менеджера среди них нет', () => {
+  const m = PANEL.match(/const FULL_ROLES = (\[[^\]]*\])/);
+  assert.ok(m, 'список ролей полного доступа не найден');
+  assert.deepEqual(JSON.parse(m[1].replace(/'/g, '"')), ['owner', 'owner_manager', 'dev']);
+});
+
+test('закрытые разделы проверяются одним правилом', () => {
+  const box = PANEL.slice(PANEL.indexOf('const TAB_ACCESS'), PANEL.indexOf('function closeMenu'));
+  for (const tab of ['dash', 'stock', 'finance', 'managers']) {
+    assert.match(box, new RegExp(tab + ':\\s*isFull'), tab + ' открыт не только полному доступу');
+  }
+  assert.match(box, /access:\s*\(\) => !!\(overview && overview\.can_grant\)/, 'раздел прав не привязан к can_grant');
+  // одно правило и для меню, и для переключения вкладки
+  assert.match(PANEL, /TABS\(\)\.filter\(\(\[k\]\) => tabAllowed\(k\)\)/, 'меню не фильтруется правилом');
+  assert.match(PANEL, /if \(!tabAllowed\(tab\)\) \{ tab = 'orders'; return shell\(\); \}/, 'переход на вкладку не перекрыт');
 });
 
 test('системный раздел показывается только разработчику', () => {
