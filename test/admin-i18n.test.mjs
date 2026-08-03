@@ -70,7 +70,7 @@ test('в панели нет русского текста мимо словар
 test('подписи не заморожены на языке загрузки', () => {
   // Константы уровня модуля считаются один раз, поэтому L() внутри них означает, что после
   // переключения языка статусы и роли останутся на прежнем. Русский тут должен быть исходником.
-  for (const name of ['ROLE_RU', 'ST', 'DELIV_LABEL', 'DASH_RANGES']) {
+  for (const name of ['ROLE_RU', 'ST', 'DELIV_LABEL', 'DASH_RANGES', 'MOVE_RU']) {
     const m = SRC.match(new RegExp('const ' + name + ' = ([\\s\\S]*?);\\n'));
     assert.ok(m, name + ' не найден');
     assert.ok(!/\bL\(/.test(m[1]), name + ': L() в константе уровня модуля');

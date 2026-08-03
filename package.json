@@ -6,7 +6,9 @@
   "scripts": {
     "test": "node --test \"test/**/*.test.mjs\"",
     "stamp": "node tools/stamp-assets.mjs",
-    "stamp:check": "node tools/stamp-assets.mjs --check"
+    "stamp:check": "node tools/stamp-assets.mjs --check",
+    "schema": "node tools/build-schema.mjs",
+    "schema:check": "node tools/build-schema.mjs --check"
   },
   "engines": {
     "node": ">=22.18"

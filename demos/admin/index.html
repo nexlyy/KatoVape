@@ -733,7 +733,58 @@ const DICT = {
     'По логину доступ выдаётся тем, кто уже завёл аккаунт с паролем. По Telegram ID можно выдать заранее: человек получит доступ сам, как только первый раз откроет магазин через бота. Повторная выдача тому же человеку просто меняет роль и город.': 'За логіном доступ видається тим, хто вже завів акаунт із паролем. За Telegram ID можна видати заздалегідь: людина отримає доступ сама, щойно вперше відкриє магазин через бота. Повторна видача тій самій людині просто змінює роль і місто.',
     'Владелец может всё, включая выдачу доступа. Разработчик и менеджер этот раздел не видят. Менеджер работает только со своим городом: ассортимент, заказы и брони других городов ему не показываются, уведомления о заказах приходят только по его городу.': 'Власник може все, зокрема видавати доступ. Розробник і менеджер цей розділ не бачать. Менеджер працює лише зі своїм містом: асортимент, замовлення та броні інших міст йому не показуються, сповіщення про замовлення приходять тільки за його містом.',
     'Не задан Supabase': 'Не задано Supabase',
-    'Заполните SUPABASE_URL и ключ в shared/config.js.': 'Заповніть SUPABASE_URL і ключ у shared/config.js.'
+    'Заполните SUPABASE_URL и ключ в shared/config.js.': 'Заповніть SUPABASE_URL і ключ у shared/config.js.',
+    'Движение товара': 'Рух товару',
+    'Остаток сейчас': 'Залишок зараз',
+    'Склад в закупке': 'Склад у закупівлі',
+    'Пришло': 'Надійшло',
+    'Приход в деньгах': 'Надходження у грошах',
+    'Продано': 'Продано',
+    'Себестоимость проданного': 'Собівартість проданого',
+    'Убыток от списаний': 'Збиток від списань',
+    'Ушло в бронь': 'Пішло в бронь',
+    'Вернулось из брони': 'Повернулося з броні',
+    'Правок руками': 'Правок руками',
+    'Остаток на складе': 'Залишок на складі',
+    'Приход': 'Надходження',
+    'Расход': 'Витрата',
+    'Остаток по городам': 'Залишок по містах',
+    'Больше всего пришло': 'Найбільше надійшло',
+    'Больше всего ушло': 'Найбільше пішло',
+    'Последние движения': 'Останні рухи',
+    'Стало': 'Стало',
+    'начальный остаток': 'початковий залишок',
+    'поставка': 'постачання',
+    'продажа': 'продаж',
+    'списание': 'списання',
+    'возврат брони': 'повернення броні',
+    'правка руками': 'правка руками',
+    'Правка остатка в карточке товара тоже попадает в журнал: если склад разошёлся с документами, видно, кто и когда его подвинул.': 'Правка залишку в картці товару теж потрапляє в журнал: якщо склад розійшовся з документами, видно, хто і коли його посунув.',
+    'своя ставка у категорий: ': 'своя ставка у категорій: ',
+    'Вставить списком': 'Вставити списком',
+    'Разобрать': 'Розібрати',
+    'Очистить': 'Очистити',
+    'Четыре столбца: id товара, вкус, штук, закупка за штуку. У товара без вкусов вкус можно пропустить и оставить три столбца. Разделитель: табуляция, точка с запятой или вертикальная черта, поэтому список копируется из таблицы как есть.': 'Чотири стовпці: id товару, смак, штук, закупівля за штуку. У товару без смаків смак можна пропустити й лишити три стовпці. Роздільник: табуляція, крапка з комою або вертикальна риска, тому список копіюється з таблиці як є.',
+    'Сначала вставьте список': 'Спершу вставте список',
+    'Строка': 'Рядок',
+    'Что не так': 'Що не так',
+    'есть вкусы: ': 'є смаки: ',
+    'ок': 'ок',
+    'Готово к добавлению: ': 'Готово до додавання: ',
+    'с ошибками: ': 'з помилками: ',
+    'на сумму': 'на суму',
+    'Добавить строки': 'Додати рядки',
+    'Добавлено строк: ': 'Додано рядків: ',
+    'мало столбцов': 'замало стовпців',
+    'нет id товара': 'немає id товару',
+    'не понял количество': 'не зрозумів кількість',
+    'не понял закупочную цену': 'не зрозумів закупівельну ціну',
+    'у этого товара нет такого вкуса': 'у цього товару немає такого смаку',
+    'товара нет в городе, поставка заведёт новый': 'товару немає в місті, постачання заведе новий',
+    'Такого вкуса нет в ассортименте: ': 'Такого смаку немає в асортименті: ',
+    'Исправьте строку или заведите вкус в разделе «Ассортимент».': 'Виправте рядок або заведіть смак у розділі «Асортимент».',
+    'Эта поставка уже проведена.': 'Це постачання вже проведено.',
+    'В поставке нет ни одной позиции.': 'У постачанні немає жодної позиції.'
   },
 
   pl: {
@@ -1095,7 +1146,58 @@ const DICT = {
     'По логину доступ выдаётся тем, кто уже завёл аккаунт с паролем. По Telegram ID можно выдать заранее: человек получит доступ сам, как только первый раз откроет магазин через бота. Повторная выдача тому же человеку просто меняет роль и город.': 'Po loginie dostęp dostają ci, którzy mają już konto z hasłem. Po Telegram ID można przyznać z wyprzedzeniem: osoba dostanie dostęp sama, gdy pierwszy raz otworzy sklep przez bota. Ponowne przyznanie tej samej osobie zmienia tylko rolę i miasto.',
     'Владелец может всё, включая выдачу доступа. Разработчик и менеджер этот раздел не видят. Менеджер работает только со своим городом: ассортимент, заказы и брони других городов ему не показываются, уведомления о заказах приходят только по его городу.': 'Właściciel może wszystko, łącznie z przyznawaniem dostępu. Deweloper i menedżer nie widzą tej sekcji. Menedżer pracuje tylko ze swoim miastem: asortyment, zamówienia i rezerwacje innych miast nie są mu pokazywane, powiadomienia o zamówieniach przychodzą wyłącznie z jego miasta.',
     'Не задан Supabase': 'Brak konfiguracji Supabase',
-    'Заполните SUPABASE_URL и ключ в shared/config.js.': 'Uzupełnij SUPABASE_URL i klucz w shared/config.js.'
+    'Заполните SUPABASE_URL и ключ в shared/config.js.': 'Uzupełnij SUPABASE_URL i klucz w shared/config.js.',
+    'Движение товара': 'Ruch towaru',
+    'Остаток сейчас': 'Stan teraz',
+    'Склад в закупке': 'Magazyn w cenach zakupu',
+    'Пришло': 'Przyjęto',
+    'Приход в деньгах': 'Przyjęcie w pieniądzu',
+    'Продано': 'Sprzedano',
+    'Себестоимость проданного': 'Koszt własny sprzedaży',
+    'Убыток от списаний': 'Strata na odpisach',
+    'Ушло в бронь': 'Poszło w rezerwacje',
+    'Вернулось из брони': 'Wróciło z rezerwacji',
+    'Правок руками': 'Poprawek ręcznych',
+    'Остаток на складе': 'Stan magazynu',
+    'Приход': 'Przyjęcia',
+    'Расход': 'Rozchód',
+    'Остаток по городам': 'Stan po miastach',
+    'Больше всего пришло': 'Najwięcej przyjęto',
+    'Больше всего ушло': 'Najwięcej wydano',
+    'Последние движения': 'Ostatnie ruchy',
+    'Стало': 'Zostało',
+    'начальный остаток': 'stan początkowy',
+    'поставка': 'dostawa',
+    'продажа': 'sprzedaż',
+    'списание': 'odpis',
+    'возврат брони': 'zwrot rezerwacji',
+    'правка руками': 'poprawka ręczna',
+    'Правка остатка в карточке товара тоже попадает в журнал: если склад разошёлся с документами, видно, кто и когда его подвинул.': 'Zmiana stanu w karcie produktu też trafia do dziennika: jeśli magazyn rozjechał się z dokumentami, widać, kto i kiedy go poprawił.',
+    'своя ставка у категорий: ': 'własna stawka w kategoriach: ',
+    'Вставить списком': 'Wklej listą',
+    'Разобрать': 'Rozpoznaj',
+    'Очистить': 'Wyczyść',
+    'Четыре столбца: id товара, вкус, штук, закупка за штуку. У товара без вкусов вкус можно пропустить и оставить три столбца. Разделитель: табуляция, точка с запятой или вертикальная черта, поэтому список копируется из таблицы как есть.': 'Cztery kolumny: id produktu, smak, sztuk, zakup za sztukę. Przy produkcie bez smaków smak można pominąć i zostawić trzy kolumny. Separator: tabulator, średnik lub pionowa kreska, dzięki temu listę kopiuje się z arkusza bez zmian.',
+    'Сначала вставьте список': 'Najpierw wklej listę',
+    'Строка': 'Wiersz',
+    'Что не так': 'Co nie gra',
+    'есть вкусы: ': 'są smaki: ',
+    'ок': 'ok',
+    'Готово к добавлению: ': 'Gotowe do dodania: ',
+    'с ошибками: ': 'z błędami: ',
+    'на сумму': 'na kwotę',
+    'Добавить строки': 'Dodaj wiersze',
+    'Добавлено строк: ': 'Dodano wierszy: ',
+    'мало столбцов': 'za mało kolumn',
+    'нет id товара': 'brak id produktu',
+    'не понял количество': 'nie rozpoznano ilości',
+    'не понял закупочную цену': 'nie rozpoznano ceny zakupu',
+    'у этого товара нет такого вкуса': 'ten produkt nie ma takiego smaku',
+    'товара нет в городе, поставка заведёт новый': 'produktu nie ma w mieście, dostawa utworzy nowy',
+    'Такого вкуса нет в ассортименте: ': 'Takiego smaku nie ma w asortymencie: ',
+    'Исправьте строку или заведите вкус в разделе «Ассортимент».': 'Popraw wiersz albo dodaj smak w sekcji «Asortyment».',
+    'Эта поставка уже проведена.': 'Ta dostawa została już zaksięgowana.',
+    'В поставке нет ни одной позиции.': 'Dostawa nie zawiera żadnej pozycji.'
   }
 };
 const ADM_LANGS = [['ru', 'RU'], ['uk', 'UA'], ['pl', 'PL']];
@@ -1696,6 +1798,72 @@ async function renderStock(m) {
   if (supOpen) openSupply(supOpen);
 }
 
+// Массовый ввод поставки.
+//
+// Первая настоящая поставка это сотня строк, и по одной через форму их никто вбивать не
+// станет. Список вставляется целиком из таблицы, а панель сверяет его с каталогом города
+// ДО того, как строки уйдут в документ. Сверка тут не для красоты: проведение заводит
+// новый товар, если строка не нашлась, поэтому опечатка во вкусе тихо создала бы
+// фантомную позицию с остатком и без цены, и вылезла бы она уже на витрине.
+const SUP_SEP = /[\t;|]/;
+// Число из ячейки таблицы: запятая как разделитель дробной части, пробелы-разделители
+// тысяч, хвост вроде «zł».
+// Минус оставляем намеренно: «-5» должно уйти в ошибку как отрицательное количество, а не
+// молча превратиться в пятёрку.
+const supNum = v => {
+  const s = String(v == null ? '' : v).replace(',', '.').replace(/[^\d.-]/g, '');
+  return s === '' ? NaN : Number(s);
+};
+
+function parseSupplyBulk(text, catalogue) {
+  const known = new Set();
+  const flavorsOf = new Map();
+  for (const p of catalogue || []) {
+    const fl = p.flavor || '';
+    known.add(p.id + ' ' + fl);
+    if (!flavorsOf.has(p.id)) flavorsOf.set(p.id, []);
+    flavorsOf.get(p.id).push(fl);
+  }
+  return String(text || '').split('\n').map(x => x.trim()).filter(Boolean).map((raw, i) => {
+    const c = raw.split(SUP_SEP).map(x => x.trim());
+    const row = { n: i + 1, raw };
+    if (c.length < 3) { row.err = 'мало столбцов'; return row; }
+    // три столбца это товар без вкусов: id, штук, закупка
+    const [pid, flavor, qty, cost] = c.length === 3
+      ? [c[0], '', c[1], c[2]] : [c[0], c[1], c[2], c[3]];
+    row.id = pid; row.flavor = flavor;
+    row.qty = Math.round(supNum(qty)); row.cost = supNum(cost);
+    if (!pid) { row.err = 'нет id товара'; return row; }
+    if (!Number.isFinite(row.qty) || row.qty <= 0) { row.err = 'не понял количество'; return row; }
+    if (!Number.isFinite(row.cost) || row.cost < 0) { row.err = 'не понял закупочную цену'; return row; }
+    if (known.has(pid + ' ' + flavor)) { row.ok = true; return row; }
+    if (flavorsOf.has(pid)) {
+      row.err = 'у этого товара нет такого вкуса';
+      row.hint = flavorsOf.get(pid).filter(Boolean).join(', ');
+      return row;
+    }
+    // Товара нет в городе вовсе: это не опечатка во вкусе, а новая позиция, и поставка
+    // имеет право её завести. Но предупредить надо, иначе опечатка в id пройдёт молча.
+    row.ok = true; row.warn = 'товара нет в городе, поставка заведёт новый';
+    return row;
+  });
+}
+
+// Проведение говорит с панелью кодами, а не фразами. Переводим их в человеческие, иначе
+// менеджер видит «BAD_FLAVOR: hqd / Minr (Mint, Cola)» и идёт спрашивать, что это было.
+function supplyErr(e) {
+  const msg = (e && e.message) || String(e);
+  const bad = /BAD_FLAVOR: (.*?) \/ (.*?) \(([^)]*)\)/.exec(msg);
+  if (bad) {
+    return L('Такого вкуса нет в ассортименте: ') + bad[1] + ' · ' + (bad[2] || L('без вкуса')) +
+      (bad[3] ? '. ' + L('есть вкусы: ') + bad[3] : '') + '. ' +
+      L('Исправьте строку или заведите вкус в разделе «Ассортимент».');
+  }
+  if (msg.includes('ALREADY_POSTED')) return L('Эта поставка уже проведена.');
+  if (msg.includes('EMPTY_SUPPLY')) return L('В поставке нет ни одной позиции.');
+  return msg;
+}
+
 async function openSupply(id) {
   supOpen = id;
   const box = document.getElementById('supcard'); if (!box) return;
@@ -1705,16 +1873,18 @@ async function openSupply(id) {
     sb.from('supply_lines').select('*').eq('supply_id', id).order('id')
   ]);
   if (!s) { box.innerHTML = ''; return; }
+  // каталог того города, куда идёт поставка, а не того, что открыт на вкладке
+  const { data: cat } = await sb.from('products').select('id,flavor').eq('city', s.city);
   const posted = s.status === 'posted';
   const total = (lines || []).reduce((a, l) => a + Number(l.cost) * l.qty, 0);
 
   box.innerHTML = panel(L('Поставка') + ' #' + s.id, `<div class="panel-body">
     ${(lines || []).length ? table([L('Товар'), L('Вкус'), L('Штук'), L('Закупка'), L('Сумма'), ''],
       (lines || []).map(l => [esc(l.product_id), esc(l.flavor || '—'),
-        `<span class="num">${l.qty}</span>`, `<span class="num">${money(l.cost)}</span>`,
-        `<span class="num">${money(l.qty * l.cost)}</span>`,
+        `<span class="num">${l.qty}</span>`, `<span class="num">${money2(l.cost)}</span>`,
+        `<span class="num">${money2(l.qty * l.cost)}</span>`,
         posted ? '' : `<button class="btn sm danger" data-linedel="${l.id}">×</button>`])) : ''}
-    <p class="hint">${L('Итого закупка')}: <b>${money(total)}</b></p>
+    <p class="hint">${L('Итого закупка')}: <b>${money2(total)}</b></p>
     ${posted ? `<p class="hint">${L('Поставка проведена, склад пополнен.')}</p>` : `
       <div class="tools" style="margin-top:10px">
         <input id="l_prod" list="prodlist" placeholder="id ${L('товара')}" style="width:170px">
@@ -1723,6 +1893,18 @@ async function openSupply(id) {
         <input id="l_cost" placeholder="${L('закупка за шт')}" style="width:130px" inputmode="decimal">
         <button class="btn" id="l_add">${L('Добавить позицию')}</button>
       </div>
+      <details class="fold" style="margin-top:10px"><summary>${L('Вставить списком')}</summary>
+        <div class="panel-body">
+          <textarea id="l_bulk" rows="7" spellcheck="false" style="font-family:ui-monospace,Consolas,monospace"
+            placeholder="hqd;Mint;10;12.50&#10;elf-bar-lux-2000;;5;18"></textarea>
+          <div class="tools" style="margin-top:10px">
+            <button class="btn" id="l_parse">${L('Разобрать')}</button>
+            <button class="btn quiet" id="l_bclear">${L('Очистить')}</button>
+          </div>
+          <p class="hint">${L('Четыре столбца: id товара, вкус, штук, закупка за штуку. У товара без вкусов вкус можно пропустить и оставить три столбца. Разделитель: табуляция, точка с запятой или вертикальная черта, поэтому список копируется из таблицы как есть.')}</p>
+          <div id="bulkres"></div>
+        </div>
+      </details>
       <div class="tools" style="margin-top:10px">
         <button class="btn primary" id="s_post">${L('Провести поставку')}</button>
         <button class="btn quiet" id="s_close">${L('Закрыть')}</button>
@@ -1750,13 +1932,53 @@ async function openSupply(id) {
     if (error) return toast(error.message, true);
     openSupply(id);
   };
+  const parse = document.getElementById('l_parse');
+  if (parse) parse.onclick = () => {
+    const res = document.getElementById('bulkres');
+    const rows = parseSupplyBulk(document.getElementById('l_bulk').value, cat);
+    if (!rows.length) { res.innerHTML = ''; return toast(L('Сначала вставьте список'), true); }
+    const good = rows.filter(r => r.ok);
+    const total = good.reduce((a, r) => a + r.qty * r.cost, 0);
+    res.innerHTML = table([L('Строка'), L('Товар'), L('Вкус'), L('Штук'), L('Закупка'), L('Что не так')],
+      rows.map(r => [
+        `<span class="num">${r.n}</span>`,
+        esc(r.id || r.raw),
+        esc(r.flavor || '—'),
+        `<span class="num">${Number.isFinite(r.qty) ? r.qty : '—'}</span>`,
+        `<span class="num">${Number.isFinite(r.cost) ? money2(r.cost) : '—'}</span>`,
+        r.err ? `<span class="pill off">${esc(L(r.err))}</span>${
+                  r.hint ? `<span class="sub">${esc(L('есть вкусы: '))}${esc(r.hint)}</span>` : ''}`
+              : r.warn ? `<span class="pill warn">${esc(L(r.warn))}</span>`
+              : `<span class="pill ok">${esc(L('ок'))}</span>`])) +
+      `<p class="hint">${L('Готово к добавлению: ')}<b>${good.length}</b>${
+        rows.length - good.length ? ' · ' + L('с ошибками: ') + (rows.length - good.length) : ''
+        } · ${L('на сумму')} <b>${money2(total)}</b></p>` +
+      (good.length ? `<div class="tools"><button class="btn primary" id="l_badd">${
+        L('Добавить строки')} (${good.length})</button></div>` : '');
+
+    const badd = document.getElementById('l_badd');
+    if (badd) badd.onclick = async () => {
+      badd.disabled = true;
+      const { error } = await sb.from('supply_lines').insert(good.map(r => ({
+        supply_id: id, product_id: r.id, flavor: r.flavor, qty: r.qty, cost: r.cost })));
+      badd.disabled = false;
+      if (error) return toast(error.message, true);
+      toast(L('Добавлено строк: ') + good.length);
+      openSupply(id);
+    };
+  };
+  const bclear = document.getElementById('l_bclear');
+  if (bclear) bclear.onclick = () => {
+    document.getElementById('l_bulk').value = '';
+    document.getElementById('bulkres').innerHTML = '';
+  };
   const post = document.getElementById('s_post');
   if (post) post.onclick = async () => {
     if (!confirm(L('Провести поставку? Остаток увеличится.'))) return;
     post.disabled = true;
     const { error } = await sb.rpc('supply_post', { p_id: id });
     post.disabled = false;
-    if (error) return toast(error.message, true);
+    if (error) return toast(supplyErr(error), true);
     toast(L('Поставка проведена'));
     render();
   };
@@ -1877,6 +2099,12 @@ async function renderManagers(m) {
     .filter(r => String(r.telegram_id) === String(tg) && r.city === city &&
                  r.category === cat)
     .sort((a, b) => (a.from_date < b.from_date ? 1 : -1))[0];
+  // База начисления у менеджера в городе одна на все категории. Список открывался всегда на
+  // «с прибыли», и сохранённое «со всей суммы» молча возвращалось к прежнему при первом же
+  // изменении процента.
+  const baseOf = (tg, city) => (((rates || [])
+    .filter(r => String(r.telegram_id) === String(tg) && r.city === city)
+    .sort((a, b) => (a.from_date < b.from_date ? 1 : -1))[0] || {}).base) || 'gross';
 
   const cards = list.map(a => {
     const city = a.city;
@@ -1902,8 +2130,8 @@ async function renderManagers(m) {
       <div class="prow"><span>${L('Способ входа')}</span><span>${a.kind === 'telegram' ? 'Telegram' : L('Пароль')}</span></div>
       ${city ? `<div class="prow"><span><b>${L('Процент с продажи')}</b></span>
         <select class="mr-base" data-tg="${esc(String(a.ident))}" data-city="${esc(city)}" style="width:auto">
-          <option value="gross">${L('с прибыли')}</option>
-          <option value="revenue">${L('со всей суммы')}</option>
+          <option value="gross" ${baseOf(a.ident, city) === 'gross' ? 'selected' : ''}>${L('с прибыли')}</option>
+          <option value="revenue" ${baseOf(a.ident, city) === 'revenue' ? 'selected' : ''}>${L('со всей суммы')}</option>
         </select></div>` : ''}
       ${rows}
       ${city ? `<div class="tools" style="margin-top:10px">
@@ -1974,7 +2202,9 @@ function payoutsPanel(rep, rates, admins) {
     ? table([L('Менеджер'), L('Город'), L('Ставка сейчас'), L('База'), L('Заказов'), L('Заработал')],
         pays.map(p => [esc(who(p.telegram_id)) + `<span class="sub">tg ${p.telegram_id}</span>`,
           esc(CITY_LABEL[p.city] || p.city),
-          `<span class="num">${p.percent_now == null ? '—' : p.percent_now + ' %'}</span>`,
+          `<span class="num">${p.percent_now == null ? '—' : p.percent_now + ' %'}</span>` +
+            `<span class="sub">${p.base_now === 'revenue' ? L('со всей суммы') : L('с прибыли')}${
+              p.cat_rates ? ' · ' + L('своя ставка у категорий: ') + p.cat_rates : ''}</span>`,
           `<span class="num">${money(p.base_sum)}</span>`,
           `<span class="num">${p.orders}</span>`,
           `<span class="num">${money(p.payout)}</span>`]))
@@ -2452,6 +2682,10 @@ function dashBounds() {
 
 const nf = n => Number(n || 0).toLocaleString('pl-PL');
 const money = n => nf(Math.round(Number(n || 0))) + ' zł';
+// Итоги округляются без потерь смысла, а закупочная цена нет: 12,50 показывалось как 13 zł,
+// и человек решал, что панель съела правку. Там, где важны гроши, считаем ими.
+const money2 = n => Number(n || 0).toLocaleString('pl-PL',
+  { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' zł';
 
 // Growth against the previous window of the same length. Null when there is nothing to
 // compare with, so an empty history does not render as a triumphant +100%.
@@ -2574,6 +2808,15 @@ function donut(rows, labelKey, valueKey, colors) {
 
 const RING_COLORS = ['#5ff3d0', '#67d9f5', '#f5b83d', '#fb7185', '#9d8bff', '#4ade80'];
 
+// Причины движения по складу. Русский тут исходник, перевод накладывается при выводе, как у
+// статусов заказа.
+const MOVE_RU = {
+  init: 'начальный остаток', supply: 'поставка', sale: 'продажа', write_off: 'списание',
+  reserve: 'бронь', reserve_return: 'возврат брони', manual: 'правка руками'
+};
+const MOVE_CLS = { supply: 'ok', sale: 'live', write_off: 'off', reserve: 'warn',
+  reserve_return: 'new', manual: 'warn', init: '' };
+
 async function renderDash(m) {
   const { from, to, bucket } = dashBounds();
   const args = { p_from: from, p_to: to };
@@ -2583,11 +2826,12 @@ async function renderDash(m) {
     sb.rpc('dash_products', args), sb.rpc('dash_customers', args), sb.rpc('dash_managers', args)
   ];
   calls.push(sb.rpc('fin_report', { p_from: from.slice(0, 10), p_to: to.slice(0, 10) }));
+  calls.push(sb.rpc('dash_stock', { ...args, p_bucket: bucket }));
   if (isDev) calls.push(sb.rpc('dash_system'));
   const res = await Promise.all(calls);
   const err = res.find(r => r.error);
   if (err) { swap(m, panel(L('Ошибка'), `<div class="empty">${esc(err.error.message)}</div>`)); return; }
-  const [k, s, p, c, mg, rep, sys] = res.map(r => r.data || {});
+  const [k, s, p, c, mg, rep, mov, sys] = res.map(r => r.data || {});
 
   const ranges = DASH_RANGES.map(([key, label]) =>
     `<button class="btn sm ${key === dashRange ? 'primary' : ''}" data-range="${key}">${L(label)}</button>`).join('') +
@@ -2698,6 +2942,49 @@ async function renderDash(m) {
     `<div class="panel-body"><p class="dash-none">${L('Нет данных за период')}</p></div>`) +
     `<p class="hint">${L('Заказы распределяются по городам, поэтому статистика менеджера: это статистика его города.')}</p>`;
 
+  // Движение товара. Приход это проведённые поставки, расход это выданные заказы и списания,
+  // бронь показана отдельно: она снимает товар с полки, но продажей ещё не стала. Остаток
+  // считает база от сегодняшнего числа назад, поэтому дырки в журнале его не ломают.
+  const mt = mov.totals || {};
+  const movSeries = (mov.series || []).map(r => ({ ...r, label: dashLabel(r.bucket, bucket) }));
+  const movLabel = r => (r.name || '') + (r.flavor ? ' · ' + r.flavor : '') +
+    ' · ' + (CITY_LABEL[r.city] || r.city);
+  const movement =
+    `<div class="kpis">
+      ${kpi(L('Остаток сейчас'), nf(mt.stock_qty) + ' ' + L('шт'))}
+      ${kpi(L('Склад в закупке'), money(mt.stock_cost))}
+      ${kpi(L('Пришло'), nf(mt.in_qty) + ' ' + L('шт'))}
+      ${kpi(L('Приход в деньгах'), money(mt.in_cost))}
+      ${kpi(L('Продано'), nf(mt.sold_qty) + ' ' + L('шт'))}
+      ${kpi(L('Себестоимость проданного'), money(mt.sold_cost))}
+      ${kpi(L('Списано'), nf(mt.written_qty) + ' ' + L('шт'))}
+      ${kpi(L('Убыток от списаний'), money(mt.written_cost))}
+      ${kpi(L('Ушло в бронь'), nf(mt.reserved_qty) + ' ' + L('шт'))}
+      ${kpi(L('Вернулось из брони'), nf(mt.returned_qty) + ' ' + L('шт'))}
+      ${kpi(L('Правок руками'), nf(mt.manual_n), mt.manual_delta ? `<span class="kpi-t ${
+        mt.manual_delta > 0 ? 'up' : 'down'}">${mt.manual_delta > 0 ? '+' : ''}${nf(mt.manual_delta)}</span>` : '')}
+    </div>
+    <div class="dash-2">
+      ${panel(L('Остаток на складе'), `<div class="panel-body">${lineChart(movSeries, 'left_qty', {})}</div>`)}
+      ${panel(L('Приход'), `<div class="panel-body">${lineChart(movSeries, 'in_qty', {})}</div>`)}
+      ${panel(L('Расход'), `<div class="panel-body">${lineChart(movSeries, 'out_qty', {})}</div>`)}
+      ${panel(L('Остаток по городам'), `<div class="panel-body">${barChart(mov.by_city || [], 'city', 'stock_qty',
+        { label: r => CITY_LABEL[r.city] || r.city })}</div>`)}
+      ${panel(L('Больше всего пришло'), `<div class="panel-body">${barChart(mov.top_in || [], 'name', 'qty', { label: movLabel })}</div>`)}
+      ${panel(L('Больше всего ушло'), `<div class="panel-body">${barChart(mov.top_out || [], 'name', 'qty', { label: movLabel })}</div>`)}
+    </div>
+    ${panel(L('Последние движения'), table([L('Когда'), L('Товар'), L('Город'), L('Причина'), L('Штук'), L('Стало')],
+      (mov.moves || []).map(r => [
+        `<span class="num">${fdate(r.at)}</span>`,
+        esc(r.name) + (r.flavor ? `<span class="sub">${esc(r.flavor)}</span>` : ''),
+        esc(CITY_LABEL[r.city] || r.city),
+        `<span class="pill ${MOVE_CLS[r.reason] || ''}">${esc(L(MOVE_RU[r.reason] || r.reason))}</span>` +
+          (r.ref_id ? `<span class="sub">#${r.ref_id}</span>` : ''),
+        `<span class="num">${r.delta > 0 ? '+' : ''}${nf(r.delta)}</span>`,
+        `<span class="num">${nf(r.qty_after)}</span>`])) ||
+      `<div class="panel-body"><p class="dash-none">${L('Нет данных за период')}</p></div>`)}
+    <p class="hint">${L('Правка остатка в карточке товара тоже попадает в журнал: если склад разошёлся с документами, видно, кто и когда его подвинул.')}</p>`;
+
   const system = isDev ? panel(L('Система'), `<div class="panel-body">
     <div class="kpis">
       ${kpi(L('Размер базы'), esc(sys.db_size || '—'))}
@@ -2735,6 +3022,7 @@ async function renderDash(m) {
       ${cards}</div>`) +
     fold(L('Динамика'), charts, true) +
     fold(L('Товары'), goods) +
+    fold(L('Движение товара'), movement) +
     fold(L('Клиенты'), clients) +
     fold(L('Менеджеры'), mgrs) +
     (system ? fold(L('Система'), system) : '') +
@@ -3246,7 +3534,7 @@ async function tgAuthFromHash() {
 }
 
 // Отпечаток этой сборки, его проставляет npm run stamp.
-const BUILD = '40f85a26';
+const BUILD = 'c33a3618';
 
 // Браузер держит саму страницу панели в кеше, и человек видит вчерашний интерфейс, считая,
 // что правки не приехали. Отпечаток рядом лежащего version.json читается мимо кеша: разошлось
