@@ -783,6 +783,7 @@ const DICT = {
     'товара нет в городе, поставка заведёт новый': 'товару немає в місті, постачання заведе новий',
     'Такого вкуса нет в ассортименте: ': 'Такого смаку немає в асортименті: ',
     'Исправьте строку или заведите вкус в разделе «Ассортимент».': 'Виправте рядок або заведіть смак у розділі «Асортимент».',
+    'Руководство владельца': 'Керівництво власника',
     'Эта поставка уже проведена.': 'Це постачання вже проведено.',
     'В поставке нет ни одной позиции.': 'У постачанні немає жодної позиції.'
   },
@@ -1196,6 +1197,7 @@ const DICT = {
     'товара нет в городе, поставка заведёт новый': 'produktu nie ma w mieście, dostawa utworzy nowy',
     'Такого вкуса нет в ассортименте: ': 'Takiego smaku nie ma w asortymencie: ',
     'Исправьте строку или заведите вкус в разделе «Ассортимент».': 'Popraw wiersz albo dodaj smak w sekcji «Asortyment».',
+    'Руководство владельца': 'Przewodnik właściciela',
     'Эта поставка уже проведена.': 'Ta dostawa została już zaksięgowana.',
     'В поставке нет ни одной позиции.': 'Dostawa nie zawiera żadnej pozycji.'
   }
@@ -1433,7 +1435,8 @@ function shell() {
               ${n ? `<i class="count">${n}</i>` : ''}</button>`;
           }).join('')}
         </nav>
-        <a class="guide-link" href="./guide.html" target="_blank" rel="noopener">${L('Как работать в панели')}</a>
+        <a class="guide-link" href="${isFull() ? './guide-owner.html' : './guide.html'}" target="_blank" rel="noopener">${
+          isFull() ? L('Руководство владельца') : L('Как работать в панели')}</a>
         <div class="admlang">
           ${ADM_LANGS.map(([l, lb]) => `<button data-lang="${l}" class="${l === admLang ? 'on' : ''}">${lb}</button>`).join('')}
         </div>
@@ -3534,7 +3537,7 @@ async function tgAuthFromHash() {
 }
 
 // Отпечаток этой сборки, его проставляет npm run stamp.
-const BUILD = 'c33a3618';
+const BUILD = 'a21768a9';
 
 // Браузер держит саму страницу панели в кеше, и человек видит вчерашний интерфейс, считая,
 // что правки не приехали. Отпечаток рядом лежащего version.json читается мимо кеша: разошлось
