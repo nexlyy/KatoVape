@@ -173,10 +173,15 @@ begin
        set qty = greatest(coalesce(p.qty, 0) - v_take, 0), updated_at = now()
      where p.id = it->>'id' and p.city = new.city and p.flavor = coalesce(it->>'flavor', '');
 
-    v_items := v_items || jsonb_build_object(
+    -- Скобки тут обязательны. `||` левоассоциативен, а массив, склеенный с объектом, этот
+    -- объект в себя добавляет. Без скобок выходило (массив || cost-category) || it, то есть
+    -- ДВА элемента на позицию вместо одного: в составе заказа появлялись пустые строки, в
+    -- аналитике товар без названия, а доля менеджера по категории считалась по общей ставке.
+    -- Со скобками сперва сливаются два объекта, и в массив уходит один.
+    v_items := v_items || (jsonb_build_object(
       'cost', v_cost,
       'category', (select p.category from public.products p
-                    where p.id = it->>'id' and p.city = new.city limit 1)) || it;
+                    where p.id = it->>'id' and p.city = new.city limit 1)) || it);
   end loop;
   perform public.stock_unmark();
 

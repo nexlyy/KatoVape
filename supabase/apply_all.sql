@@ -3693,10 +3693,15 @@ begin
        set qty = greatest(coalesce(p.qty, 0) - v_take, 0), updated_at = now()
      where p.id = it->>'id' and p.city = new.city and p.flavor = coalesce(it->>'flavor', '');
 
-    v_items := v_items || jsonb_build_object(
+    -- Скобки тут обязательны. `||` левоассоциативен, а массив, склеенный с объектом, этот
+    -- объект в себя добавляет. Без скобок выходило (массив || cost-category) || it, то есть
+    -- ДВА элемента на позицию вместо одного: в составе заказа появлялись пустые строки, в
+    -- аналитике товар без названия, а доля менеджера по категории считалась по общей ставке.
+    -- Со скобками сперва сливаются два объекта, и в массив уходит один.
+    v_items := v_items || (jsonb_build_object(
       'cost', v_cost,
       'category', (select p.category from public.products p
-                    where p.id = it->>'id' and p.city = new.city limit 1)) || it;
+                    where p.id = it->>'id' and p.city = new.city limit 1)) || it);
   end loop;
   perform public.stock_unmark();
 
@@ -3916,8 +3921,12 @@ create or replace function public.supply_post(p_id bigint)
 returns json language plpgsql security definer set search_path = public as $$
 declare s record; l record; n int := 0; v_qty int; v_known text;
 begin
+  -- Проводит поставку только полный доступ. Раньше здесь стоял admin_sees_city, и менеджер
+  -- города проходил проверку: сам документ он не видит (таблица закрыта в 0041), но функция
+  -- security definer читает её мимо RLS, а номера последовательные. То есть чужой черновик
+  -- можно было провести вслепую, подобрав id.
   select * into s from public.supplies where id = p_id;
-  if s is null or not public.admin_sees_city(s.city) then
+  if s is null or not public.is_full_admin() then
     raise exception 'forbidden' using errcode = '42501';
   end if;
   if s.status = 'posted' then raise exception 'ALREADY_POSTED' using errcode = 'P0001'; end if;
