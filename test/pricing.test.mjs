@@ -233,3 +233,52 @@ test('наценка за карту одна и та же на витрине �
   assert.ok(front, 'в core.js не найдена CARD_SURCHARGE');
   assert.equal(Number(front[1]), CARD_SURCHARGE);
 });
+
+// Одна и та же позиция может прийти несколькими строками. Витрина такую корзину не собирает,
+// но запрос может: раньше каждая строка проходила проверку остатка сама по себе, а вместе они
+// обещали больше, чем лежит на полке.
+test('повторы одной позиции склеиваются в одну строку', async () => {
+  const priced = await priceCart(env, {
+    items: [line('model-a', 'Strawberry', 4), line('model-a', 'Strawberry', 6)]
+  });
+  assert.equal(priced.lines.length, 1, 'должна остаться одна строка');
+  assert.equal(priced.lines[0].n, 10);
+  assert.equal(priced.total_zl, 350, 'и цена считается по ступени десятки');
+});
+
+test('остаток проверяется по суммарному количеству, а не построчно', async () => {
+  const many = PRODUCTS.map((r) => (r.id === 'plain' ? { ...r, qty: 5 } : r));
+  const back = globalThis.fetch;
+  globalThis.fetch = async (url, opts) => {
+    if (String(url).includes('/rest/v1/products')) {
+      return new Response(JSON.stringify(many), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    }
+    return back(url, opts);
+  };
+  try {
+    // по отдельности каждая строка проходит, вместе их девять на пять штук остатка
+    await assert.rejects(
+      () => priceCart(env, { items: [line('plain', '', 4), line('plain', '', 5)] }),
+      (e) => e.code === 'out_of_stock'
+    );
+    // а ровно по остатку двумя строками пройти обязано
+    const ok = await priceCart(env, { items: [line('plain', '', 2), line('plain', '', 3)] });
+    assert.equal(ok.lines[0].n, 5);
+  } finally { globalThis.fetch = back; }
+});
+
+// Лимит «раз на человека» считается в базе по владельцу заказа, а под service_role auth.uid()
+// пуст, поэтому владельца обязана передавать сама функция.
+test('в promo_check уходит тот, кто заказывает', async () => {
+  promos.LATO = { ok: true, discount: 10, kind: 'percent', value: 10, stackable: true };
+  let seen = null;
+  const back = globalThis.fetch;
+  globalThis.fetch = async (url, opts) => {
+    if (String(url).includes('/rest/v1/rpc/promo_check')) seen = JSON.parse((opts && opts.body) || '{}');
+    return back(url, opts);
+  };
+  try {
+    await priceCart(env, { items: [line('plain', '', 1)], promo: 'LATO' }, 'u-42');
+    assert.equal(seen && seen.p_user, 'u-42');
+  } finally { globalThis.fetch = back; promos = {}; }
+});

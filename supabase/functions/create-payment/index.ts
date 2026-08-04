@@ -25,7 +25,7 @@ Deno.serve(async (req) => {
 
   let priced;
   try {
-    priced = await priceCart(env, b);
+    priced = await priceCart(env, b, userId);
   } catch (e) {
     return json({ error: (e && (e as any).code) || "price" }, 400);
   }

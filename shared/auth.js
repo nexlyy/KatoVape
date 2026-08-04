@@ -676,14 +676,9 @@ window.KVAuth = (function () {
       return Array.isArray(data) ? data[0] : data;
     } catch (e) { return null; }
   }
-  async function promoUse(code, orderId) {
-    if (!user || !cloudOn() || !code) return false;
-    try {
-      const c = await client();
-      const { error } = await c.rpc('promo_use', { p_code: code, p_order: orderId || null });
-      return !error;
-    } catch (e) { return false; }
-  }
+  // Расход промокода отсюда больше не отмечается: это делает сервер при создании заказа
+  // (наличные) и вебхук Stripe по факту оплаты (карта). Функция promo_use в базе удалена
+  // миграцией 0050 вместе с этой возможностью.
 
   // заявка «сообщить о поступлении»: та же таблица броней, вид notify, со своим городом
   async function apiRestock(data) {
@@ -817,7 +812,7 @@ window.KVAuth = (function () {
   return {
     init, signUp, signIn, signOut, openModal, decorateProfile,
     apiReserve, apiOrder, loggedIn, contact, saveContact,
-    apiMyReservations, apiCancelReservation, apiMyOrders, apiRestock, promoCheck, promoUse, saveCity,
+    apiMyReservations, apiCancelReservation, apiMyOrders, apiRestock, promoCheck, saveCity,
     apiAllReviews, apiMyReviews, apiReviewables, apiReview, cloudOn,
     isAdmin, role, refresh: afterAuth, reservationLoad, accessToken,
     _tgWidget: tgWidget,

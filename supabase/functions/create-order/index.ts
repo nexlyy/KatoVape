@@ -6,7 +6,7 @@
 import { cors, json } from "../_shared/cors.ts";
 import { priceCart, withCardSurcharge, type Env } from "../_shared/pricing.ts";
 import { verifyInitData } from "../_shared/telegram.ts";
-import { rest, userFromToken, profileIdByTelegram } from "../_shared/rest.ts";
+import { rest, userFromToken, profileIdByTelegram, recordPromoUse } from "../_shared/rest.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -70,7 +70,7 @@ Deno.serve(async (req) => {
 
   // Total, stock, promo and delivery are all computed server-side from our own catalogue.
   let priced;
-  try { priced = await priceCart(env, { ...b, city, delivery }); }
+  try { priced = await priceCart(env, { ...b, city, delivery }, userId); }
   catch (e) { return json({ error: (e && (e as any).code) || "price" }, 400); }
   if (payWay === "card") priced = withCardSurcharge(priced);
 
@@ -97,6 +97,9 @@ Deno.serve(async (req) => {
     });
     const order = Array.isArray(rows) ? rows[0] : rows;
     if (!order || !order.id) return json({ error: "order failed" }, 500);
+    // Cash on pickup is final the moment it is placed, so the code is spent here. Card orders
+    // are recorded by the webhook instead, when the money actually arrives.
+    if (priced.promo.length) await recordPromoUse(priced.promo, order.id, userId);
     return json({ orderId: order.id, sum: priced.total_zl });
   } catch {
     return json({ error: "order failed" }, 500);

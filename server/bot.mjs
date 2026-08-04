@@ -838,8 +838,20 @@ async function tgLoop() {
   for (;;) {
     try {
       const r = await getUpdates(offset, 25);
-      if (r && r.ok && r.result) for (const u of r.result) { offset = u.update_id + 1; handleUpdate(u).catch(() => {}); }
-      else if (r && r.ok === false) await sleep(2000);
+      if (r && r.ok && r.result) {
+        // Обновления обрабатываются ПО ОЧЕРЕДИ, а не пачкой параллельно. Раньше здесь стояло
+        // handleUpdate(u).catch(...) без await: два быстрых нажатия на одну кнопку заходили
+        // одновременно, и статус заказа менялся дважды, а бронь по диплинку заводилась
+        // дважды. Телеграм и так шлёт не больше сотни за раз, очередь тут ничего не тормозит.
+        //
+        // Смещение двигаем ПОСЛЕ обработки: если процесс упадёт посреди пачки, телеграм
+        // пришлёт необработанное заново, а не потеряет его.
+        for (const u of r.result) {
+          // одно битое обновление не должно ронять весь цикл
+          try { await handleUpdate(u); } catch {}
+          offset = u.update_id + 1;
+        }
+      } else if (r && r.ok === false) await sleep(2000);
     } catch { await sleep(3000); }
   }
 }
@@ -1149,6 +1161,12 @@ if (!(BOT_TOKEN && SUPA && KEY)) {
   console.error('bot.mjs needs TELEGRAM_BOT_TOKEN, SUPABASE_URL and SUPABASE_SERVICE_KEY');
   process.exit(1);
 }
+
+// Node роняет процесс на необработанном отказе промиса. Циклы свои ошибки ловят, но одна
+// забытая точка где-то в глубине уронила бы бота ночью, и узнали бы об этом утром. Пишем в
+// журнал и работаем дальше: перезапуск ради одного сбоя дороже самого сбоя.
+process.on('unhandledRejection', e => console.error('unhandledRejection:', (e && e.stack) || e));
+process.on('uncaughtException', e => console.error('uncaughtException:', (e && e.stack) || e));
 console.log('KatoVape bot started, managers: ' + MANAGERS.join(', '));
 if (MINIAPP_URL) setMenuButton(MINIAPP_URL).then(r => console.log('menuButton:', r && r.ok ? 'ok' : JSON.stringify(r)));
 tgLoop();

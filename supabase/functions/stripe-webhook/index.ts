@@ -29,16 +29,41 @@ async function patchOrder(id: string | number, patch: Record<string, unknown>) {
   });
 }
 
-// What we asked for when the order was created, in grosz.
-async function orderAmount(id: string | number): Promise<{ amount: number; currency: string } | null> {
+// What we asked for when the order was created, in grosz. The promo codes come along because
+// a card order spends them here, on payment, and not when it was merely started.
+async function orderAmount(
+  id: string | number,
+): Promise<{ amount: number; currency: string; promo: string[]; user_id: string | null } | null> {
   const res = await fetch(
-    SUPABASE_URL.replace(/\/$/, "") + "/rest/v1/orders?id=eq." + id + "&select=amount,currency",
+    SUPABASE_URL.replace(/\/$/, "") + "/rest/v1/orders?id=eq." + id + "&select=amount,currency,promo,user_id",
     { headers: { apikey: SERVICE_KEY, Authorization: "Bearer " + SERVICE_KEY } },
   );
   if (!res.ok) return null;
   const rows = await res.json().catch(() => null);
   const o = Array.isArray(rows) ? rows[0] : null;
-  return o ? { amount: Number(o.amount) || 0, currency: String(o.currency || "pln") } : null;
+  return o
+    ? {
+      amount: Number(o.amount) || 0,
+      currency: String(o.currency || "pln"),
+      promo: Array.isArray(o.promo) ? o.promo : [],
+      user_id: o.user_id || null,
+    }
+    : null;
+}
+
+// Расход промокода записывает сервер. Повторный вызов по тому же заказу ничего не удваивает,
+// это проверяет сама promo_use_for, что важно: Stripe повторяет вебхук при любой заминке.
+async function spendPromo(codes: string[], orderId: string | number, userId: string | null) {
+  for (const code of codes) {
+    await fetch(SUPABASE_URL.replace(/\/$/, "") + "/rest/v1/rpc/promo_use_for", {
+      method: "POST",
+      headers: {
+        apikey: SERVICE_KEY, Authorization: "Bearer " + SERVICE_KEY,
+        "Content-Type": "application/json", Prefer: "count=none",
+      },
+      body: JSON.stringify({ p_code: code, p_order: orderId, p_user: userId }),
+    }).catch(() => {});
+  }
 }
 
 Deno.serve(async (req) => {
@@ -88,6 +113,7 @@ Deno.serve(async (req) => {
       payment_ref: obj.payment_intent || obj.id,
       updated_at: new Date().toISOString(),
     }).catch(() => {});
+    if (want && want.promo.length) await spendPromo(want.promo, orderId, want.user_id);
   } else if ((event.type === "payment_intent.payment_failed" ||
               event.type === "checkout.session.expired") && orderId) {
     await patchOrder(orderId, { payment_status: "failed", updated_at: new Date().toISOString() }).catch(() => {});

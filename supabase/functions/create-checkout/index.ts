@@ -29,14 +29,15 @@ Deno.serve(async (req) => {
   const tgId = await verifyInitData(b.initData, BOT_TOKEN);
   if (!tgId) return json({ error: "telegram signature invalid" }, 401);
 
+  // Attach the order to the same account as on the website so reviews link up later. Looked up
+  // before pricing, because the promo limit "once per person" is counted against this account.
+  const userId = await profileIdByTelegram(tgId);
+
   let priced;
-  try { priced = await priceCart(env, b); }
+  try { priced = await priceCart(env, b, userId); }
   catch (e) { return json({ error: (e && (e as any).code) || "price" }, 400); }
   // This path is always a card, so the surcharge always applies.
   priced = withCardSurcharge(priced);
-
-  // Attach the order to the same account as on the website so reviews link up later.
-  const userId = await profileIdByTelegram(tgId);
 
   let order;
   try {

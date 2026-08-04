@@ -30,6 +30,17 @@ export async function userFromToken(auth: string | null): Promise<string | null>
   return (u && u.id) || null;
 }
 
+// Записать расход промокода. Делает это сервер сразу после того, как заказ лёг в таблицу:
+// раньше расход отмечал браузер, и кто не отмечал, у того код не тратился, то есть лимиты
+// «раз на человека» и «всего» держались только на честности покупателя.
+export async function recordPromoUse(codes: string[], orderId: number | string, userId: string | null) {
+  for (const code of codes || []) {
+    try {
+      await rest("POST", "rpc/promo_use_for", { p_code: code, p_order: orderId, p_user: userId }, "count=none");
+    } catch { /* заказ уже создан, из-за счётчика его отменять нельзя */ }
+  }
+}
+
 // Look up the profile by telegram_id so a mini-app order lands on the same account as the site.
 export async function profileIdByTelegram(tgId: number): Promise<string | null> {
   try {

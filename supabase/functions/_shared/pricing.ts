@@ -79,10 +79,10 @@ export interface Env {
 // This used to keep its own list in content.json, so a code created in the panel was
 // invisible to checkout while an old demo code still applied, both ways the charge
 // disagreed with what the customer saw.
-// The per-user limit is not enforced here: auth.uid() is empty under service_role, so
-// promo_use counts it after the order.
+// The per-user limit needs to know who is buying: auth.uid() is empty under service_role, so
+// the caller passes the account explicitly and promo_check counts against it.
 async function promoDiscount(
-  env: Env, code: string, city: string, sum: number, cats: string[],
+  env: Env, code: string, city: string, sum: number, cats: string[], userId: string | null,
 ): Promise<{ discount: number; stackable: boolean }> {
   const res = await fetch(env.SUPABASE_URL.replace(/\/$/, "") + "/rest/v1/rpc/promo_check", {
     method: "POST",
@@ -90,7 +90,10 @@ async function promoDiscount(
       apikey: env.SERVICE_KEY, Authorization: "Bearer " + env.SERVICE_KEY,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ p_code: code, p_city: city, p_sum: sum, p_categories: cats.length ? cats : null }),
+    body: JSON.stringify({
+      p_code: code, p_city: city, p_sum: sum,
+      p_categories: cats.length ? cats : null, p_user: userId,
+    }),
   });
   if (!res.ok) throw new Error("promo_check " + res.status);
   const data = await res.json();
@@ -108,14 +111,14 @@ async function promoDiscount(
 // function does not answer, charging a best-guess amount would mean charging something the
 // customer never saw, so the payment is refused instead.
 async function discountFor(
-  env: Env, codes: string[], city: string, sum: number, cats: string[],
+  env: Env, codes: string[], city: string, sum: number, cats: string[], userId: string | null,
 ): Promise<{ discount: number; applied: string[] }> {
   const applied: string[] = [];
   let disc = 0;
   for (const raw of codes) {
     let r;
     try {
-      r = await promoDiscount(env, raw, city, sum, cats);
+      r = await promoDiscount(env, raw, city, sum, cats, userId);
     } catch (_e) {
       throw Object.assign(new Error("promo"), { code: "promo" });
     }
@@ -175,6 +178,7 @@ export function withCardSurcharge(p: Priced): Priced {
 export async function priceCart(
   env: Env,
   body: { city?: string; items?: CartLine[]; delivery?: string; promo?: string | string[] },
+  userId: string | null = null,
 ): Promise<Priced> {
   const city = (body.city || "katowice").toString();
   const lines = Array.isArray(body.items) ? body.items : [];
@@ -190,16 +194,22 @@ export async function priceCart(
 
   // Normalise quantities and sum them per group first: the price tier depends on the total
   // for the model, so a line price cannot be known without the whole cart.
-  const rows = lines.map((l) => {
+  //
+  // The same product and flavour may arrive as several lines. The storefront never builds a
+  // cart that way, but a request can, and then each line passed the stock check on its own
+  // while together they promised more than the shelf holds. Merged before anything is checked.
+  const merged = new Map<string, { item: Item; id: string; flavor: string; n: number }>();
+  for (const l of lines) {
     const item = byId[l.id];
     if (!item) throw Object.assign(new Error("bad_item"), { code: "bad_item", id: l.id });
-    return {
-      item,
-      id: l.id,
-      flavor: (l.flavor || "").toString(),
-      n: Math.min(Math.max(Math.floor(Number(l.n) || 0), 1), 99),
-    };
-  });
+    const flavor = (l.flavor || "").toString();
+    const n = Math.min(Math.max(Math.floor(Number(l.n) || 0), 1), 99);
+    const key = l.id + "::" + flavor;
+    const seen = merged.get(key);
+    if (seen) seen.n = Math.min(seen.n + n, 99);
+    else merged.set(key, { item, id: l.id, flavor, n });
+  }
+  const rows = [...merged.values()];
   const groupQty: Record<string, number> = {};
   for (const r of rows) {
     const g = tierGroupOf(r.item);
@@ -223,7 +233,7 @@ export async function priceCart(
     });
   }
 
-  const { discount: disc, applied } = await discountFor(env, promoList(body.promo), city, sub, [...cats]);
+  const { discount: disc, applied } = await discountFor(env, promoList(body.promo), city, sub, [...cats], userId);
 
   const methods: any[] = (content.delivery && content.delivery.methods) || null;
   const dm = String(body.delivery || "pickup");
@@ -236,7 +246,9 @@ export async function priceCart(
     amount: Math.round(total_zl * 100),
     total_zl,
     currency: "pln",
-    label: "KatoVape · " + count + " " + (count === 1 ? "товар" : "товара/ов"),
+    // Строка уходит в счёт Stripe, где языка покупателя нет. Поэтому без склонений и без
+    // русского: короткая нейтральная подпись, одинаковая на всех трёх языках витрины.
+    label: "KatoVape · " + count + " x",
     discount: disc,
     promo: applied,
     lines: outLines,
