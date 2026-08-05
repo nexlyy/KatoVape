@@ -120,7 +120,8 @@ window.KV = (function () {
       phoneAsked: 'Откройте бота и нажмите «Поделиться номером»',
       phoneGot: 'Номер подставлен из Telegram',
       edit: 'Изменить', apply: 'Применить',
-      dataWarn: 'Проверьте данные внимательно: по ним оформляется отправка. Ошибка задержит посылку.',
+      dataWarn: 'Проверьте данные внимательно: по ним оформляется отправка. Посылка уйдёт туда, куда вы указали, и за последствия неверно введённых данных магазин ответственности не несёт.',
+      paczkoWarn: 'Код вида KAT01M посмотрите в приложении или на сайте InPost и впишите точно, буква в букву. Проверить его за вас мы не можем.',
       confirmTitle: 'Проверьте данные получателя', confirmOk: 'Всё верно, оформить',
       payLater: 'Оплатить при выдаче', payTitle: 'Оплата', payCardBtn: 'Оплатить картой',
       promoWhy_not_found: 'Такого промокода нет', promoWhy_inactive: 'Промокод отключён',
@@ -134,6 +135,9 @@ window.KV = (function () {
       promoWhy_no_stack: 'Этот код не складывается с другими', reviewEdit: 'Изменить отзыв',
       payNow: 'Оплатить {n} zł', payInBrowser: 'Оплата открыта в браузере. Завершите её и вернитесь, подтвердим здесь.',
       payWay: 'Способ оплаты', payCash: 'Наличными', payCard: 'Картой', payCardNote: '+10% к сумме', payFail: 'Оплата не прошла, попробуйте ещё раз',
+      payDelivCard: 'Доставка оплачивается заранее: наличных при получении нет.',
+      payDelivOff: 'Оплата картой сейчас недоступна, а доставку нужно оплатить заранее. Выберите самовывоз или напишите менеджеру.',
+      payAskManager: 'Написать менеджеру',
       checkData: 'Проверьте данные:', fioPh: 'Фамилия и имя',
       errFio: 'Укажите фамилию и имя', errPhone2: 'Телефон в формате +48 600 000 000',
       errEmail2: 'Проверьте адрес почты', errPaczko2: 'Номер пачкомата выглядит как KAT01M',
@@ -155,11 +159,6 @@ window.KV = (function () {
       stNew: 'оформлен', stConfirmed: 'в обработке', stDone: 'выдан', stCancelled: 'отменён',
       stPacked: 'собран', stShipped: 'отправлен',
       stActive: 'активна', stExpired: 'истекла', stNotified: 'ждёт выдачи',
-      pickMap: 'Выбрать пачкомат',
-      lockerTitle: 'Пачкоматы InPost', lockerSearch: 'Улица, район или код',
-      lockerNone: 'Ничего не нашлось. Попробуйте название улицы.',
-      lockerMore: 'Ещё {n} точек. Уточните поиск.',
-      lockerLoad: 'Загружаем список точек…', lockerPicked: 'Выбран пачкомат'
     },
     uk: {
       profile: 'Профіль', guest: 'Гість', yourName: 'Ваше ім’я', save: 'Зберегти',
@@ -185,7 +184,8 @@ window.KV = (function () {
       phoneAsked: 'Відкрийте бота й натисніть «Поділитися номером»',
       phoneGot: 'Номер підставлено з Telegram',
       edit: 'Змінити', apply: 'Застосувати',
-      dataWarn: 'Перевірте дані уважно: за ними оформлюється відправка. Помилка затримає посилку.',
+      dataWarn: 'Перевірте дані уважно: за ними оформлюється відправка. Посилка піде туди, куди ви вказали, і за наслідки неправильно введених даних магазин відповідальності не несе.',
+      paczkoWarn: 'Код виду KAT01M подивіться в застосунку або на сайті InPost і впишіть точно, літера в літеру. Перевірити його за вас ми не можемо.',
       confirmTitle: 'Перевірте дані отримувача', confirmOk: 'Все вірно, оформити',
       payLater: 'Оплата при отриманні', payTitle: 'Оплата', payCardBtn: 'Оплатити карткою',
       promoWhy_not_found: 'Такого промокоду немає', promoWhy_inactive: 'Промокод вимкнено',
@@ -199,6 +199,9 @@ window.KV = (function () {
       promoWhy_no_stack: 'Цей код не складається з іншими', reviewEdit: 'Змінити відгук',
       payNow: 'Сплатити {n} zł', payInBrowser: 'Оплата відкрита в браузері. Завершіть її та поверніться, підтвердимо тут.',
       payWay: 'Спосіб оплати', payCash: 'Готівкою', payCard: 'Карткою', payCardNote: '+10% до суми', payFail: 'Оплата не пройшла, спробуйте ще раз',
+      payDelivCard: 'Доставка оплачується заздалегідь: готівки при отриманні немає.',
+      payDelivOff: 'Оплата карткою зараз недоступна, а доставку треба оплатити заздалегідь. Оберіть самовивіз або напишіть менеджеру.',
+      payAskManager: 'Написати менеджеру',
       checkData: 'Перевірте дані:', fioPh: 'Прізвище та ім’я',
       errFio: 'Вкажіть прізвище та ім’я', errPhone2: 'Телефон у форматі +48 600 000 000',
       errEmail2: 'Перевірте адресу пошти', errPaczko2: 'Номер поштомата виглядає як KAT01M',
@@ -220,11 +223,6 @@ window.KV = (function () {
       stNew: 'оформлено', stConfirmed: 'в обробці', stDone: 'видано', stCancelled: 'скасовано',
       stPacked: 'зібрано', stShipped: 'відправлено',
       stActive: 'активна', stExpired: 'минула', stNotified: 'чекає видачі',
-      pickMap: 'Обрати поштомат',
-      lockerTitle: 'Поштомати InPost', lockerSearch: 'Вулиця, район або код',
-      lockerNone: 'Нічого не знайшлось. Спробуйте назву вулиці.',
-      lockerMore: 'Ще {n} точок. Уточніть пошук.',
-      lockerLoad: 'Завантажуємо список точок…', lockerPicked: 'Обрано поштомат'
     },
     pl: {
       profile: 'Profil', guest: 'Gość', yourName: 'Twoje imię', save: 'Zapisz',
@@ -250,7 +248,8 @@ window.KV = (function () {
       phoneAsked: 'Otwórz bota i naciśnij „Udostępnij numer”',
       phoneGot: 'Numer pobrany z Telegrama',
       edit: 'Zmień', apply: 'Zastosuj',
-      dataWarn: 'Sprawdź dane uważnie: na ich podstawie wysyłamy paczkę. Błąd opóźni dostawę.',
+      dataWarn: 'Sprawdź dane uważnie: na ich podstawie wysyłamy paczkę. Przesyłka pojedzie tam, gdzie wskazałeś, a za skutki błędnie podanych danych sklep nie odpowiada.',
+      paczkoWarn: 'Kod w rodzaju KAT01M sprawdź w aplikacji lub na stronie InPost i wpisz dokładnie, litera w literę. Nie możemy zweryfikować go za Ciebie.',
       confirmTitle: 'Sprawdź dane odbiorcy', confirmOk: 'Zgadza się, zamawiam',
       payLater: 'Płatność przy odbiorze', payTitle: 'Płatność', payCardBtn: 'Zapłać kartą',
       promoWhy_not_found: 'Nie ma takiego kodu', promoWhy_inactive: 'Kod jest wyłączony',
@@ -264,6 +263,9 @@ window.KV = (function () {
       promoWhy_no_stack: 'Tego kodu nie można łączyć z innymi', reviewEdit: 'Zmień opinię',
       payNow: 'Zapłać {n} zł', payInBrowser: 'Płatność otwarta w przeglądarce. Dokończ ją i wróć, potwierdzimy tutaj.',
       payWay: 'Sposób płatności', payCash: 'Gotówką', payCard: 'Kartą', payCardNote: '+10% do sumy', payFail: 'Płatność nie przeszła, spróbuj ponownie',
+      payDelivCard: 'Dostawę opłaca się z góry: gotówki przy odbiorze nie ma.',
+      payDelivOff: 'Płatność kartą jest teraz niedostępna, a dostawę trzeba opłacić z góry. Wybierz odbiór osobisty albo napisz do menedżera.',
+      payAskManager: 'Napisz do menedżera',
       checkData: 'Sprawdź dane:', fioPh: 'Imię i nazwisko',
       errFio: 'Podaj imię i nazwisko', errPhone2: 'Telefon w formacie +48 600 000 000',
       errEmail2: 'Sprawdź adres e-mail', errPaczko2: 'Numer paczkomatu wygląda jak KAT01M',
@@ -285,11 +287,6 @@ window.KV = (function () {
       stNew: 'złożone', stConfirmed: 'w realizacji', stDone: 'wydane', stCancelled: 'anulowane',
       stPacked: 'skompletowane', stShipped: 'wysłane',
       stActive: 'aktywna', stExpired: 'wygasła', stNotified: 'czeka na odbiór',
-      pickMap: 'Wybierz paczkomat',
-      lockerTitle: 'Paczkomaty InPost', lockerSearch: 'Ulica, dzielnica lub kod',
-      lockerNone: 'Nic nie znaleziono. Spróbuj nazwy ulicy.',
-      lockerMore: 'Jeszcze {n} punktów. Doprecyzuj wyszukiwanie.',
-      lockerLoad: 'Ładujemy listę punktów…', lockerPicked: 'Wybrano paczkomat'
     }
   };
   for (const l in EXTRA) Object.assign(STR[l], EXTRA[l]);
@@ -810,7 +807,6 @@ window.KV = (function () {
       if (e.target.closest('.kvc-edit')) { confirmEdit = true; renderConfirm(); return; }
       if (e.target.closest('.kvc-apply')) { applyConfirm(); return; }
       if (e.target.closest('.kvc-tgphone')) { requestPhone(); return; }
-      if (e.target.closest('.kvc-map')) { openGeo(); return; }
       const pw = e.target.closest('[data-payway]');
       if (pw) { payWay = pw.dataset.payway; localStorage.setItem('kv_payway', payWay); renderConfirm(); return; }
       if (e.target.closest('.kvc-later')) { placeOrder(); return; }   // оплата при выдаче
@@ -893,7 +889,10 @@ window.KV = (function () {
         '<input data-ct="' + f.k + '" type="' + (f.k === 'email' ? 'email' : f.k === 'phone' ? 'tel' : 'text') + '" value="' + esc(f.v || '') + '"' +
         (f.k === 'phone' ? ' placeholder="+48 600 000 000"' : f.k === 'paczkomat' ? ' placeholder="KAT01M"' : f.k === 'name' ? ' placeholder="' + esc(t('fioPh')) + '"' : '') + '></label>' +
         (f.k === 'phone' && tgPhoneReady() ? '<button class="kvc-tgphone" type="button">✈ ' + t('tgPhone') + '</button>' : '') +
-        (f.k === 'paczkomat' && geoReady() ? '<button class="kvc-map" type="button">' + t('pickMap') + '</button>' : '')
+        // Выбор пачкомата из списка убран: справочник InPost отдаёт точки по названию города,
+        // и код из другого города в нём не находился, хотя он существует. Код вписывается
+        // руками, а рядом сказано, где его взять и чем грозит опечатка.
+        (f.k === 'paczkomat' ? '<p class="kvc-fhint">' + t('paczkoWarn') + '</p>' : '')
       ).join('') +
         '<div class="kvc-warn">' + t('dataWarn') + '</div>' +
         '<button class="kvc-apply">' + t('apply') + '</button>';
@@ -903,22 +902,38 @@ window.KV = (function () {
       const pay = window.KVPay && KVPay.enabled();
       // наценку за карту показываем только когда оплата картой реально работает
       const cardOn = pay && !(window.KV_CONFIG || {}).PAYMENTS_CARD_OFF;
+      // Наличные бывают только при самовывозе: посылку в пачкомат и курьера оплачивают
+      // заранее, брать деньги на месте там некому. Раньше кнопка «наличными» предлагалась
+      // и там, и заказ приходил менеджеру как неоплаченный, хотя платить было негде.
+      const cashOk = cur.method === 'pickup';
+      // Доставка при выключенной карте платить нечем. Оформлять такой заказ нельзя: он ушёл
+      // бы менеджеру как неоплаченный, и посылку пришлось бы держать до выяснения.
+      const payNone = !cashOk && !cardOn;
       // Пока карта отключена, оформление заказа должно оставаться главным действием:
       // кнопка карты идёт сверху приглушённой, под ней обычное «оформить».
       const actions = cardOn
         ? '<div id="kvc-pay" class="kvc-pay"></div>' +
-          '<button class="kvc-later">' + t('payLater') + '</button>' +
+          (cashOk ? '<button class="kvc-later">' + t('payLater') + '</button>' : '') +
           '<div class="kvc-btns kvc-btns-edit"><button class="kvc-edit">' + t('edit') + '</button></div>'
         : (pay ? '<div id="kvc-pay" class="kvc-pay"></div>' : '') +
           '<div class="kvc-btns"><button class="kvc-edit">' + t('edit') + '</button>' +
-          '<button class="kvc-go">' + t('confirmOk') + '</button></div>';
+          (payNone ? '' : '<button class="kvc-go">' + t('confirmOk') + '</button>') + '</div>';
       // Способ оплаты выбирается тут же: наличными цена обычная, картой дороже на 10%.
       // Выбор влияет на итог, поэтому сумма пересчитывается сразу над кнопками.
-      const payBox = '<div class="kvc-pays"><span class="kvc-pays-t">' + t('payWay') + '</span>' +
-        [['cash', t('payCash'), grandTotal()], ['card', t('payCard'), cardTotal()]].map(([k, lbl, sum]) =>
-          '<button class="kvc-pay-opt' + (payWay === k ? ' sel' : '') + '" data-payway="' + k + '" type="button">' +
-          '<b>' + lbl + '</b><em>' + sum + ' zł</em>' +
-          (k === 'card' ? '<i>' + t('payCardNote') + '</i>' : '') + '</button>').join('') + '</div>';
+      const ways = (cashOk ? [['cash', t('payCash'), grandTotal()]] : [])
+        .concat([['card', t('payCard'), cardTotal()]]);
+      // Если наличные недоступны, а карта выключена флагом, платить нечем. Молча оставлять
+      // выбранными наличные нельзя: заказ ушёл бы неоплаченным.
+      if (!cashOk && payWay !== 'card') { payWay = 'card'; localStorage.setItem('kv_payway', 'card'); }
+      const payBox = payNone
+        ? '<div class="kvc-paywarn">' + t('payDelivOff') +
+            ' <a href="' + managerLink() + '" target="_blank" rel="noopener">' + t('payAskManager') + '</a></div>'
+        : '<div class="kvc-pays"><span class="kvc-pays-t">' + t('payWay') + '</span>' +
+          ways.map(([k, lbl, sum]) =>
+            '<button class="kvc-pay-opt' + (payWay === k ? ' sel' : '') + '" data-payway="' + k + '" type="button">' +
+            '<b>' + lbl + '</b><em>' + sum + ' zł</em>' +
+            (k === 'card' ? '<i>' + t('payCardNote') + '</i>' : '') + '</button>').join('') +
+          (cashOk ? '' : '<p class="kvc-paynote">' + t('payDelivCard') + '</p>') + '</div>';
       inner = need.map(f =>
         '<div class="kvc-row"><span>' + f.lbl + '</span><b>' + (esc(f.v || '') || '<i class="kvc-none">—</i>') + '</b></div>').join('') +
         '<div class="kvc-row"><span>' + t('delivery') + '</span><b>' + deliveryLabel(cur.method) + '</b></div>' +
@@ -1075,122 +1090,6 @@ window.KV = (function () {
     }
   }
 
-  // ---- выбор пачкомата InPost ----
-  // Список точек лежит в data/inpost/<город>.json: он выгружен из открытого справочника
-  // InPost (server/inpost-fetch.mjs), поэтому ни ключа, ни стороннего виджета не нужно.
-  // Файл города подтягиваем только когда человек открыл выбор.
-  let lockers = null, lockersCity = null, lockersBusy = false;
-  function geoReady() { return true; }
-  // Открытый справочник InPost отвечает браузеру напрямую (Access-Control-Allow-Origin: *)
-  // и ключа не требует. Поэтому точки берём живьём: это покрывает ЛЮБОЙ город, включая
-  // новые, и список всегда свежий. Выгрузка в data/inpost остаётся запасным вариантом
-  // на случай, если справочник недоступен.
-  const INPOST_API = 'https://api-shipx-pl.easypack24.net/v1/points';
-  function cityQuery(cid) {
-    const c = cities.find(x => x.id === cid);
-    const name = (c && c.name && (c.name.pl || c.name.ru)) || cid;
-    return name.charAt(0).toUpperCase() + name.slice(1);
-  }
-  async function fetchLive(cid) {
-    const out = [];
-    for (let page = 1; page <= 6; page++) {
-      const url = INPOST_API + '?city=' + encodeURIComponent(cityQuery(cid)) +
-        '&type=parcel_locker&status=Operating&per_page=500&page=' + page;
-      const r = await fetch(url, { headers: { Accept: 'application/json' } });
-      if (!r.ok) throw new Error('inpost ' + r.status);
-      const d = await r.json();
-      for (const it of d.items || []) {
-        const a = it.address || {};
-        const street = (a.line1 || '').trim();
-        if (!it.name || !street) continue;
-        const post = ((a.line2 || '').match(/\d{2}-\d{3}/) || [''])[0];
-        out.push({ c: it.name, a: street, p: post, d: (it.location_description || '').trim().slice(0, 80) });
-      }
-      if (page >= (d.total_pages || 1)) break;
-    }
-    out.sort((x, y) => x.a.localeCompare(y.a, 'pl'));
-    return out;
-  }
-  async function loadLockers(cid) {
-    if (lockers && lockersCity === cid) return lockers;
-    try {
-      const live = await fetchLive(cid);
-      if (live.length) { lockers = live; lockersCity = cid; return lockers; }
-    } catch (e) { /* справочник недоступен, идём к выгрузке */ }
-    try {
-      const r = await fetch(ROOT + 'data/inpost/' + cid + '.json');
-      if (!r.ok) throw new Error(r.status);
-      lockers = await r.json();
-      lockersCity = cid;   // город запоминаем только при удачной загрузке,
-    } catch (e) {          // иначе обрыв связи навсегда оставил бы пустой список
-      lockers = [];
-      lockersCity = null;
-    }
-    return lockers;
-  }
-  function ensureLockerBox() {
-    let d = document.getElementById('kvg');
-    if (d) return d;
-    d = document.createElement('div');
-    d.id = 'kvg'; d.className = 'kvg'; d.hidden = true;
-    d.innerHTML = '<div class="kvg-box">' +
-      '<div class="kvg-head"><b>' + t('lockerTitle') + '</b>' +
-      '<button class="kvg-x" aria-label="close">&times;</button></div>' +
-      '<input class="kvg-q" type="search" placeholder="' + t('lockerSearch') + '">' +
-      '<div class="kvg-list"></div></div>';
-    document.body.appendChild(d);
-    d.addEventListener('click', e => {
-      if (e.target === d || e.target.closest('.kvg-x')) { d.hidden = true; document.body.classList.remove('kv-noscroll'); return; }
-      const pick = e.target.closest('[data-locker]');
-      if (pick) {
-        const code = pick.dataset.locker;
-        const addr = pick.dataset.addr || '';
-        // только подставляем в поле: в профиль это уйдёт по кнопке «Применить»
-        // вместе с остальным, что человек сейчас правит
-        document.querySelectorAll('[data-ct="paczkomat"]').forEach(i => { i.value = code; });
-        setDelivery(undefined, code);
-        d.hidden = true;
-        document.body.classList.remove('kv-noscroll');
-        toast(t('lockerPicked') + ' ' + code + (addr ? ', ' + addr : ''));
-      }
-    });
-    d.querySelector('.kvg-q').addEventListener('input', e => drawLockers(e.target.value));
-    return d;
-  }
-  function drawLockers(q) {
-    const box = document.querySelector('#kvg .kvg-list'); if (!box) return;
-    const list = lockers || [];
-    const s = (q || '').trim().toLowerCase();
-    const hit = s
-      ? list.filter(x => (x.c + ' ' + x.a + ' ' + (x.p || '') + ' ' + (x.d || '')).toLowerCase().indexOf(s) >= 0)
-      : list;
-    if (!hit.length) { box.innerHTML = '<p class="kvg-none">' + t('lockerNone') + '</p>'; return; }
-    // рисуем первую сотню: в Варшаве точек больше полутора тысяч
-    box.innerHTML = hit.slice(0, 100).map(x =>
-      '<button class="kvg-i" type="button" data-locker="' + esc(x.c) + '" data-addr="' + esc(x.a) + '">' +
-        '<b>' + esc(x.c) + '</b>' +
-        '<span>' + esc(x.a) + (x.p ? ', ' + esc(x.p) : '') + '</span>' +
-        (x.d ? '<i>' + esc(x.d) + '</i>' : '') +
-      '</button>').join('') +
-      (hit.length > 100 ? '<p class="kvg-none">' + t('lockerMore').replace('{n}', hit.length - 100) + '</p>' : '');
-  }
-  async function openGeo() {
-    const d = ensureLockerBox();
-    const box = d.querySelector('.kvg-list');
-    d.hidden = false;
-    document.body.classList.add('kv-noscroll');
-    if (lockersBusy) return;
-    if (!lockers || lockersCity !== city) {
-      lockersBusy = true;
-      box.innerHTML = '<p class="kvg-none">' + t('lockerLoad') + '</p>';
-      await loadLockers(city);
-      lockersBusy = false;
-    }
-    const q = d.querySelector('.kvg-q');
-    q.value = '';
-    drawLockers('');
-    if (!isApp) setTimeout(() => q.focus(), 50);
-  }
 
   // бронь всегда идёт через окно товара: там выбор вкуса и даты выдачи
   function reserve(id) {
@@ -2574,8 +2473,7 @@ window.KV = (function () {
               '<label class="kvp-ct-f"><span>' + f.lbl + (f.hint ? ' <i>' + f.hint + '</i>' : '') + '</span>' +
               '<input data-ct="' + f.k + '" type="' + (f.k === 'email' ? 'email' : f.k === 'phone' ? 'tel' : 'text') + '" value="' + esc(f.v || '') + '"' +
               (f.k === 'phone' ? ' placeholder="+48 600 000 000"' : f.k === 'paczkomat' ? ' placeholder="KAT01M"' : '') + '></label>' +
-              (f.k === 'phone' && tgPhoneReady() ? '<button class="kvp-ct-tgphone" type="button">✈ ' + t('tgPhone') + '</button>' : '') +
-              (f.k === 'paczkomat' && geoReady() ? '<button class="kvp-ct-map" type="button">' + t('pickMap') + '</button>' : '')
+              (f.k === 'phone' && tgPhoneReady() ? '<button class="kvp-ct-tgphone" type="button">✈ ' + t('tgPhone') + '</button>' : '')
             ).join('') +
             '<button class="kvp-ct-apply">' + t('apply') + '</button>'
           : fields.map(f =>
@@ -2703,7 +2601,6 @@ window.KV = (function () {
     }
     if (e.target.closest('.kvp-ct-edit')) { profileEdit = true; renderProfile(); return; }
     if (e.target.closest('.kvp-ct-tgphone')) { requestPhone(); return; }
-    if (e.target.closest('.kvp-ct-map')) { openGeo(); return; }
     if (e.target.closest('.kvp-ct-apply')) { applyProfileContact(d); return; }
     const rc = e.target.closest('[data-res-cancel]');
     if (rc) { cancelReservation(+rc.dataset.resCancel); return; }
@@ -3109,6 +3006,10 @@ body.kv-noscroll{overflow:hidden}
 .kvc-go[disabled]{opacity:.6;cursor:default}
 .kvc-pay{margin-top:14px;min-height:44px}
 .kvc-pays{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.kvc-paynote{width:100%;margin:2px 0 0;font-size:11.5px;color:var(--kv-muted)}
+.kvc-paywarn{margin-top:14px;padding:11px 13px;border-radius:12px;font-size:12.5px;line-height:1.5;
+  background:rgba(245,184,61,.1);border:1px solid rgba(245,184,61,.3);color:var(--kv-text)}
+.kvc-paywarn a{color:var(--kv-accent-2);font-weight:700;white-space:nowrap}
 .kvc-pays-t{width:100%;font-size:11px;font-weight:800;color:var(--kv-muted);text-transform:uppercase;letter-spacing:.4px}
 .kvc-pay-opt{flex:1;min-width:120px;display:flex;flex-direction:column;gap:2px;align-items:flex-start;background:var(--kv-surface);border:1px solid var(--kv-line);border-radius:12px;padding:10px 12px;cursor:pointer;font-family:inherit;color:var(--kv-text)}
 .kvc-pay-opt b{font-size:13px}
@@ -3121,7 +3022,8 @@ body.kv-noscroll{overflow:hidden}
 .kvc-f input{background:var(--kv-field);border:1px solid var(--kv-line);color:var(--kv-text);border-radius:10px;padding:11px 13px;font-family:inherit;font-size:13.5px}
 .kvc-f input:focus{outline:none;border-color:var(--kv-accent)}
 .kvc-apply{width:100%;margin-top:6px;background:var(--kv-accent);color:var(--kv-accent-ink);border:none;border-radius:11px;padding:12px;font-weight:800;font-size:13px;cursor:pointer;font-family:inherit}
-.kvc-map,.kvp-ct-map,.kvc-tgphone,.kvp-ct-tgphone{background:none;border:1px dashed var(--kv-line);color:var(--kv-accent-2,var(--kv-accent));border-radius:9px;padding:8px 12px;font-weight:700;font-size:12px;cursor:pointer;font-family:inherit;margin-bottom:10px}
+.kvc-tgphone,.kvp-ct-tgphone{background:none;border:1px dashed var(--kv-line);color:var(--kv-accent-2,var(--kv-accent));border-radius:9px;padding:8px 12px;font-weight:700;font-size:12px;cursor:pointer;font-family:inherit;margin-bottom:10px}
+.kvc-fhint{margin:-4px 0 10px;font-size:11.5px;line-height:1.45;color:var(--kv-muted)}
 .kvc-tgphone,.kvp-ct-tgphone{border-color:#2aabee;color:#2aabee}
 .kvp-ct-warn{background:rgba(255,176,32,.1);border:1px solid rgba(255,176,32,.35);color:#d29a2b;border-radius:10px;padding:9px 11px;font-size:11.5px;line-height:1.5;margin-bottom:10px}
 .kvp-ct-f{display:flex;flex-direction:column;gap:4px;margin-bottom:9px;font-size:11.5px;font-weight:700;color:var(--kv-muted)}
@@ -3138,24 +3040,7 @@ body.kv-noscroll{overflow:hidden}
 .kvp-st-new{color:#d29a2b}.kvp-st-confirmed{color:var(--kv-accent-2,var(--kv-accent))}
 .kvp-st-packed,.kvp-st-shipped{color:var(--kv-accent-2,var(--kv-accent))}
 .kvp-st-done{color:#3dbb6e}.kvp-st-cancelled{color:var(--kv-muted)}
-.kvp-res-cancel{background:none;border:none;color:#ff6a86;font-weight:700;font-size:12px;cursor:pointer;font-family:inherit;padding:0}
-.kvg{position:fixed;inset:0;z-index:180;background:rgba(6,6,10,.8);display:flex;align-items:flex-end;justify-content:center}
-@media(min-width:640px){.kvg{align-items:center;padding:20px}}
-.kvg[hidden]{display:none}
-.kvg-box{display:flex;flex-direction:column;width:min(560px,100%);height:min(86vh,640px);background:var(--kv-surface2);border:1px solid var(--kv-line);border-radius:18px 18px 0 0;overflow:hidden}
-@media(min-width:640px){.kvg-box{border-radius:18px}}
-.kvg-head{display:flex;align-items:center;justify-content:space-between;padding:16px 18px 12px}
-.kvg-head b{font-size:16px}
-.kvg-x{width:34px;height:34px;border:none;background:var(--kv-surface);color:var(--kv-muted);border-radius:50%;font-size:22px;line-height:1;cursor:pointer}
-.kvg-q{margin:0 18px 12px;background:var(--kv-field);border:1px solid var(--kv-line);color:var(--kv-text);border-radius:11px;padding:11px 14px;font-family:inherit;font-size:14px}
-.kvg-q:focus{outline:none;border-color:var(--kv-accent)}
-.kvg-list{flex:1;overflow-y:auto;padding:0 12px 16px;display:flex;flex-direction:column;gap:6px}
-.kvg-i{display:block;width:100%;text-align:left;background:var(--kv-surface);border:1px solid var(--kv-line);color:var(--kv-text);border-radius:11px;padding:10px 13px;cursor:pointer;font-family:inherit}
-.kvg-i:hover{border-color:var(--kv-accent)}
-.kvg-i b{display:block;font-size:13px;font-weight:800;color:var(--kv-accent-2,var(--kv-accent))}
-.kvg-i span{display:block;font-size:13px;margin-top:1px}
-.kvg-i i{display:block;font-style:normal;font-size:11.5px;color:var(--kv-muted);margin-top:2px}
-.kvg-none{padding:14px 6px;font-size:12.5px;color:var(--kv-muted);text-align:center;line-height:1.5}`;
+.kvp-res-cancel{background:none;border:none;color:#ff6a86;font-weight:700;font-size:12px;cursor:pointer;font-family:inherit;padding:0}`;
     const s = document.createElement('style');
     s.id = 'kv-shared'; s.textContent = css;
     document.head.appendChild(s);
