@@ -104,6 +104,8 @@ window.KV = (function () {
       clearData: 'Очистить мои данные', cleared: 'Данные очищены',
       ordersN: 'заказов', reviewsN: 'отзывов', favsN: 'в избранном',
       pickFlavor: 'Выберите вкус', selected: 'Выбрано', chooseFirst: 'Сначала выберите вкус',
+      pickQtyFirst: 'Укажите количество', pickedN: 'Набрано: {n} шт',
+      tierLadder: 'Чем больше, тем дешевле', addedPart: 'добавлено, часть не поместилась в остаток',
       taste: 'Вкусовой профиль', sweet: 'Сладость', cool: 'Холодок', sour: 'Кислинка',
       flavorDesc: 'Описание вкуса', addFav: 'В избранное', inFav: 'В избранном',
       reviewAdd: 'Оставить отзыв', reviewName: 'Имя', reviewText: 'Что понравилось?',
@@ -168,6 +170,8 @@ window.KV = (function () {
       clearData: 'Очистити мої дані', cleared: 'Дані очищено',
       ordersN: 'замовлень', reviewsN: 'відгуків', favsN: 'в обраному',
       pickFlavor: 'Оберіть смак', selected: 'Обрано', chooseFirst: 'Спочатку оберіть смак',
+      pickQtyFirst: 'Вкажіть кількість', pickedN: 'Набрано: {n} шт',
+      tierLadder: 'Що більше, то дешевше', addedPart: 'додано, частина не вмістилася в залишок',
       taste: 'Смаковий профіль', sweet: 'Солодкість', cool: 'Холодок', sour: 'Кислинка',
       flavorDesc: 'Опис смаку', addFav: 'В обране', inFav: 'В обраному',
       reviewAdd: 'Залишити відгук', reviewName: 'Ім’я', reviewText: 'Що сподобалось?',
@@ -232,6 +236,8 @@ window.KV = (function () {
       clearData: 'Wyczyść moje dane', cleared: 'Dane wyczyszczone',
       ordersN: 'zamówień', reviewsN: 'opinii', favsN: 'w ulubionych',
       pickFlavor: 'Wybierz smak', selected: 'Wybrano', chooseFirst: 'Najpierw wybierz smak',
+      pickQtyFirst: 'Podaj ilość', pickedN: 'Wybrano: {n} szt',
+      tierLadder: 'Im więcej, tym taniej', addedPart: 'dodano, część nie zmieściła się w stanie',
       taste: 'Profil smaku', sweet: 'Słodycz', cool: 'Chłodek', sour: 'Kwaśność',
       flavorDesc: 'Opis smaku', addFav: 'Do ulubionych', inFav: 'W ulubionych',
       reviewAdd: 'Dodaj opinię', reviewName: 'Imię', reviewText: 'Co Ci się podobało?',
@@ -644,16 +650,21 @@ window.KV = (function () {
     return qty(item);
   }
 
-  // n: сколько добавить (оптовая ступень из карточки), по умолчанию одна штука
-  function cartAdd(id, fl, n) {
-    const key = id + '::' + (fl === undefined ? '' : fl);
-    const want = Math.max(1, Math.floor(n || 1));
-    const have = cart[key] || 0;
-    const avail = availFor(key);
-    if (have >= avail) return false;                        // больше, чем есть, не продать
-    cart[key] = Math.min(have + want, avail);               // не даём уйти за остаток
-    saveCart();
-    return true;
+  // Положить сразу несколько вкусов одной модели: [{fl, n}]. Возвращает, сколько штук легло
+  // и сколько не поместилось в остаток, чтобы карточка могла сказать об этом честно.
+  function cartAddMany(id, picks) {
+    let added = 0, short = 0;
+    for (const p of picks || []) {
+      const key = id + '::' + (p.fl === undefined || p.fl === '' ? '' : p.fl);
+      const want = Math.max(1, Math.floor(p.n || 1));
+      const have = cart[key] || 0;
+      const room = Math.max(availFor(key) - have, 0);
+      const take = Math.min(want, room);
+      if (take > 0) { cart[key] = have + take; added += take; }
+      short += want - take;
+    }
+    if (added) saveCart();
+    return { added, short };
   }
   function cartSet(key, n) {
     if (n <= 0) delete cart[key]; else cart[key] = n;
@@ -1958,7 +1969,10 @@ window.KV = (function () {
     const hasFl = !!(item.flavors && item.flavors.length);
     let fl = -1;
     if (hasFl) { fl = item.flavors.findIndex(f => f.qty > 0); if (fl < 0) fl = 0; }
-    modal = { id, fl, rate: 0, name: profileName || '', text: '' };
+    // counts: сколько штук набрано по каждому вкусу до отправки в корзину. Раньше вкус был
+    // один за раз, и за тремя вкусами приходилось трижды открывать карточку.
+    // Список вкусов сразу раскрыт: в нём теперь стоят счётчики, и прятать их незачем.
+    modal = { id, fl, counts: {}, flOpen: hasFl, rate: 0, name: profileName || '', text: '' };
     ensureModal();
     renderModal();
     const d = document.getElementById('kvm');
@@ -2003,23 +2017,39 @@ window.KV = (function () {
     // фото товара (в эскизе "фото с жижей")
     const bigPhoto = '<div class="kvm-photo-big">' + photo(item) + '</div>';
 
-    // выбор вкуса: закрытая строка, по клику раскрывается список со скроллом
+    // Набор вкусов. У каждой строки свой счётчик, поэтому три разных вкуса набираются за один
+    // заход, а не тремя открытиями карточки подряд. Клик по самой строке по-прежнему делает
+    // вкус «просматриваемым»: от него зависят профиль, описание и форма отзыва ниже.
+    const countOf = i => Math.max(0, Math.floor(modal.counts[i] || 0));
+    const inCart = i => cart[item.id + '::' + i] || 0;
+    const picked = hasFl ? item.flavors.reduce((s, f, i) => s + countOf(i), 0) : countOf('');
     const flavStrip = hasFl ?
       '<div class="kvm-fpick' + (modal.flOpen ? ' open' : '') + '">' +
         '<button class="kvm-fsel" type="button" data-fl-toggle="1">' +
           '<span class="kvm-fsel-bar"' + (fl ? ' style="background:' + flavorGrad(fl.name) + '"' : '') + '></span>' +
-          '<span class="kvm-fsel-n">' + esc(modal.flPicked && fl ? flavorName(fl) : t('pickFlavor')) + '</span>' +
+          '<span class="kvm-fsel-n">' + esc(picked ? t('pickedN', picked) : t('pickFlavor')) + '</span>' +
           '<span class="kvm-fsel-ch" aria-hidden="true">▼</span>' +
         '</button>' +
         '<div class="kvm-flavs">' + item.flavors.map((f, i) => {
-          const have = f.qty > 0;
+          const room = Math.max((f.qty || 0) - inCart(i), 0);
+          const have = room > 0;
+          const n = countOf(i);
           const c = flavorColors(f.name);
-          return '<button class="kvm-flav' + (i === modal.fl ? ' sel' : '') + (have ? '' : ' off') + '" data-fl-sel="' + i + '"' +
-            ' style="--fl:' + c[0] + ';--fl2:' + c[1] + '"' + (have ? '' : ' disabled') + '>' +
+          return '<div class="kvm-flav' + (i === modal.fl ? ' sel' : '') + (have ? '' : ' off') +
+            (n ? ' has' : '') + '" data-fl-sel="' + i + '" style="--fl:' + c[0] + ';--fl2:' + c[1] + '">' +
             '<span class="kvm-flav-bar" style="background:' + flavorGrad(f.name) + '"></span>' +
             '<span class="kvm-flav-n">' + esc(flavorName(f)) + '</span>' +
-            '<span class="kvm-flav-q">' + (have ? f.qty + ' ' + t('pcs') : t('qtyNone')) + '</span>' +
-          '</button>';
+            '<span class="kvm-flav-q">' + (have ? room + ' ' + t('pcs') : t('qtyNone')) + '</span>' +
+            (have
+              ? '<span class="kvm-cnt">' +
+                  '<button class="kvm-cnt-b" type="button" data-fl-minus="' + i + '"' +
+                    (n ? '' : ' disabled') + ' aria-label="-">−</button>' +
+                  '<b class="kvm-cnt-n">' + n + '</b>' +
+                  '<button class="kvm-cnt-b" type="button" data-fl-plus="' + i + '"' +
+                    (n >= room ? ' disabled' : '') + ' aria-label="+">+</button>' +
+                '</span>'
+              : '') +
+          '</div>';
         }).join('') + '</div>' +
       '</div>' : '';
 
@@ -2048,39 +2078,47 @@ window.KV = (function () {
           (fl ? '<span class="kvm-pick-q">' + (fl.qty > 0 ? t('left', fl.qty) : t('qtyNone')) + '</span>' : '') +
         '</div></div>' : '';
 
-    // Оптовые цены и выбор количества. Ступени приходят из админки (products.tiers), поэтому
-    // набор кнопок любой: 3/5/10 или другой.
-    // Цены на кнопках, те, что человек реально получит: к добавляемому количеству
-    // прибавляется уже набранное по этой модели. Иначе, положив 8 штук другого вкуса,
-    // он видел бы на «1 шт» розничную цену, а в корзине: оптовую.
-    const canAdd = hasFl ? !!(fl && fl.qty > 0) : qty(item) > 0;
-    const stock = hasFl ? (fl ? fl.qty : 0) : qty(item);
+    // Товар без вкусов набирается тем же счётчиком, только строка одна.
+    const plainRoom = hasFl ? 0 : Math.max(qty(item) - (cart[item.id + '::'] || 0), 0);
+    const plainCnt = hasFl ? 0 : countOf('');
+    const plainBox = (!hasFl && plainRoom > 0)
+      ? '<div class="kvm-plain"><span class="kvm-plain-l">' + t('qtyPick') + '</span>' +
+          '<span class="kvm-cnt">' +
+            '<button class="kvm-cnt-b" type="button" data-fl-minus=""' + (plainCnt ? '' : ' disabled') + ' aria-label="-">−</button>' +
+            '<b class="kvm-cnt-n">' + plainCnt + '</b>' +
+            '<button class="kvm-cnt-b" type="button" data-fl-plus=""' + (plainCnt >= plainRoom ? ' disabled' : '') + ' aria-label="+">+</button>' +
+          '</span>' +
+          '<span class="kvm-plain-q">' + t('left', plainRoom) + '</span></div>'
+      : '';
+
+    // Оптовая лесенка. Раньше это был выбор количества, теперь количество набирают
+    // счётчиками, а лесенка осталась подсказкой: она показывает, почём выйдет штука на
+    // каждой ступени и подсвечивает ту, до которой человек уже добрал.
     const tiers = priceTiers(item);
-    // Показываем только настоящие оптовые ступени, обычно 3, 5 и 10. Кнопка «1 шт» тут была
-    // лишней: она не ступень, а просто розница, и занимала место в ряду, из-за чего опт
-    // читался как «четыре варианта количества» вместо «дешевле от трёх».
     const steps = tiers ? [...new Set(tiers.map(x => +x.q))].filter(q => q > 1).sort((a, b) => a - b) : [];
-    if (!modal.qty || !(modal.qty === 1 || steps.includes(modal.qty))) modal.qty = 1;
-    const pickQty = Math.min(modal.qty, Math.max(stock, 1));
-    const unit = unitWithCart(item, pickQty) || item.price || 0;
+    // Ступень считается по всей модели: уже лежащее в корзине плюс набранное здесь.
+    const inCartModel = Object.keys(cart)
+      .filter(k => k.split('::')[0] === item.id)
+      .reduce((s, k) => s + cart[k], 0);
+    const totalQty = inCartModel + picked;
+    const reached = steps.filter(q => totalQty >= q).pop() || 0;
+    const unit = unitWithCart(item, Math.max(picked, 1)) || item.price || 0;
     const tiersHTML = steps.length
-      ? '<div class="kvm-tiers"><span class="kvm-tiers-t">' + t('qtyPick') + '</span>' +
+      ? '<div class="kvm-tiers"><span class="kvm-tiers-t">' + t('tierLadder') + '</span>' +
         steps.map(q => {
-          const p = unitWithCart(item, q) || item.price || 0;
-          const off = q > stock;
-          return '<button class="kvm-tier' + (q === pickQty ? ' sel' : '') + (off ? ' off' : '') + '" type="button"' +
-            (off ? ' disabled' : '') + ' data-qty="' + q + '">' +
-            '<b>' + q + '</b> ' + t('pcs') + '<em>' + p + ' zł</em></button>';
+          const p = tierPrice(item, q) || item.price || 0;
+          return '<span class="kvm-tier' + (q === reached ? ' sel' : '') + '">' +
+            '<b>' + q + '</b> ' + t('pcs') + '<em>' + p + ' zł</em></span>';
         }).join('') + '</div>'
       : '';
-    const addSum = unit * pickQty;
-    const addBtn = canAdd
-      ? '<button class="kvm-add-cta" data-add="' + item.id + '"' + (hasFl ? ' data-fl="' + modal.fl + '"' : '') +
-          ' data-n="' + pickQty + '">' + t('add') +
-          (addSum ? ' · ' + addSum + ' zł' : '') + (pickQty > 1 ? ' (' + pickQty + ' ' + t('pcs') + ')' : '') + '</button>'
+
+    const addSum = picked * unit;
+    const addBtn = picked > 0
+      ? '<button class="kvm-add-cta" data-add-all="' + item.id + '">' + t('add') +
+          ' · ' + picked + ' ' + t('pcs') + (addSum ? ' · ' + addSum + ' zł' : '') + '</button>'
       : (st === 'out'
           ? '<button class="kv-restock kvm-restock" data-notify="' + item.id + '">' + ui('notify') + '</button>'
-          : '<button class="kvm-add-cta" disabled>' + t('chooseFirst') + '</button>');
+          : '<button class="kvm-add-cta" disabled>' + t(hasFl ? 'chooseFirst' : 'pickQtyFirst') + '</button>');
     const resBtn = st !== 'out' ? '<button class="kvm-res" data-res="' + item.id + '">' + t('reserve') + '</button>' : '';
 
     // панель брони: дата выдачи, не дальше недели от сегодня
@@ -2110,7 +2148,7 @@ window.KV = (function () {
         '<p class="kvm-rnote">' + t('resNote') + '</p>' +
         '<button class="kvm-res-go" data-res-go="1" type="button">' + t('resOk') + '</button></div>';
     }
-    const buy = '<div class="kvm-buy">' + preview + addBtn + tiersHTML + resBtn + resPanel + '</div>';
+    const buy = '<div class="kvm-buy">' + preview + plainBox + tiersHTML + addBtn + resBtn + resPanel + '</div>';
 
     // отзывы: показываем настоящие, форма только на купленный вкус
     const flavorKey = fl ? fl.name : '';
@@ -2159,28 +2197,48 @@ window.KV = (function () {
     if (ftog) { e.stopPropagation(); modal.flOpen = !modal.flOpen; renderModal(); return; }
     const revPick = e.target.closest('[data-rev-fl]');
     if (revPick) { modal.revFl = revPick.dataset.revFl; modal.rate = 0; modal.text = ''; renderModal(); return; }
-    const sel = e.target.closest('[data-fl-sel]');
-    // до первого выбора в закрытой строке стоит «Выберите вкус», после: сам вкус
-    if (sel) { modal.fl = +sel.dataset.flSel; modal.flPicked = true; modal.flOpen = false; renderModal(); return; }
-    const fav = e.target.closest('[data-fav]');
-    if (fav) { e.stopPropagation(); toggleFav(fav.dataset.fav); renderModal(); if (hooks.render) hooks.render(); return; }
-    const q = e.target.closest('[data-qty]');
-    // Повторный клик по выбранной ступени снимает её и возвращает розничную единицу: кнопки
-    // «1 шт» в ряду больше нет, и без этого из опта нельзя было выйти, не закрыв карточку.
-    if (q) {
+    // Счётчики вкусов. Плюс не пускает за остаток с учётом того, что уже лежит в корзине.
+    const plus = e.target.closest('[data-fl-plus]');
+    if (plus) {
       e.stopPropagation();
-      const want = +q.dataset.qty;
-      modal.qty = modal.qty === want ? 1 : want;
+      const k = plus.dataset.flPlus;
+      const it = find(modal.id);
+      const room = k === ''
+        ? Math.max(qty(it) - (cart[it.id + '::'] || 0), 0)
+        : Math.max(((it.flavors[+k] || {}).qty || 0) - (cart[it.id + '::' + k] || 0), 0);
+      const now = Math.max(0, Math.floor(modal.counts[k] || 0));
+      if (now < room) modal.counts[k] = now + 1;
+      if (k !== '') modal.fl = +k;
       renderModal();
       return;
     }
-    const add = e.target.closest('[data-add]');
-    if (add) {
+    const minus = e.target.closest('[data-fl-minus]');
+    if (minus) {
       e.stopPropagation();
-      const ok = cartAdd(add.dataset.add, add.dataset.fl !== undefined ? +add.dataset.fl : undefined, +add.dataset.n || 1);
-      toast(t(ok ? 'added' : 'maxQty'));
-      if (ok) {
-        track('add_to_cart', { id: add.dataset.add });
+      const k = minus.dataset.flMinus;
+      const now = Math.max(0, Math.floor(modal.counts[k] || 0));
+      if (now <= 1) delete modal.counts[k]; else modal.counts[k] = now - 1;
+      renderModal();
+      return;
+    }
+    const sel = e.target.closest('[data-fl-sel]');
+    // Клик по строке вкуса делает его просматриваемым: от него зависят профиль, описание и
+    // форма отзыва. Список при этом не закрывается, иначе набирать несколько вкусов неудобно.
+    if (sel) { modal.fl = +sel.dataset.flSel; modal.flPicked = true; renderModal(); return; }
+    const fav = e.target.closest('[data-fav]');
+    if (fav) { e.stopPropagation(); toggleFav(fav.dataset.fav); renderModal(); if (hooks.render) hooks.render(); return; }
+    const addAll = e.target.closest('[data-add-all]');
+    if (addAll) {
+      e.stopPropagation();
+      const id = addAll.dataset.addAll;
+      const picks = Object.keys(modal.counts)
+        .map(k => ({ fl: k === '' ? undefined : +k, n: modal.counts[k] }))
+        .filter(p => p.n > 0);
+      const { added, short } = cartAddMany(id, picks);
+      toast(t(added ? (short ? 'addedPart' : 'added') : 'maxQty'));
+      if (added) {
+        track('add_to_cart', { id, n: added });
+        modal.counts = {};
         // по ТЗ: после добавления сразу показываем корзину, а не оставляем её сзади
         closeProduct();
         openCart();
@@ -2914,8 +2972,20 @@ body.kv-noscroll{overflow:hidden}
 .kvm-buy{display:flex;flex-direction:column;gap:9px}
 .kvm-tiers{display:flex;gap:7px;flex-wrap:wrap;align-items:center}
 .kvm-tiers-t{width:100%;font-size:11px;font-weight:800;color:var(--kv-muted);text-transform:uppercase;letter-spacing:.4px}
-.kvm-tier{flex:1;min-width:66px;text-align:center;background:var(--kv-surface);border:1px solid var(--kv-line);border-radius:10px;padding:7px 4px;font-size:11px;color:var(--kv-muted);font-weight:700;cursor:pointer;font-family:inherit;transition:border-color .15s,background .15s}
-.kvm-tier:hover:not(.off){border-color:var(--kv-accent)}
+/* лесенка теперь подсказка, а не выбор количества: её не нажимают */
+.kvm-tier{flex:1;min-width:66px;text-align:center;background:var(--kv-surface);border:1px solid var(--kv-line);border-radius:10px;padding:7px 4px;font-size:11px;color:var(--kv-muted);font-weight:700;font-family:inherit;transition:border-color .15s,background .15s}
+/* счётчик вкуса: минус, число, плюс */
+.kvm-cnt{display:flex;align-items:center;gap:2px;margin-left:auto;flex-shrink:0}
+.kvm-cnt-b{width:30px;height:30px;display:grid;place-items:center;background:var(--kv-surface2);border:1px solid var(--kv-line);border-radius:9px;color:var(--kv-text);font-size:16px;font-weight:700;line-height:1;cursor:pointer;font-family:inherit;padding:0}
+.kvm-cnt-b:hover:not([disabled]){border-color:var(--kv-accent);color:var(--kv-accent-2,var(--kv-accent))}
+.kvm-cnt-b[disabled]{opacity:.32;cursor:default}
+.kvm-cnt-n{min-width:22px;text-align:center;font-size:13px;font-weight:800;font-variant-numeric:tabular-nums}
+.kvm-flav.has{border-color:var(--kv-accent)}
+.kvm-flav.has .kvm-cnt-n{color:var(--kv-accent-2,var(--kv-accent))}
+/* товар без вкусов: тот же счётчик отдельной строкой */
+.kvm-plain{display:flex;align-items:center;gap:11px;background:var(--kv-surface);border:1px solid var(--kv-line);border-radius:11px;padding:10px 12px;margin-bottom:9px}
+.kvm-plain-l{font-size:11px;font-weight:800;color:var(--kv-muted);text-transform:uppercase;letter-spacing:.4px}
+.kvm-plain-q{font-size:11.5px;color:var(--kv-muted);flex-shrink:0}
 .kvm-tier.sel{border-color:var(--kv-accent);background:var(--kv-surface2)}
 .kvm-tier.sel b{color:var(--kv-accent-2,var(--kv-accent))}
 .kvm-tier.off{opacity:.4;cursor:default}
@@ -3056,14 +3126,10 @@ body.kv-noscroll{overflow:hidden}
     document.head.appendChild(s);
   }
 
-  // клики по кнопкам "в корзину" и "бронь" ловим один раз на документе
+  // клики по кнопкам "бронь" и "сообщить о поступлении" ловим один раз на документе.
+  // Кнопки «в корзину» тут больше нет: класть в корзину можно только из карточки товара,
+  // где набирают вкусы и количество, и разбирает это onModalClick.
   document.addEventListener('click', e => {
-    const add = e.target.closest('[data-add]');
-    if (add) {
-      const ok = cartAdd(add.dataset.add, add.dataset.fl !== undefined ? +add.dataset.fl : undefined);
-      toast(t(ok ? 'added' : 'maxQty'));
-      if (ok) track('add_to_cart', { id: add.dataset.add });
-    }
     const res = e.target.closest('[data-res]');
     if (res) reserve(res.dataset.res);
     const notify = e.target.closest('[data-notify]');

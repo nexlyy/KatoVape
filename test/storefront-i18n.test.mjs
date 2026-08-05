@@ -78,6 +78,7 @@ for (const [name, dict] of [['витрина', STR], ['витрина (инте�
     const SAME_BY_NATURE = new Set([
       'new', 'reserve', 'pcs', 'ml', 'password',
       'cool', 'sour', 'delInpost', 'delivPay', 'phoneF', 'payTitle', 'tomorrow', 'stActive',
+      'pickedN',
     ]);
     const same = Object.keys(dict.ru)
       .filter((k) => !SAME_BY_NATURE.has(k) && dict.uk[k] === dict.ru[k] && /[А-Яа-яЁё]/.test(dict.ru[k]));

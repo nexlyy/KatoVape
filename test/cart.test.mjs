@@ -108,3 +108,67 @@ test('количества считаются по группам раздель
   assert.equal(g['model-a'], 6);
   assert.equal(g['model-b'], 4);
 });
+
+// ---- набор нескольких вкусов за один заход ----
+// Раньше вкус клали по одному: выбрал, «в корзину», вышел, снова открыл. Теперь у каждого
+// вкуса свой счётчик, и всё уходит в корзину одной кнопкой.
+const many = sandbox(
+  [
+    slice('function availFor(key)', '  function cartSet(key, n)'),
+    'function saveCart() { saved++; }',
+    'let saved = 0;',
+    'function savedCount() { return saved; }'
+  ],
+  { cart: {}, find: (id) => ITEMS[id], qty: (it) => it.qty || 0 },
+  ['cartAddMany', 'availFor', 'savedCount']
+);
+const reset = (obj) => { many.box.cart = obj || {}; };
+
+test('три вкуса одной модели ложатся одним действием', () => {
+  reset();
+  const r = many.api.cartAddMany('model-a', [{ fl: 0, n: 3 }, { fl: 1, n: 2 }, { fl: 2, n: 5 }]);
+  assert.equal(r.added, 10);
+  assert.equal(r.short, 0);
+  assert.deepEqual({ ...many.box.cart }, { 'model-a::0': 3, 'model-a::1': 2, 'model-a::2': 5 });
+});
+
+test('добавление складывается с тем, что уже лежит', () => {
+  reset({ 'model-a::0': 2 });
+  many.api.cartAddMany('model-a', [{ fl: 0, n: 3 }]);
+  assert.equal(many.box.cart['model-a::0'], 5);
+});
+
+test('больше остатка не кладём, и об этом сообщают', () => {
+  reset();
+  ITEMS['model-b'].flavors[0].qty = 4;
+  const r = many.api.cartAddMany('model-b', [{ fl: 0, n: 10 }]);
+  assert.equal(r.added, 4, 'легло ровно столько, сколько есть');
+  assert.equal(r.short, 6, 'остальное не поместилось');
+  assert.equal(many.box.cart['model-b::0'], 4);
+  ITEMS['model-b'].flavors[0].qty = 99;
+});
+
+test('часть вкусов помещается, часть нет: считаем и то, и другое', () => {
+  reset();
+  ITEMS['model-a'].flavors[1].qty = 1;
+  const r = many.api.cartAddMany('model-a', [{ fl: 0, n: 2 }, { fl: 1, n: 3 }]);
+  assert.equal(r.added, 3);
+  assert.equal(r.short, 2);
+  ITEMS['model-a'].flavors[1].qty = 99;
+});
+
+test('товар без вкусов кладётся тем же путём', () => {
+  reset();
+  const r = many.api.cartAddMany('plain', [{ fl: undefined, n: 4 }]);
+  assert.equal(r.added, 4);
+  assert.equal(many.box.cart['plain::'], 4);
+});
+
+test('пустой набор корзину не трогает и не сохраняет', () => {
+  reset({ 'plain::': 1 });
+  const before = many.api.savedCount();
+  const r = many.api.cartAddMany('plain', []);
+  assert.equal(r.added, 0);
+  assert.equal(many.api.savedCount(), before, 'лишнего сохранения быть не должно');
+  assert.deepEqual({ ...many.box.cart }, { 'plain::': 1 });
+});
