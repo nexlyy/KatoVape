@@ -711,6 +711,12 @@ const DICT = {
     'Чёрный список': 'Чорний список',
     'Закрыть': 'Закрити',
     'Заблокированный клиент не сможет оформить заказ и бронь.': 'Заблокований клієнт не зможе оформити замовлення та бронь.',
+    'Удалить клиента': 'Видалити клієнта',
+    'Удаление убирает карточку и заметки. Заказы клиента остаются в истории магазина, а его аккаунт, если он заводил, продолжает работать: карточка заведётся заново при следующем заказе.': 'Видалення прибирає картку й нотатки. Замовлення клієнта лишаються в історії магазину, а його акаунт, якщо він заводив, працює далі: картка заведеться знову за наступного замовлення.',
+    'Удалить карточку клиента «': 'Видалити картку клієнта «',
+    '»? Заметки уйдут вместе с ней.': '»? Нотатки підуть разом із нею.',
+    'Карточка недоступна для удаления': 'Картка недоступна для видалення',
+    'Клиент удалён': 'Клієнта видалено',
     'Заказы клиента': 'Замовлення клієнта',
     'Получение': 'Отримання',
     'Источник': 'Джерело',
@@ -1125,6 +1131,12 @@ const DICT = {
     'Чёрный список': 'Czarna lista',
     'Закрыть': 'Zamknij',
     'Заблокированный клиент не сможет оформить заказ и бронь.': 'Zablokowany klient nie złoży zamówienia ani rezerwacji.',
+    'Удалить клиента': 'Usuń klienta',
+    'Удаление убирает карточку и заметки. Заказы клиента остаются в истории магазина, а его аккаунт, если он заводил, продолжает работать: карточка заведётся заново при следующем заказе.': 'Usunięcie kasuje kartę i notatki. Zamówienia klienta zostają w historii sklepu, a jego konto, jeśli je zakładał, działa dalej: karta powstanie ponownie przy kolejnym zamówieniu.',
+    'Удалить карточку клиента «': 'Usunąć kartę klienta «',
+    '»? Заметки уйдут вместе с ней.': '»? Notatki znikną razem z nią.',
+    'Карточка недоступна для удаления': 'Karta niedostępna do usunięcia',
+    'Клиент удалён': 'Klient usunięty',
     'Заказы клиента': 'Zamówienia klienta',
     'Получение': 'Odbiór',
     'Источник': 'Źródło',
@@ -2490,8 +2502,11 @@ async function openContact(id) {
           <input type="checkbox" id="c_blocked" ${c.blocked ? 'checked' : ''}> ${L('Чёрный список')}</label>
         <button class="btn primary" id="c_save">${L('Применить')}</button>
         <button class="btn quiet" id="c_close">${L('Закрыть')}</button>
+        <div class="grow"></div>
+        <button class="btn danger" id="c_del">${L('Удалить клиента')}</button>
       </div>
       <p class="hint">${L('Заблокированный клиент не сможет оформить заказ и бронь.')}</p>
+      <p class="hint">${L('Удаление убирает карточку и заметки. Заказы клиента остаются в истории магазина, а его аккаунт, если он заводил, продолжает работать: карточка заведётся заново при следующем заказе.')}</p>
     </div>`) +
     panel(L('Заказы клиента'), ordRows.length
       ? table([L('Заказ'), L('Дата'), L('Статус'), L('Сумма'), L('Получение'), L('Источник')], ordRows)
@@ -2516,6 +2531,18 @@ async function openContact(id) {
     b.classList.toggle('primary');
   });
   document.getElementById('c_close').onclick = () => { cOpen = null; box.innerHTML = ''; };
+  document.getElementById('c_del').onclick = async () => {
+    const who = (c.full_name || '').trim() || c.phone || L('без имени');
+    if (!confirm(L('Удалить карточку клиента «') + who + L('»? Заметки уйдут вместе с ней.'))) return;
+    // select() возвращает удалённые строки: если политика не пустила (чужой город), их будет
+    // ноль, и молчаливого «удалено» быть не должно
+    const { data: gone, error } = await sb.from('contacts').delete().eq('id', id).select('id');
+    if (error) return toast(error.message, true);
+    if (!gone || !gone.length) return toast(L('Карточка недоступна для удаления'), true);
+    toast(L('Клиент удалён'));
+    cOpen = null;
+    render();
+  };
   document.getElementById('c_save').onclick = async () => {
     const { error } = await sb.rpc('crm_contact_save', {
       p_id: id, p_city: document.getElementById('c_city').value,
@@ -3537,7 +3564,7 @@ async function tgAuthFromHash() {
 }
 
 // Отпечаток этой сборки, его проставляет npm run stamp.
-const BUILD = 'a21768a9';
+const BUILD = '026d668b';
 
 // Браузер держит саму страницу панели в кеше, и человек видит вчерашний интерфейс, считая,
 // что правки не приехали. Отпечаток рядом лежащего version.json читается мимо кеша: разошлось
