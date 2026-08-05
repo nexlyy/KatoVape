@@ -8,7 +8,8 @@
     "stamp": "node tools/stamp-assets.mjs",
     "stamp:check": "node tools/stamp-assets.mjs --check",
     "schema": "node tools/build-schema.mjs",
-    "schema:check": "node tools/build-schema.mjs --check"
+    "schema:check": "node tools/build-schema.mjs --check",
+    "tiers": "node tools/seed-tiers.mjs"
   },
   "engines": {
     "node": ">=22.18"

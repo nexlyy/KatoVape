@@ -2056,12 +2056,14 @@ window.KV = (function () {
     const canAdd = hasFl ? !!(fl && fl.qty > 0) : qty(item) > 0;
     const stock = hasFl ? (fl ? fl.qty : 0) : qty(item);
     const tiers = priceTiers(item);
-    const steps = tiers ? [...new Set(tiers.map(x => +x.q))].sort((a, b) => a - b) : [];
-    if (!steps.length || steps[0] !== 1) steps.unshift(1);
-    if (!modal.qty || !steps.includes(modal.qty)) modal.qty = 1;
+    // Показываем только настоящие оптовые ступени, обычно 3, 5 и 10. Кнопка «1 шт» тут была
+    // лишней: она не ступень, а просто розница, и занимала место в ряду, из-за чего опт
+    // читался как «четыре варианта количества» вместо «дешевле от трёх».
+    const steps = tiers ? [...new Set(tiers.map(x => +x.q))].filter(q => q > 1).sort((a, b) => a - b) : [];
+    if (!modal.qty || !(modal.qty === 1 || steps.includes(modal.qty))) modal.qty = 1;
     const pickQty = Math.min(modal.qty, Math.max(stock, 1));
     const unit = unitWithCart(item, pickQty) || item.price || 0;
-    const tiersHTML = tiers
+    const tiersHTML = steps.length
       ? '<div class="kvm-tiers"><span class="kvm-tiers-t">' + t('qtyPick') + '</span>' +
         steps.map(q => {
           const p = unitWithCart(item, q) || item.price || 0;
@@ -2163,7 +2165,15 @@ window.KV = (function () {
     const fav = e.target.closest('[data-fav]');
     if (fav) { e.stopPropagation(); toggleFav(fav.dataset.fav); renderModal(); if (hooks.render) hooks.render(); return; }
     const q = e.target.closest('[data-qty]');
-    if (q) { e.stopPropagation(); modal.qty = +q.dataset.qty; renderModal(); return; }
+    // Повторный клик по выбранной ступени снимает её и возвращает розничную единицу: кнопки
+    // «1 шт» в ряду больше нет, и без этого из опта нельзя было выйти, не закрыв карточку.
+    if (q) {
+      e.stopPropagation();
+      const want = +q.dataset.qty;
+      modal.qty = modal.qty === want ? 1 : want;
+      renderModal();
+      return;
+    }
     const add = e.target.closest('[data-add]');
     if (add) {
       e.stopPropagation();
