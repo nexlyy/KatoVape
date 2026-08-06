@@ -21,6 +21,10 @@ const PAGES = [
 ];
 const ASSETS = ['config.js', 'core.js', 'auth.js', 'pay.js'];
 
+// Файлы рядом с панелью: адрес у них фиксированный, а Pages отдаёт их с кешем на десять
+// минут. Без отпечатка человек получал бы вчерашнюю выгрузку при свежей панели.
+const PANEL_ASSETS = [['demos/admin/', 'export.js']];
+
 const hash = (name) => createHash('sha256').update(read('shared/' + name)).digest('hex').slice(0, 8);
 const check = process.argv.includes('--check');
 
@@ -35,6 +39,13 @@ for (const page of PAGES) {
     // manager to fill in shared/config.js) and must not be stamped there.
     // Matches both an existing ?v=... and a link with no version at all.
     const re = new RegExp('(src=["\'][^"\']*shared/' + name.replace('.', '\\.') + ')(\\?v=[^"\']*)?', 'g');
+    after = after.replace(re, '$1?v=' + v);
+  }
+  // Свои файлы страницы, они лежат рядом и подключаются относительным путём.
+  for (const [dir, name] of PANEL_ASSETS) {
+    if (!page.startsWith(dir)) continue;
+    const v = createHash('sha256').update(read(dir + name)).digest('hex').slice(0, 8);
+    const re = new RegExp('(src=["\']\\./' + name.replace('.', '\\.') + ')(\\?v=[^"\']*)?', 'g');
     after = after.replace(re, '$1?v=' + v);
   }
   if (after === before) continue;

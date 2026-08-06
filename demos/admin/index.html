@@ -219,6 +219,9 @@ td .sub{display:block;color:var(--muted);font-size:11.5px;margin-top:2px}
 /* Сведения о человеке: подпись с двоеточием, значение сразу за ней, каждая пара своей строкой. */
 .irow{display:flex;align-items:baseline;gap:7px;padding:5px 0;font-size:13px;flex-wrap:wrap}
 .irow > b{color:var(--muted);font-weight:600}
+/* полоса выгрузки отчёта под цифрами дашборда */
+.exp-bar{margin-top:16px;padding-top:14px;border-top:1px solid var(--line);align-items:center}
+.exp-t{font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
 .irow > span{color:var(--ink)}
 /* dashboard */
 .kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:10px;margin-top:4px}
@@ -364,6 +367,7 @@ td .sub{display:block;color:var(--muted);font-size:11.5px;margin-top:2px}
 
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="../../shared/config.js?v=ed39e448"></script>
+<script src="./export.js?v=d390f344"></script>
 <script type="module">
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.111.0';
 
@@ -723,6 +727,10 @@ const DICT = {
     'Чёрный список': 'Чорний список',
     'Закрыть': 'Закрити',
     'Заблокированный клиент не сможет оформить заказ и бронь.': 'Заблокований клієнт не зможе оформити замовлення та бронь.',
+    'Скачать отчёт': 'Завантажити звіт',
+    'Язык документа': 'Мова документа',
+    'Браузер заблокировал окно печати. Разрешите всплывающие окна для этой страницы.': 'Браузер заблокував вікно друку. Дозвольте спливаючі вікна для цієї сторінки.',
+    'Файл готов': 'Файл готовий',
     'Удалить клиента': 'Видалити клієнта',
     'Удаление убирает карточку и заметки. Заказы клиента остаются в истории магазина, а его аккаунт, если он заводил, продолжает работать: карточка заведётся заново при следующем заказе.': 'Видалення прибирає картку й нотатки. Замовлення клієнта лишаються в історії магазину, а його акаунт, якщо він заводив, працює далі: картка заведеться знову за наступного замовлення.',
     'Удалить карточку клиента «': 'Видалити картку клієнта «',
@@ -1143,6 +1151,10 @@ const DICT = {
     'Чёрный список': 'Czarna lista',
     'Закрыть': 'Zamknij',
     'Заблокированный клиент не сможет оформить заказ и бронь.': 'Zablokowany klient nie złoży zamówienia ani rezerwacji.',
+    'Скачать отчёт': 'Pobierz raport',
+    'Язык документа': 'Język dokumentu',
+    'Браузер заблокировал окно печати. Разрешите всплывающие окна для этой страницы.': 'Przeglądarka zablokowała okno drukowania. Zezwól na wyskakujące okienka dla tej strony.',
+    'Файл готов': 'Plik gotowy',
     'Удалить клиента': 'Usuń klienta',
     'Удаление убирает карточку и заметки. Заказы клиента остаются в истории магазина, а его аккаунт, если он заводил, продолжает работать: карточка заведётся заново при следующем заказе.': 'Usunięcie kasuje kartę i notatki. Zamówienia klienta zostają w historii sklepu, a jego konto, jeśli je zakładał, działa dalej: karta powstanie ponownie przy kolejnym zamówieniu.',
     'Удалить карточку клиента «': 'Usunąć kartę klienta «',
@@ -2704,6 +2716,9 @@ const DASH_RANGES = [
   ['quarter', 'Квартал'], ['year', 'Год'], ['all', 'Всё время']
 ];
 let dashRange = localStorage.getItem('kv_dash_range') || '30d';
+// Язык выгружаемого отчёта. Помнится отдельно от языка панели, а пока его не выбрали явно,
+// следует за языком интерфейса.
+let expLangSaved = localStorage.getItem('kv_exp_lang') || '';
 let dashCustom = { from: '', to: '' };
 
 function dashBounds() {
@@ -3062,9 +3077,23 @@ async function renderDash(m) {
   const fold = (title, body, open) =>
     `<details class="fold" ${open ? 'open' : ''}><summary>${esc(title)}</summary>${body}</details>`;
 
+  // Выгрузка отчёта. Язык выбирается отдельно от языка панели: владелец может сидеть в
+  // русском интерфейсе и отправить бухгалтеру польский файл.
+  const expLang = expLangSaved || admLang;
+  const expLangs = (window.KVExport ? KVExport.LANGS : [])
+    .map(([l, lb]) => `<option value="${l}" ${l === expLang ? 'selected' : ''}>${lb}</option>`).join('');
+  const expBar = window.KVExport ? `<div class="tools exp-bar">
+      <span class="exp-t">${L('Скачать отчёт')}</span>
+      <select id="x_lang" style="width:auto" title="${L('Язык документа')}">${expLangs}</select>
+      <button class="btn sm" data-exp="csv">CSV</button>
+      <button class="btn sm" data-exp="xlsx">XLSX</button>
+      <button class="btn sm" data-exp="docx">DOCX</button>
+      <button class="btn sm" data-exp="pdf">PDF</button>
+    </div>` : '';
+
   swap(m, panel(L('Дашборд'), `<div class="panel-body">
       <div class="tools">${ranges}</div>${customRow}
-      ${cards}</div>`) +
+      ${cards}${expBar}</div>`) +
     fold(L('Динамика'), charts, true) +
     fold(L('Товары'), goods) +
     fold(L('Движение товара'), movement) +
@@ -3077,6 +3106,25 @@ async function renderDash(m) {
     dashRange = b.dataset.range;
     localStorage.setItem('kv_dash_range', dashRange);
     render();
+  });
+
+  const xl = document.getElementById('x_lang');
+  if (xl) xl.onchange = () => { expLangSaved = xl.value; localStorage.setItem('kv_exp_lang', expLangSaved); };
+  m.querySelectorAll('[data-exp]').forEach(b => b.onclick = () => {
+    // Считаем по тем же данным, что уже нарисованы на экране: ни одного лишнего запроса,
+    // и в файле ровно те цифры, что человек видит.
+    const doc = KVExport.build(expLangSaved || admLang, {
+      from: from.slice(0, 10), to: to.slice(0, 10), cityLabel: CITY_LABEL,
+      kpi: k, fin: rep, stock: mov, products: p, managers: mg, customers: c
+    });
+    const how = b.dataset.exp;
+    if (how === 'pdf') {
+      if (!KVExport.toPrint(doc)) toast(L('Браузер заблокировал окно печати. Разрешите всплывающие окна для этой страницы.'), true);
+      return;
+    }
+    const blob = how === 'csv' ? KVExport.csv(doc) : how === 'xlsx' ? KVExport.xlsx(doc) : KVExport.docx(doc);
+    KVExport.download(KVExport.fileName(doc, how), blob);
+    toast(L('Файл готов'));
   });
   const apply = document.getElementById('d_apply');
   if (apply) apply.onclick = () => {
@@ -3579,7 +3627,7 @@ async function tgAuthFromHash() {
 }
 
 // Отпечаток этой сборки, его проставляет npm run stamp.
-const BUILD = '3975bcf5';
+const BUILD = 'e37b0a88';
 
 // Браузер держит саму страницу панели в кеше, и человек видит вчерашний интерфейс, считая,
 // что правки не приехали. Отпечаток рядом лежащего version.json читается мимо кеша: разошлось
