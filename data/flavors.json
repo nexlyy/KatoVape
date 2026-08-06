@@ -1,0 +1,397 @@
+{
+  "_": "Описания вкусов от владельца магазина. Ключ верхнего уровня: id товара, внутри имя вкуса как в каталоге. Если вкуса тут нет, витрина соберёт описание сама по вкусовому профилю.",
+  "elf-liq": {
+    "Apple Peach": {
+      "ru": "Идеальное сочетание зелёного яблока и сладкого персика. На вдохе ощущается приятная фруктовая кислинка, которая плавно сменяется персиковым послевкусием.",
+      "uk": "Ідеальне поєднання зеленого яблука та солодкого персика. На вдиху відчувається приємна фруктова кислинка, яка плавно змінюється персиковим післясмаком.",
+      "pl": "Idealne połączenie zielonego jabłka i słodkiej brzoskwini. Na wdechu czuć przyjemną owocową kwaskowatość, która płynnie przechodzi w brzoskwiniowy posmak."
+    },
+    "Apple Pear": {
+      "ru": "Свежий и сочный фруктовый микс, объединяющий спелое яблоко и медовую грушу. Вкус отличается сладостью и лёгкой свежестью, оставляя приятное фруктовое послевкусие.",
+      "uk": "Свіжий і соковитий фруктовий мікс, що поєднує стигле яблуко та медову грушу. Смак вирізняється солодкістю та легкою свіжістю, лишаючи приємний фруктовий післясмак.",
+      "pl": "Świeży i soczysty owocowy miks łączący dojrzałe jabłko i miodową gruszkę. Smak wyróżnia się słodyczą i lekką świeżością, zostawiając przyjemny owocowy posmak."
+    },
+    "Blackberry Lemon": {
+      "ru": "Сладкая и немного терпкая ежевика в паре с ярким цитрусовым лимоном. Вкус предлагает отличный баланс между насыщенной ягодной сладостью и бодрящей лимонной кислинкой.",
+      "uk": "Солодка й трохи терпка ожина в парі з яскравим цитрусовим лимоном. Смак пропонує чудовий баланс між насиченою ягідною солодкістю та бадьорою лимонною кислинкою.",
+      "pl": "Słodka i lekko cierpka jeżyna w parze z wyrazistą cytrusową cytryną. Smak daje świetną równowagę między nasyconą owocową słodyczą a orzeźwiającą cytrynową kwaskowatością."
+    },
+    "Blackcurrant Aniseed": {
+      "ru": "Необычное сочетание насыщенной чёрной смородины с пряной ноткой аниса. В основе напоминает лакричные леденцы, раскрываясь ягодным фоном на выдохе.",
+      "uk": "Незвичне поєднання насиченої чорної смородини з пряною ноткою анісу. В основі нагадує лакричні льодяники, розкриваючись ягідним тлом на видиху.",
+      "pl": "Nietypowe połączenie nasyconej czarnej porzeczki z korzenną nutą anyżu. W podstawie przypomina lukrecjowe cukierki, rozwijając się jagodowym tłem na wydechu."
+    },
+    "Blue Razz Ice": {
+      "ru": "Популярное сочетание синей малины с выраженным ледяным эффектом. Яркий ягодный вкус, который дарит максимальную свежесть и приятную сладость.",
+      "uk": "Популярне поєднання синьої малини з вираженим крижаним ефектом. Яскравий ягідний смак, що дарує максимальну свіжість і приємну солодкість.",
+      "pl": "Popularne połączenie niebieskiej maliny z wyraźnym lodowym efektem. Wyrazisty jagodowy smak, który daje maksimum świeżości i przyjemną słodycz."
+    },
+    "Blue Razz Lemonade": {
+      "ru": "Классический вкус освежающего лимонада из синей малины. Сочетает сладкие ягодные ноты с цитрусовой кислинкой и лёгким привкусом газированного напитка.",
+      "uk": "Класичний смак освіжаючого лимонаду із синьої малини. Поєднує солодкі ягідні ноти з цитрусовою кислинкою та легким присмаком газованого напою.",
+      "pl": "Klasyczny smak orzeźwiającej lemoniady z niebieskiej maliny. Łączy słodkie jagodowe nuty z cytrusową kwaskowatością i lekkim posmakiem napoju gazowanego."
+    },
+    "Blueberry Raspberry Pomegranate": {
+      "ru": "Многогранное ягодное сочетание. Сладкая черника, терпкая малина и лёгкая кислинка граната создают ягодный и очень сочный вкус.",
+      "uk": "Багатогранне ягідне поєднання. Солодка чорниця, терпка малина та легка кислинка гранату створюють ягідний і дуже соковитий смак.",
+      "pl": "Wielowymiarowe połączenie jagodowe. Słodka borówka, cierpka malina i lekka kwaskowatość granatu tworzą jagodowy i bardzo soczysty smak."
+    },
+    "Blueberry Rose Mint": {
+      "ru": "Изысканный и нестандартный микс, объединяющий сладкую чернику и нежные лепестки розы. Охлаждающая мята на выдохе делает этот вкус свежим и запоминающимся.",
+      "uk": "Вишуканий і нестандартний мікс, що поєднує солодку чорницю та ніжні пелюстки троянди. Охолоджувальна м'ята на видиху робить цей смак свіжим і таким, що запам'ятовується.",
+      "pl": "Wykwintny i nietypowy miks łączący słodką borówkę i delikatne płatki róży. Chłodząca mięta na wydechu czyni ten smak świeżym i zapadającym w pamięć."
+    },
+    "Blueberry Sour Raspberry": {
+      "ru": "Популярное сочетание сладкой черники и кислой малины. Идеальный баланс сладости и кислинки делает этот вкус одним из самых любимых в линейке.",
+      "uk": "Популярне поєднання солодкої чорниці та кислої малини. Ідеальний баланс солодкості й кислинки робить цей смак одним із найулюбленіших у лінійці.",
+      "pl": "Popularne połączenie słodkiej borówki i kwaśnej maliny. Idealna równowaga słodyczy i kwaskowatości czyni ten smak jednym z ulubionych w linii."
+    },
+    "Blueberry": {
+      "ru": "Классический вкус спелой лесной черники. Насыщенный, в меру сладкий ягодный аромат без лишних добавок, который отлично подойдёт на каждый день.",
+      "uk": "Класичний смак стиглої лісової чорниці. Насичений, в міру солодкий ягідний аромат без зайвих додатків, що чудово підійде на щодень.",
+      "pl": "Klasyczny smak dojrzałej leśnej borówki. Nasycony, w miarę słodki jagodowy aromat bez zbędnych dodatków, który świetnie sprawdzi się na co dzień."
+    },
+    "Cherry Cola": {
+      "ru": "Легендарная вишнёвая кола: вкус любимого газированного напитка переплетается с яркими и сладкими нотками вишни.",
+      "uk": "Легендарна вишнева кола: смак улюбленого газованого напою переплітається з яскравими та солодкими нотками вишні.",
+      "pl": "Legendarna wiśniowa cola: smak ulubionego napoju gazowanego przeplata się z wyrazistymi i słodkimi nutami wiśni."
+    },
+    "Cherry Lemon Peach": {
+      "ru": "Яркий фруктово-ягодный микс, в котором выступают спелая вишня, освежающий лимон и сочный персик. Вкус напоминает насыщенный кисло-сладкий коктейль с приятным послевкусием.",
+      "uk": "Яскравий фруктово-ягідний мікс, у якому виступають стигла вишня, освіжаючий лимон і соковитий персик. Смак нагадує насичений кисло-солодкий коктейль із приємним післясмаком.",
+      "pl": "Wyrazisty owocowo-jagodowy miks, w którym grają dojrzała wiśnia, orzeźwiająca cytryna i soczysta brzoskwinia. Smak przypomina nasycony słodko-kwaśny koktajl z przyjemnym posmakiem."
+    },
+    "Cherry": {
+      "ru": "Глубокий и насыщенный вкус спелой вишни. Сочетает идеально сбалансированную ягодную сладость и лёгкую терпкость.",
+      "uk": "Глибокий і насичений смак стиглої вишні. Поєднує ідеально збалансовану ягідну солодкість і легку терпкість.",
+      "pl": "Głęboki i nasycony smak dojrzałej wiśni. Łączy idealnie zbalansowaną owocową słodycz i lekką cierpkość."
+    },
+    "Cola": {
+      "ru": "Незабываемый вкус самой популярной в мире газировки. Сладкий, слегка карамельный аромат с лёгким освежающим эффектом шипучки на выдохе.",
+      "uk": "Незабутній смак найпопулярнішої у світі газованки. Солодкий, злегка карамельний аромат із легким освіжаючим ефектом шипучки на видиху.",
+      "pl": "Niezapomniany smak najpopularniejszego napoju gazowanego na świecie. Słodki, lekko karmelowy aromat z delikatnym orzeźwiającym musowaniem na wydechu."
+    },
+    "Cool Mint": {
+      "ru": "Чистый и кристальный вкус мяты с мощным ледяным холодком. Предельно освежающий, бодрящий и оставляющий долгое приятное послевкусие.",
+      "uk": "Чистий і кришталевий смак м'яти з потужним крижаним холодком. Гранично освіжаючий, бадьорий і залишає довгий приємний післясмак.",
+      "pl": "Czysty i krystaliczny smak mięty z mocnym lodowym chłodem. Maksymalnie orzeźwiający, pobudzający i zostawiający długi przyjemny posmak."
+    },
+    "Cuba Tobacco": {
+      "ru": "Классический кубинский табак для ценителей традиционных вкусов. Отличается терпким, древесным и слегка сигарным ароматом с мягким послевкусием.",
+      "uk": "Класичний кубинський тютюн для поціновувачів традиційних смаків. Вирізняється терпким, деревним і злегка сигарним ароматом із м'яким післясмаком.",
+      "pl": "Klasyczny kubański tytoń dla miłośników tradycyjnych smaków. Wyróżnia się cierpkim, drzewnym i lekko cygarowym aromatem z łagodnym posmakiem."
+    },
+    "Double Apple": {
+      "ru": "Знаменитое сочетание сладкого красного и кислого зелёного яблока. Классический микс с фирменной, еле заметной терпкостью, придающей особый характер.",
+      "uk": "Знамените поєднання солодкого червоного та кислого зеленого яблука. Класичний мікс із фірмовою, ледь помітною терпкістю, що надає особливого характеру.",
+      "pl": "Słynne połączenie słodkiego czerwonego i kwaśnego zielonego jabłka. Klasyczny miks z firmową, ledwie wyczuwalną cierpkością, która nadaje mu charakteru."
+    },
+    "ELF Jack": {
+      "ru": "Необычное сочетание сладкой лакрицы и пряного аниса. Во вкусе ощущается глубокая конфетная сладость, которая сменяется пикантным послевкусием.",
+      "uk": "Незвичне поєднання солодкої лакриці та пряного анісу. У смаку відчувається глибока цукеркова солодкість, яка змінюється пікантним післясмаком.",
+      "pl": "Nietypowe połączenie słodkiej lukrecji i korzennego anyżu. W smaku czuć głęboką cukierkową słodycz, która przechodzi w pikantny posmak."
+    },
+    "ElfBull Ice": {
+      "ru": "Точная копия популярного энергетика с добавлением льда. Бодрящий, кисло-сладкий и очень освежающий вкус, заряжающий энергией.",
+      "uk": "Точна копія популярного енергетика з додаванням льоду. Бадьорий, кисло-солодкий і дуже освіжаючий смак, що заряджає енергією.",
+      "pl": "Wierna kopia popularnego napoju energetycznego z dodatkiem lodu. Pobudzający, słodko-kwaśny i bardzo orzeźwiający smak, który dodaje energii."
+    },
+    "Grape Cherry": {
+      "ru": "Утончённое сочетание сладкого винограда и сочной спелой вишни. Насыщенный и глубокий ягодный микс с богатым и длительным послевкусием.",
+      "uk": "Витончене поєднання солодкого винограду та соковитої стиглої вишні. Насичений і глибокий ягідний мікс із багатим та тривалим післясмаком.",
+      "pl": "Wyrafinowane połączenie słodkich winogron i soczystej dojrzałej wiśni. Nasycony i głęboki jagodowy miks z bogatym, długim posmakiem."
+    },
+    "Grape": {
+      "ru": "Классический и всеми узнаваемый вкус винограда. Очень сладкий, сочный и ароматный, напоминающий свежевыжатый виноградный сок.",
+      "uk": "Класичний і всіма впізнаваний смак винограду. Дуже солодкий, соковитий і ароматний, схожий на свіжовичавлений виноградний сік.",
+      "pl": "Klasyczny i rozpoznawalny smak winogron. Bardzo słodki, soczysty i aromatyczny, przypominający świeżo wyciśnięty sok winogronowy."
+    },
+    "Green Grape Rose": {
+      "ru": "Свежий зелёный виноград, дополненный цветочным ароматом розы. Очень нежный, свежий и изящный вкус с весенними нотками.",
+      "uk": "Свіжий зелений виноград, доповнений квітковим ароматом троянди. Дуже ніжний, свіжий і витончений смак із весняними нотками.",
+      "pl": "Świeże zielone winogrona uzupełnione kwiatowym aromatem róży. Bardzo delikatny, świeży i elegancki smak z wiosennymi nutami."
+    },
+    "Jasmine Raspberry": {
+      "ru": "Необычное сочетание цветочного жасмина и сочной сладости малины. Ароматный и деликатный вкус для ценителей нестандартных миксов.",
+      "uk": "Незвичне поєднання квіткового жасмину та соковитої солодкості малини. Ароматний і делікатний смак для поціновувачів нестандартних міксів.",
+      "pl": "Nietypowe połączenie kwiatowego jaśminu i soczystej słodyczy maliny. Aromatyczny i delikatny smak dla miłośników nieoczywistych miksów."
+    },
+    "Kiwi Passion Fruit Guava": {
+      "ru": "Насыщенный экзотический микс, объединяющий спелую гуаву, маракуйю и киви. Во вкусе раскрывается приятная тропическая сладость, которая сменяется освежающей кислинкой.",
+      "uk": "Насичений екзотичний мікс, що поєднує стиглу гуаву, маракуйю та ківі. У смаку розкривається приємна тропічна солодкість, яка змінюється освіжаючою кислинкою.",
+      "pl": "Nasycony egzotyczny miks łączący dojrzałą guawę, marakuję i kiwi. W smaku rozwija się przyjemna tropikalna słodycz, która przechodzi w orzeźwiającą kwaskowatość."
+    },
+    "Lemon Lime": {
+      "ru": "Бодрящий цитрусовый дуэт лимона и лайма. Освежающий вкус с приятной кислинкой, отдалённо напоминающий популярный лимонный лимонад.",
+      "uk": "Бадьорий цитрусовий дует лимона та лайма. Освіжаючий смак із приємною кислинкою, що віддалено нагадує популярний лимонний лимонад.",
+      "pl": "Pobudzający cytrusowy duet cytryny i limonki. Orzeźwiający smak z przyjemną kwaskowatością, z dala przypominający popularną cytrynową lemoniadę."
+    },
+    "Mango Peach": {
+      "ru": "Сладкое тропическое манго в идеальном сочетании с сочным персиком. Максимально фруктовый, нежный и насыщенный летний микс.",
+      "uk": "Солодке тропічне манго в ідеальному поєднанні із соковитим персиком. Максимально фруктовий, ніжний і насичений літній мікс.",
+      "pl": "Słodkie tropikalne mango w idealnym połączeniu z soczystą brzoskwinią. Maksymalnie owocowy, delikatny i nasycony letni miks."
+    },
+    "P&B Cloud": {
+      "ru": "Сладкое сочетание сахарной ваты с лёгким холодком. Воздушный, популярный и очень сладкий десертный дуэт.",
+      "uk": "Солодке поєднання цукрової вати з легким холодком. Повітряний, популярний і дуже солодкий десертний дует.",
+      "pl": "Słodkie połączenie waty cukrowej z lekkim chłodem. Puszysty, popularny i bardzo słodki deserowy duet."
+    },
+    "Peach Ice": {
+      "ru": "Сочный, сладкий персик с насыщенной ледяной свежестью. Превосходный летний вариант, который отлично подойдёт для повседневного парения.",
+      "uk": "Соковитий, солодкий персик із насиченою крижаною свіжістю. Чудовий літній варіант, що добре підійде для щоденного паріння.",
+      "pl": "Soczysta, słodka brzoskwinia z nasyconą lodową świeżością. Znakomity letni wybór, który świetnie sprawdzi się na co dzień."
+    },
+    "Pina Colada": {
+      "ru": "Классический карибский коктейль в лучшем исполнении. Нежное кокосовое молоко идеально сбалансировано со сладким свежим ананасовым соком.",
+      "uk": "Класичний карибський коктейль у найкращому виконанні. Ніжне кокосове молоко ідеально збалансоване із солодким свіжим ананасовим соком.",
+      "pl": "Klasyczny karaibski koktajl w najlepszym wydaniu. Delikatne mleko kokosowe idealnie zbalansowane słodkim, świeżym sokiem ananasowym."
+    },
+    "Pineapple Colada": {
+      "ru": "Версия пина колады с акцентом на тропический ананас. Более яркий ананасовый вкус с мягкими и ненавязчивыми кокосовыми нотками.",
+      "uk": "Версія піна колади з акцентом на тропічний ананас. Яскравіший ананасовий смак із м'якими та ненав'язливими кокосовими нотками.",
+      "pl": "Wersja pina colady z akcentem na tropikalnego ananasa. Wyrazistszy ananasowy smak z łagodnymi, nienachalnymi nutami kokosa."
+    },
+    "Pineapple Ice": {
+      "ru": "Сладкое сочетание спелого тропического ананаса с освежающим холодком. Бодрящий и сбалансированный кисло-сладкий вкус, передающий сочность настоящего ананаса.",
+      "uk": "Солодке поєднання стиглого тропічного ананаса з освіжаючим холодком. Бадьорий і збалансований кисло-солодкий смак, що передає соковитість справжнього ананаса.",
+      "pl": "Słodkie połączenie dojrzałego tropikalnego ananasa z orzeźwiającym chłodem. Pobudzający i zbalansowany słodko-kwaśny smak oddający soczystość prawdziwego ananasa."
+    },
+    "Pink Grapefruit": {
+      "ru": "Сочный и спелый розовый грейпфрут. Вкус предлагает умеренную сладость с характерной приятной цитрусовой горчинкой и лёгким холодком на выдохе.",
+      "uk": "Соковитий і стиглий рожевий грейпфрут. Смак пропонує помірну солодкість із характерною приємною цитрусовою гірчинкою та легким холодком на видиху.",
+      "pl": "Soczysty i dojrzały różowy grejpfrut. Smak daje umiarkowaną słodycz z charakterystyczną, przyjemną cytrusową goryczką i lekkim chłodem na wydechu."
+    },
+    "Pink Lemonade Soda": {
+      "ru": "Газированная разновидность популярного розового лимонада. Сладкие ягоды гармонируют с лимоном и приятным ощущением пузырьков газировки.",
+      "uk": "Газована різновидність популярного рожевого лимонаду. Солодкі ягоди гармоніюють із лимоном і приємним відчуттям бульбашок газованки.",
+      "pl": "Gazowana odmiana popularnej różowej lemoniady. Słodkie owoce współgrają z cytryną i przyjemnym wrażeniem bąbelków."
+    },
+    "Pink Lemonade": {
+      "ru": "Классический розовый лимонад, сочетающий сладость малины и лёгкую терпкость лимона. Очень освежающий, приятный и сбалансированный летний вкус.",
+      "uk": "Класичний рожевий лимонад, що поєднує солодкість малини та легку терпкість лимона. Дуже освіжаючий, приємний і збалансований літній смак.",
+      "pl": "Klasyczna różowa lemoniada łącząca słodycz maliny i lekką cierpkość cytryny. Bardzo orzeźwiający, przyjemny i zbalansowany letni smak."
+    },
+    "Raspberry Lychee": {
+      "ru": "Сладкая, ароматная малина в паре с экзотическим личи. Необычный и очень сочный ягодный микс с лёгкими цветочными нотками.",
+      "uk": "Солодка, ароматна малина в парі з екзотичним лічі. Незвичний і дуже соковитий ягідний мікс із легкими квітковими нотками.",
+      "pl": "Słodka, aromatyczna malina w parze z egzotycznym liczi. Nietypowy i bardzo soczysty jagodowy miks z lekkimi kwiatowymi nutami."
+    },
+    "Rhubarb Snoow": {
+      "ru": "Нежный ванильно-заварной крем с приятной кислинкой ревеня. Необычный и очень сбалансированный вкус для ценителей.",
+      "uk": "Ніжний ванільно-заварний крем із приємною кислинкою ревеню. Незвичний і дуже збалансований смак для поціновувачів.",
+      "pl": "Delikatny krem waniliowy z przyjemną kwaskowatością rabarbaru. Nietypowy i bardzo zbalansowany smak dla koneserów."
+    },
+    "Snoow Tobacco": {
+      "ru": "Мягкий, землистый табак, приукрашенный сладким заварным кремом. Идеальный выбор для тех, кто любит сливочные десертно-табачные сочетания.",
+      "uk": "М'який, землистий тютюн, прикрашений солодким заварним кремом. Ідеальний вибір для тих, хто любить вершкові десертно-тютюнові поєднання.",
+      "pl": "Łagodny, ziemisty tytoń ozdobiony słodkim kremem. Idealny wybór dla tych, którzy lubią kremowe deserowo-tytoniowe połączenia."
+    },
+    "Sour Apple": {
+      "ru": "Яркий вкус кислых зелёных яблок. Очень насыщенный, сочный и по-настоящему кислый на выдохе, дарящий мгновенную свежесть.",
+      "uk": "Яскравий смак кислих зелених яблук. Дуже насичений, соковитий і справді кислий на видиху, що дарує миттєву свіжість.",
+      "pl": "Wyrazisty smak kwaśnych zielonych jabłek. Bardzo nasycony, soczysty i naprawdę kwaśny na wydechu, dający natychmiastową świeżość."
+    },
+    "Sour Watermelon Gummy": {
+      "ru": "Вкус, сочетающий жевательные мармеладные конфеты с арбузом. Сладкая мармеладная основа дополняется кислой обсыпкой, создавая необычный конфетный привкус.",
+      "uk": "Смак, що поєднує жувальні мармеладні цукерки з кавуном. Солодка мармеладна основа доповнюється кислою обсипкою, створюючи незвичний цукерковий присмак.",
+      "pl": "Smak łączący żelki z arbuzem. Słodka żelkowa podstawa uzupełniona kwaśną posypką tworzy nietypowy cukierkowy posmak."
+    },
+    "Spearmint": {
+      "ru": "Классическая сладкая мята, напоминающая жевательную резинку. Очень свежий вкус с приятным холодком.",
+      "uk": "Класична солодка м'ята, схожа на жувальну гумку. Дуже свіжий смак із приємним холодком.",
+      "pl": "Klasyczna słodka mięta przypominająca gumę do żucia. Bardzo świeży smak z przyjemnym chłodem."
+    },
+    "Strawberry Banana": {
+      "ru": "Нежное и обволакивающее сочетание спелой клубники и сладкого банана. Классический фруктовый микс, который точно запомнится.",
+      "uk": "Ніжне й огортаюче поєднання стиглої полуниці та солодкого банана. Класичний фруктовий мікс, який точно запам'ятається.",
+      "pl": "Delikatne i otulające połączenie dojrzałej truskawki i słodkiego banana. Klasyczny owocowy miks, który na pewno zapadnie w pamięć."
+    },
+    "Strawberry Cherry Lemon": {
+      "ru": "Фруктово-ягодное трио из трёх ярких вкусов. Сладкая клубника, сочная вишня и лимонная кислинка создают настоящее разнообразие.",
+      "uk": "Фруктово-ягідне тріо з трьох яскравих смаків. Солодка полуниця, соковита вишня та лимонна кислинка створюють справжнє розмаїття.",
+      "pl": "Owocowo-jagodowe trio trzech wyrazistych smaków. Słodka truskawka, soczysta wiśnia i cytrynowa kwaskowatość tworzą prawdziwą różnorodność."
+    },
+    "Strawberry Ice": {
+      "ru": "Классический вкус спелой клубники с приятным ледяным послевкусием. Сладкий и очень удачный освежающий ягодный микс.",
+      "uk": "Класичний смак стиглої полуниці з приємним крижаним післясмаком. Солодкий і дуже вдалий освіжаючий ягідний мікс.",
+      "pl": "Klasyczny smak dojrzałej truskawki z przyjemnym lodowym posmakiem. Słodki i bardzo udany orzeźwiający jagodowy miks."
+    },
+    "Strawberry Kiwi": {
+      "ru": "Идеальный баланс сладкой клубники и тропического, слегка кислого киви. Сочный, свежий и невероятно популярный повседневный микс.",
+      "uk": "Ідеальний баланс солодкої полуниці та тропічного, злегка кислого ківі. Соковитий, свіжий і неймовірно популярний щоденний мікс.",
+      "pl": "Idealna równowaga słodkiej truskawki i tropikalnego, lekko kwaśnego kiwi. Soczysty, świeży i niezwykle popularny miks na co dzień."
+    },
+    "Strawberry Raspberry Cherry Ice": {
+      "ru": "Ягодный взрыв из клубники, малины и вишни. Обильное добавление льда делает этот насыщенный кисло-сладкий микс максимально освежающим.",
+      "uk": "Ягідний вибух із полуниці, малини та вишні. Щедре додавання льоду робить цей насичений кисло-солодкий мікс максимально освіжаючим.",
+      "pl": "Jagodowa eksplozja truskawki, maliny i wiśni. Obfity dodatek lodu czyni ten nasycony słodko-kwaśny miks maksymalnie orzeźwiającym."
+    },
+    "Strawberry Snoow": {
+      "ru": "Роскошный десертный вкус настоящего клубничного мороженого. Сладкий, сливочный и очень ягодный, с приятной молочной серединой.",
+      "uk": "Розкішний десертний смак справжнього полуничного морозива. Солодкий, вершковий і дуже ягідний, із приємною молочною серединою.",
+      "pl": "Wystawny deserowy smak prawdziwych lodów truskawkowych. Słodki, kremowy i bardzo owocowy, z przyjemnym mlecznym środkiem."
+    },
+    "Watermelon Cherry": {
+      "ru": "Интересное сочетание сочного летнего арбуза и спелой вишни. Освежающий, в меру сладкий ягодный микс, который отлично подойдёт на каждый день.",
+      "uk": "Цікаве поєднання соковитого літнього кавуна та стиглої вишні. Освіжаючий, в міру солодкий ягідний мікс, що чудово підійде на щодень.",
+      "pl": "Ciekawe połączenie soczystego letniego arbuza i dojrzałej wiśni. Orzeźwiający, w miarę słodki jagodowy miks, który świetnie sprawdzi się na co dzień."
+    },
+    "Watermelon": {
+      "ru": "Классический вкус сочного, сладкого и сахарного арбуза. Лёгкий, освежающий и абсолютно ненавязчивый выбор.",
+      "uk": "Класичний смак соковитого, солодкого та цукрового кавуна. Легкий, освіжаючий і абсолютно ненав'язливий вибір.",
+      "pl": "Klasyczny smak soczystego, słodkiego arbuza. Lekki, orzeźwiający i całkowicie nienachalny wybór."
+    }
+  },
+  "puffy": {
+    "Apple Grape Blueberry": {
+      "ru": "Яркое сочетание красного яблока, сладкого винограда и спелой черники. Насыщенный фруктово-ягодный микс порадует приятной сладостью и лёгкой кислинкой.",
+      "uk": "Яскраве поєднання червоного яблука, солодкого винограду та стиглої чорниці. Насичений фруктово-ягідний мікс потішить приємною солодкістю й легкою кислинкою.",
+      "pl": "Wyraziste połączenie czerwonego jabłka, słodkich winogron i dojrzałej borówki. Nasycony owocowo-jagodowy miks ucieszy przyjemną słodyczą i lekką kwaskowatością."
+    },
+    "Banana Cherry": {
+      "ru": "Нежный дуэт сладкого спелого банана и сочной вишни. Вкус предлагает отличный баланс между нежным тропическим фруктом и яркой ягодной ноткой.",
+      "uk": "Ніжний дует солодкого стиглого банана та соковитої вишні. Смак пропонує чудовий баланс між ніжним тропічним фруктом і яскравою ягідною ноткою.",
+      "pl": "Delikatny duet słodkiego dojrzałego banana i soczystej wiśni. Smak daje świetną równowagę między łagodnym tropikalnym owocem a wyrazistą jagodową nutą."
+    },
+    "Berry Kiwi": {
+      "ru": "Яркий микс спелых лесных ягод и тропического киви. Сладкая ягодная основа отлично дополняется лёгкой фруктовой кислинкой, оставляя свежее послевкусие.",
+      "uk": "Яскравий мікс стиглих лісових ягід і тропічного ківі. Солодка ягідна основа чудово доповнюється легкою фруктовою кислинкою, лишаючи свіжий післясмак.",
+      "pl": "Wyrazisty miks dojrzałych leśnych owoców i tropikalnego kiwi. Słodka jagodowa baza świetnie uzupełniona lekką owocową kwaskowatością zostawia świeży posmak."
+    },
+    "Berry Cherry Cocktail": {
+      "ru": "Коктейль из отборных лесных ягод и спелой вишни. Насыщенный и многогранный вкус, который переливается сладкими и слегка терпкими нотками.",
+      "uk": "Коктейль із добірних лісових ягід і стиглої вишні. Насичений і багатогранний смак, що переливається солодкими та злегка терпкими нотками.",
+      "pl": "Koktajl z wyselekcjonowanych leśnych owoców i dojrzałej wiśni. Nasycony i wielowymiarowy smak mieniący się słodkimi i lekko cierpkimi nutami."
+    },
+    "Black Grape Mint": {
+      "ru": "Глубокий вкус тёмного винограда, дополненный освежающей мятой. Сладкий и сочный ягодный вкус с приятным охлаждающим эффектом на выдохе.",
+      "uk": "Глибокий смак темного винограду, доповнений освіжаючою м'ятою. Солодкий і соковитий ягідний смак із приємним охолоджувальним ефектом на видиху.",
+      "pl": "Głęboki smak ciemnych winogron uzupełniony orzeźwiającą miętą. Słodki i soczysty jagodowy smak z przyjemnym chłodzeniem na wydechu."
+    },
+    "Blueberry Pomegranate": {
+      "ru": "Сладкая лесная черника в паре с немного терпким гранатом. Интересное кисло-сладкое сочетание, дарящее насыщенное и долгое фруктовое послевкусие.",
+      "uk": "Солодка лісова чорниця в парі з дещо терпким гранатом. Цікаве кисло-солодке поєднання, що дарує насичений і довгий фруктовий післясмак.",
+      "pl": "Słodka leśna borówka w parze z lekko cierpkim granatem. Ciekawe słodko-kwaśne połączenie dające nasycony i długi owocowy posmak."
+    },
+    "Blueberry Raspberry": {
+      "ru": "Классический ягодный микс сладкой черники и ароматной малины. Очень гармоничный и сочный вкус, который отлично подходит для повседневного парения.",
+      "uk": "Класичний ягідний мікс солодкої чорниці та ароматної малини. Дуже гармонійний і соковитий смак, що чудово підходить для щоденного паріння.",
+      "pl": "Klasyczny jagodowy miks słodkiej borówki i aromatycznej maliny. Bardzo harmonijny i soczysty smak, świetny na co dzień."
+    },
+    "Cherry Ice": {
+      "ru": "Насыщенный вкус спелой вишни с ярко выраженным ледяным холодком. Отличный баланс ягодной сладости и бодрящей морозной свежести.",
+      "uk": "Насичений смак стиглої вишні з яскраво вираженим крижаним холодком. Чудовий баланс ягідної солодкості та бадьорої морозної свіжості.",
+      "pl": "Nasycony smak dojrzałej wiśni z wyraźnym lodowym chłodem. Świetna równowaga owocowej słodyczy i orzeźwiającej mroźnej świeżości."
+    },
+    "Cola Orange": {
+      "ru": "Разновидность сладкой колы с добавлением сочного апельсина. Необычный освежающий напиток, раскрывающийся небольшой пряностью и фруктовой кислинкой.",
+      "uk": "Різновид солодкої коли з додаванням соковитого апельсина. Незвичний освіжаючий напій, що розкривається невеликою пряністю та фруктовою кислинкою.",
+      "pl": "Odmiana słodkiej coli z dodatkiem soczystej pomarańczy. Nietypowy orzeźwiający napój rozwijający się lekką korzennością i owocową kwaskowatością."
+    },
+    "Cranberry Grape": {
+      "ru": "Терпкая клюква в гармоничном сочетании со сладким виноградом. Яркий кисло-сладкий микс, который порадует глубоким и насыщенным вкусом.",
+      "uk": "Терпка журавлина в гармонійному поєднанні із солодким виноградом. Яскравий кисло-солодкий мікс, що потішить глибоким і насиченим смаком.",
+      "pl": "Cierpka żurawina w harmonijnym połączeniu ze słodkimi winogronami. Wyrazisty słodko-kwaśny miks, który ucieszy głębokim i nasyconym smakiem."
+    },
+    "Energy Drink": {
+      "ru": "Узнаваемый вкус классического энергетического напитка. Бодрящий, сладкий и слегка кисловатый, отлично освежает.",
+      "uk": "Впізнаваний смак класичного енергетичного напою. Бадьорий, солодкий і злегка кислуватий, чудово освіжає.",
+      "pl": "Rozpoznawalny smak klasycznego napoju energetycznego. Pobudzający, słodki i lekko kwaskowaty, świetnie orzeźwia."
+    },
+    "Grape Melon": {
+      "ru": "Сочетание сладкого тёмного винограда и нежной спелой дыни. Очень нежный, летний и обволакивающий микс с яркими фруктовыми нотками.",
+      "uk": "Поєднання солодкого темного винограду та ніжної стиглої дині. Дуже ніжний, літній і огортаючий мікс із яскравими фруктовими нотками.",
+      "pl": "Połączenie słodkich ciemnych winogron i delikatnego dojrzałego melona. Bardzo łagodny, letni i otulający miks z wyrazistymi owocowymi nutami."
+    },
+    "Grape Raspberry Plum": {
+      "ru": "Яркий микс винограда, ароматной малины и сочной сливы. Многогранный вкус, сочетающий сладость ягод и лёгкую терпкость сливы.",
+      "uk": "Яскравий мікс винограду, ароматної малини та соковитої сливи. Багатогранний смак, що поєднує солодкість ягід і легку терпкість сливи.",
+      "pl": "Wyrazisty miks winogron, aromatycznej maliny i soczystej śliwki. Wielowymiarowy smak łączący słodycz owoców i lekką cierpkość śliwki."
+    },
+    "Grape": {
+      "ru": "Классический вкус спелого тёмного винограда. Очень сладкий и сочный, напоминающий свежевыжатый виноградный сок.",
+      "uk": "Класичний смак стиглого темного винограду. Дуже солодкий і соковитий, схожий на свіжовичавлений виноградний сік.",
+      "pl": "Klasyczny smak dojrzałych ciemnych winogron. Bardzo słodki i soczysty, przypominający świeżo wyciśnięty sok winogronowy."
+    },
+    "Gummy Bear": {
+      "ru": "Популярный вкус сладких мармеладных мишек. Приятный конфетно-фруктовый вкус, который оставляет лёгкое и ненавязчивое послевкусие.",
+      "uk": "Популярний смак солодких мармеладних ведмедиків. Приємний цукерково-фруктовий смак, що лишає легкий і ненав'язливий післясмак.",
+      "pl": "Popularny smak słodkich żelkowych misiów. Przyjemny cukierkowo-owocowy smak zostawiający lekki, nienachalny posmak."
+    },
+    "Ice Mojito Mint": {
+      "ru": "Освежающий коктейль мохито с ярко выраженной мятой и холодком. Бодрящий микс сладости, цитрусовой кислинки и ледяной свежести.",
+      "uk": "Освіжаючий коктейль мохіто з яскраво вираженою м'ятою та холодком. Бадьорий мікс солодкості, цитрусової кислинки та крижаної свіжості.",
+      "pl": "Orzeźwiający koktajl mojito z wyraźną miętą i chłodem. Pobudzający miks słodyczy, cytrusowej kwaskowatości i lodowej świeżości."
+    },
+    "Lemon Grapefruit": {
+      "ru": "Яркий цитрусовый дуэт кислого лимона и сочного грейпфрута. Вкус отличается бодрящей кислинкой и характерной грейпфрутовой горчинкой на выдохе.",
+      "uk": "Яскравий цитрусовий дует кислого лимона та соковитого грейпфрута. Смак вирізняється бадьорою кислинкою та характерною грейпфрутовою гірчинкою на видиху.",
+      "pl": "Wyrazisty cytrusowy duet kwaśnej cytryny i soczystego grejpfruta. Smak wyróżnia się orzeźwiającą kwaskowatością i charakterystyczną grejpfrutową goryczką na wydechu."
+    },
+    "Lemon Mint": {
+      "ru": "Классическое сочетание освежающего лимона и прохладной мяты. Идеальный баланс цитрусовой кислинки и мятной свежести на каждый день.",
+      "uk": "Класичне поєднання освіжаючого лимона та прохолодної м'яти. Ідеальний баланс цитрусової кислинки та м'ятної свіжості на щодень.",
+      "pl": "Klasyczne połączenie orzeźwiającej cytryny i chłodnej mięty. Idealna równowaga cytrusowej kwaskowatości i miętowej świeżości na co dzień."
+    },
+    "Peach Blueberry Ice": {
+      "ru": "Спелый сладкий персик и лесная черника с добавлением приятного холодка. Сочный фруктово-ягодный микс с освежающим ледяным послевкусием.",
+      "uk": "Стиглий солодкий персик і лісова чорниця з додаванням приємного холодку. Соковитий фруктово-ягідний мікс із освіжаючим крижаним післясмаком.",
+      "pl": "Dojrzała słodka brzoskwinia i leśna borówka z dodatkiem przyjemnego chłodu. Soczysty owocowo-jagodowy miks z orzeźwiającym lodowym posmakiem."
+    },
+    "Pineapple Coconut": {
+      "ru": "Тропическое сочетание сладкого ананаса и нежного кокоса. Мягкий и сбалансированный вкус, очень напоминающий пина коладу.",
+      "uk": "Тропічне поєднання солодкого ананаса та ніжного кокоса. М'який і збалансований смак, що дуже нагадує піна коладу.",
+      "pl": "Tropikalne połączenie słodkiego ananasa i delikatnego kokosa. Łagodny i zbalansowany smak, bardzo przypominający pina coladę."
+    },
+    "Raspberry Watermelon": {
+      "ru": "Сочный летний арбуз в паре со сладкой ароматной малиной. Очень лёгкий и освежающий ягодный микс, который порадует своей сладостью.",
+      "uk": "Соковитий літній кавун у парі із солодкою ароматною малиною. Дуже легкий і освіжаючий ягідний мікс, що потішить своєю солодкістю.",
+      "pl": "Soczysty letni arbuz w parze ze słodką aromatyczną maliną. Bardzo lekki i orzeźwiający jagodowy miks, który ucieszy słodyczą."
+    },
+    "Rose Milk": {
+      "ru": "Нежное молочное сочетание с цветочными нотками лепестков розы. Нежный, десертный и очень необычный вкус.",
+      "uk": "Ніжне молочне поєднання з квітковими нотками пелюсток троянди. Ніжний, десертний і дуже незвичний смак.",
+      "pl": "Delikatne mleczne połączenie z kwiatowymi nutami płatków róży. Łagodny, deserowy i bardzo nietypowy smak."
+    },
+    "Skittles Candy": {
+      "ru": "Яркий вкус популярных фруктовых конфет. Сладкий, насыщенный и слегка кисловатый микс, который порадует своей незабываемой сладостью.",
+      "uk": "Яскравий смак популярних фруктових цукерок. Солодкий, насичений і злегка кислуватий мікс, що потішить незабутньою солодкістю.",
+      "pl": "Wyrazisty smak popularnych owocowych cukierków. Słodki, nasycony i lekko kwaskowaty miks, który ucieszy niezapomnianą słodyczą."
+    },
+    "Sour Strawberry": {
+      "ru": "Спелая клубника с ярко выраженной кислинкой. Сочный ягодный вкус, дарящий приятный контраст сладости и кислинки на выдохе.",
+      "uk": "Стигла полуниця з яскраво вираженою кислинкою. Соковитий ягідний смак, що дарує приємний контраст солодкості й кислинки на видиху.",
+      "pl": "Dojrzała truskawka z wyraźną kwaskowatością. Soczysty jagodowy smak dający przyjemny kontrast słodyczy i kwasu na wydechu."
+    },
+    "Strawberry Lime": {
+      "ru": "Сладкая клубника в сочетании с бодрящим лаймом. Интересный кисло-сладкий вкус, где ягодная мягкость сменяется цитрусовой свежестью.",
+      "uk": "Солодка полуниця в поєднанні з бадьорим лаймом. Цікавий кисло-солодкий смак, де ягідна м'якість змінюється цитрусовою свіжістю.",
+      "pl": "Słodka truskawka w połączeniu z orzeźwiającą limonką. Ciekawy słodko-kwaśny smak, w którym owocowa łagodność przechodzi w cytrusową świeżość."
+    },
+    "Strawberry Watermelon": {
+      "ru": "Популярный микс сладкой клубники и сочного арбуза. Идеальный летний вариант, отличающийся лёгкостью и насыщенным фруктовым ароматом.",
+      "uk": "Популярний мікс солодкої полуниці та соковитого кавуна. Ідеальний літній варіант, що вирізняється легкістю та насиченим фруктовим ароматом.",
+      "pl": "Popularny miks słodkiej truskawki i soczystego arbuza. Idealny letni wybór, wyróżniający się lekkością i nasyconym owocowym aromatem."
+    },
+    "Sweet Orange Grapefruit": {
+      "ru": "Сладкий апельсин в паре с сочным розовым грейпфрутом. Гармоничный цитрусовый вкус без лишней кислинки, дарящий мягкое и свежее послевкусие.",
+      "uk": "Солодкий апельсин у парі із соковитим рожевим грейпфрутом. Гармонійний цитрусовий смак без зайвої кислинки, що дарує м'який і свіжий післясмак.",
+      "pl": "Słodka pomarańcza w parze z soczystym różowym grejpfrutem. Harmonijny cytrusowy smak bez zbędnej kwaskowatości, dający łagodny i świeży posmak."
+    },
+    "Tropical Fruits": {
+      "ru": "Богатый вкус из отборных тропических фруктов. Насыщенный, сладкий и мультифруктовый, подходящий для ежедневного парения.",
+      "uk": "Багатий смак із добірних тропічних фруктів. Насичений, солодкий і мультифруктовий, що підходить для щоденного паріння.",
+      "pl": "Bogaty smak wyselekcjonowanych owoców tropikalnych. Nasycony, słodki i wieloowocowy, odpowiedni na co dzień."
+    },
+    "Turbo Mint": {
+      "ru": "Очень освежающая и насыщенная перечная мята. Кристально чистый вкус с ярко выраженным ледяным эффектом.",
+      "uk": "Дуже освіжаюча й насичена перцева м'ята. Кришталево чистий смак із яскраво вираженим крижаним ефектом.",
+      "pl": "Bardzo orzeźwiająca i nasycona mięta pieprzowa. Krystalicznie czysty smak z wyraźnym lodowym efektem."
+    },
+    "Watermelon Bubble Gum": {
+      "ru": "Сладкая жевательная резинка с сочным арбузным вкусом. Приятный конфетный вкус, оставляющий долгое фруктовое послевкусие.",
+      "uk": "Солодка жувальна гумка із соковитим кавуновим смаком. Приємний цукерковий смак, що лишає довгий фруктовий післясмак.",
+      "pl": "Słodka guma do żucia o soczystym arbuzowym smaku. Przyjemny cukierkowy smak zostawiający długi owocowy posmak."
+    }
+  }
+}

@@ -354,6 +354,10 @@ window.KV = (function () {
   let cart = {};
   let hooks = { render: null, cart: null };
   let content = {};                  // тексты разделов, промо, самовывоз
+  // Описания вкусов от владельца: data/flavors.json, ключ товара -> имя вкуса -> ru/uk/pl.
+  // Лежат отдельно от каталога, поэтому один и тот же текст работает во всех городах и
+  // подхватывается сам, когда вкус заводят в панели.
+  let flavorDescs = {};
   // применённые промокоды, по порядку ввода: [{code, type, value, discount}]
   // Раньше держали один: второй код вытеснял первый, и сложить скидки было нельзя.
   let appliedPromos = [];
@@ -1809,9 +1813,26 @@ window.KV = (function () {
     balanced: { ru: 'мягкий сбалансированный вкус', uk: 'м’який збалансований смак', pl: 'łagodny, zrównoważony smak' },
     tobacco: { ru: 'тёплый табачный вкус без приторности', uk: 'теплий тютюновий смак без нудотності', pl: 'ciepły tytoniowy smak bez mdłości' }
   };
+  // Имя вкуса из каталога и из справочника может отличаться регистром и пробелами
+  // («Cola ice» против «Cola Ice»), поэтому сверяем по упрощённому виду.
+  const descKey = s => String(s || '').toLowerCase().replace(/[\s_-]+/g, ' ').trim();
+  function ownerDesc(item, flavor) {
+    const book = flavorDescs[item && item.id];
+    if (!book || !flavor || !flavor.name) return null;
+    const want = descKey(flavor.name);
+    for (const k in book) if (descKey(k) === want) {
+      const v = book[k];
+      return (v && (v[lang] || v.ru)) || null;
+    }
+    return null;
+  }
+
   function flavorDesc(item, flavor) {
     const ov = flavor && flavor.desc;
     if (ov) return typeof ov === 'string' ? ov : (ov[lang] || ov.ru);
+    // Текст владельца важнее собранного по вкусовому профилю: он про конкретный вкус.
+    const own = ownerDesc(item, flavor);
+    if (own) return own;
     const nm = flavor ? flavorName(flavor) : '';
     const raw = ((flavor && flavor.name) || '').toLowerCase();
     const tp = tasteOf(item, flavor);
@@ -3160,11 +3181,11 @@ body.kv-noscroll{overflow:hidden}
     try {
       // data/meta.json больше не грузим: ярлыки задаются в панели управления, а других
       // данных в нём не осталось, лишний запрос на старте
-      const [prod, c] = await Promise.all([
-        loadJSON('data/products.json'), loadJSON('data/content.json')
+      const [prod, c, fd] = await Promise.all([
+        loadJSON('data/products.json'), loadJSON('data/content.json'), loadJSON('data/flavors.json')
       ]);
       if (!prod || !prod.categories) throw new Error('no products');
-      master = prod; content = c || {};
+      master = prod; content = c || {}; flavorDescs = fd || {};
     } catch (e) {
       if (opts.fail) opts.fail();
       return;
