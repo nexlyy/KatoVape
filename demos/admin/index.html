@@ -3448,7 +3448,9 @@ const TINT_RU = {
 };
 // Три полосы вкусового профиля. Витрина показывает их шкалой 1..10, хранит 0..100.
 const TASTE_RU = [['sweet', 'Сладость'], ['cool', 'Холодок'], ['sour', 'Кислинка']];
-const DESC_LANGS = [['ru', 'RU'], ['uk', 'UK'], ['pl', 'PL']];
+// Код языка в базе украинский по стандарту (uk), а подписывается он как UA: так его пишут
+// на витрине и в переключателе самой панели, и расхождение сбивало с толку.
+const DESC_LANGS = [['ru', 'RU'], ['uk', 'UA'], ['pl', 'PL']];
 const TINT = () => window.KV_TINT;
 
 function tintGrad(hex) {
@@ -3507,8 +3509,8 @@ function flavorCard(r) {
     </div>
     <div class="fl-desc">
       <b class="fl-h">${L('Описание')}</b>
-      <div class="fl-langs">${DESC_LANGS.map(([l], i) =>
-        `<button type="button" class="btn sm ${i ? '' : 'primary'}" data-dl="${l}">${l.toUpperCase()}</button>`).join('')}</div>
+      <div class="fl-langs">${DESC_LANGS.map(([l, label], i) =>
+        `<button type="button" class="btn sm ${i ? '' : 'primary'}" data-dl="${l}">${label}</button>`).join('')}</div>
       ${DESC_LANGS.map(([l], i) =>
         `<textarea class="fl-ta" data-d="${l}" rows="4" maxlength="900"${i ? ' hidden' : ''}
           placeholder="${L('Пусто: витрина соберёт описание по вкусовому профилю')}">${esc(d[l] || '')}</textarea>`).join('')}
@@ -3821,6 +3823,17 @@ function bindProducts(m) {
     bindFlavorCard(slot, r);
     slot.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   });
+  // Список перерисовывается после каждого сохранения, и раскрытая карточка приезжает
+  // заново разметкой, но без обработчиков: палитра не рисовалась, ползунки не считались,
+  // кнопки молчали. Со стороны это выглядело как зависшая панель, которую лечит только
+  // закрыть и открыть. Оживляем то, что осталось раскрытым.
+  if (flOpen) {
+    const [gi, ri] = flOpen.split(':').map(Number);
+    const r = groups[gi] && groups[gi].items[ri];
+    const slot = m.querySelector('.fl-slot[data-fs="' + flOpen + '"]');
+    if (r && slot && slot.firstElementChild) bindFlavorCard(slot, r);
+    else flOpen = '';       // товар или вкус исчез после сохранения
+  }
   m.querySelectorAll('[data-city]').forEach(b => b.onclick = () => {
     if (hasChanges() && !confirm(L('Есть несохранённые изменения. Сменить город и потерять их?'))) return;
     clearDirty(); cityNow = b.dataset.city; render();
@@ -3966,7 +3979,7 @@ async function tgAuthFromHash() {
 }
 
 // Отпечаток этой сборки, его проставляет npm run stamp.
-const BUILD = '376a9e5d';
+const BUILD = 'bf5e1ad9';
 
 // Браузер держит саму страницу панели в кеше, и человек видит вчерашний интерфейс, считая,
 // что правки не приехали. Отпечаток рядом лежащего version.json читается мимо кеша: разошлось
