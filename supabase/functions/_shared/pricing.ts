@@ -11,6 +11,11 @@ type CartLine = { id: string; flavor?: string; n: number };
 // Delivery fallback when content.json has no delivery block; matches DELIVERY_DEF on the front.
 const DELIVERY_DEF: Record<string, number> = { pickup: 0, inpost: 12, courier: 18 };
 
+// Цены дробные (45,50), а двоичная дробь копит хвост: 45,45 × 3 даёт 136,35000000000002.
+// Округляем до гроша после каждого шага, ровно как cash() в shared/core.js, иначе сумма
+// заказа и показанная в корзине расходятся в последнем знаке.
+const zl = (n: number) => Math.round(n * 100) / 100;
+
 async function getJson(url: string): Promise<any> {
   const res = await fetch(url, { headers: { Accept: "application/json" } });
   if (!res.ok) throw Object.assign(new Error("catalog " + res.status), { code: "catalog" });
@@ -125,9 +130,9 @@ async function discountFor(
     // A stackable=false code works alone. The storefront will not let such a pair be built,
     // but a request may arrive around it, and then the code is simply skipped.
     if (!r.stackable && codes.length > 1) continue;
-    if (r.discount > 0) { disc += r.discount; applied.push(raw); }
+    if (r.discount > 0) { disc = zl(disc + r.discount); applied.push(raw); }
   }
-  return { discount: Math.min(Math.max(disc, 0), sum), applied };
+  return { discount: zl(Math.min(Math.max(disc, 0), sum)), applied };
 }
 
 // promo arrives as a string (legacy) or a list; clean it and drop repeats.
@@ -224,12 +229,13 @@ export async function priceCart(
     const avail = ov.qtyByKey[r.id + "::" + r.flavor];
     if (avail != null && r.n > avail) throw Object.assign(new Error("out_of_stock"), { code: "out_of_stock", id: r.id });
     const unit = unitPrice(r.item, groupQty[tierGroupOf(r.item)], ov);
-    sub += unit * r.n;
+    const lineSum = zl(unit * r.n);
+    sub = zl(sub + lineSum);
     count += r.n;
     if (r.item._cat) cats.add(r.item._cat);
     outLines.push({
       id: r.id, name: r.item.name || r.id, flavor: r.flavor,
-      n: r.n, unit, sum: unit * r.n,
+      n: r.n, unit, sum: lineSum,
     });
   }
 
@@ -239,7 +245,7 @@ export async function priceCart(
   const dm = String(body.delivery || "pickup");
   const fee = methods ? ((methods.find((m) => m.id === dm) || {}).fee || 0) : (DELIVERY_DEF[dm] || 0);
 
-  const total_zl = Math.max(sub - disc, 0) + fee;
+  const total_zl = zl(Math.max(zl(sub - disc), 0) + fee);
   if (total_zl <= 0) throw Object.assign(new Error("empty"), { code: "empty" });
 
   return {

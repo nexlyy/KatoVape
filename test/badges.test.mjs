@@ -17,7 +17,11 @@ const { api, box } = sandbox(
     NEW_DAYS: 14,
     t: (k) => LBL[k] || k,
     ui: (k) => LBL[k] || k,
-    esc
+    esc,
+    // applyStock переставляет корзину вслед за составом вкусов; здесь речь про ярлыки,
+    // поэтому корзины нет и переставлять нечего
+    cartFlavorNames: () => ({}),
+    reseatCart: () => {}
   },
   ['badgesOf', 'badgesHTML', 'sortItems', 'status', 'applyStock']
 );

@@ -25,7 +25,10 @@ function productColumns() {
   return cols;
 }
 
-const GRANT = all.match(/grant select \(([^)]+)\)\s*\n?\s*on public\.products to anon/);
+// Выдач может быть несколько: колонку добавляют — список прав переписывают целиком.
+// Действует последняя, миграции идут по порядку.
+const GRANTS = [...all.matchAll(/grant select \(([^)]+)\)\s*\n?\s*on public\.products to anon/g)];
+const GRANT = GRANTS[GRANTS.length - 1];
 
 test('право на каталог выдано поимённо, а не на всю таблицу', () => {
   assert.ok(/revoke select on public\.products from anon/.test(all), 'общее право у анонима не забрано');
@@ -45,7 +48,7 @@ test('анониму открыто всё, кроме закупочной це
 
 test('витрина не просит закупочную цену', () => {
   const core = repoFile('shared/core.js');
-  const sel = core.match(/select=id,flavor,price,qty,tiers,hit,labels/);
+  const sel = core.match(/select=id,flavor,price,qty,tiers,hit,labels,tint/);
   assert.ok(sel, 'не найден запрос каталога, проверьте, что он не начал брать всё подряд');
   assert.ok(!/products\?[^']*select=\*/.test(core), 'витрина просит все колонки, закупка утечёт');
 });

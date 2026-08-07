@@ -400,9 +400,48 @@ window.KV = (function () {
 
   // у каждого города своя корзина: один заказ уходит в один магазин
   function cartStoreKey() { return 'kv_cart_' + city; }
+  // Рядом с корзиной лежат названия вкусов. Ключ корзины это номер вкуса в списке товара, а
+  // список живой: менеджер удаляет вкус в панели, и всё, что было ниже, съезжает на позицию
+  // вверх. Без названий человек вернулся бы к отложенной корзине и нашёл в ней соседний
+  // вкус вместо выбранного, с той же ценой и без единого признака подмены.
+  function cartNamesKey() { return 'kv_cartfl_' + city; }
+  function cartFlavorNames() {
+    const out = {};
+    for (const key in cart) {
+      const [id, fl] = key.split('::');
+      if (fl === '') continue;
+      const item = find(id);
+      const f = item && item.flavors && item.flavors[+fl];
+      if (f) out[key] = f.name;
+    }
+    return out;
+  }
+  // Переносит количества на нынешние номера вкусов. Вкуса больше нет — строка уходит.
+  function reseatCart(names) {
+    if (!names) return;
+    const next = {};
+    let moved = false;
+    for (const key in cart) {
+      const [id, fl] = key.split('::');
+      const want = names[key];
+      if (fl === '' || want == null) { next[key] = (next[key] || 0) + cart[key]; continue; }
+      const item = find(id);
+      const at = item && item.flavors ? item.flavors.findIndex(f => f.name === want) : -1;
+      if (at < 0) { moved = true; continue; }
+      if (at !== +fl) moved = true;
+      next[id + '::' + at] = (next[id + '::' + at] || 0) + cart[key];
+    }
+    if (!moved) return;
+    cart = next;
+    saveCart();
+  }
   function loadCart() {
+    let names = null;
     try { cart = JSON.parse(localStorage.getItem(cartStoreKey()) || '{}'); }
     catch (e) { cart = {}; }
+    try { names = JSON.parse(localStorage.getItem(cartNamesKey()) || 'null'); }
+    catch (e) { names = null; }
+    reseatCart(names);
   }
 
   function t(key, n) {
@@ -434,6 +473,10 @@ window.KV = (function () {
     db.categories.forEach(cc => cc.items.forEach(it => { it._cat = cc.id; }));
     city = c.id;
     currentCity = c;
+    // Корзина принадлежит городу, а читается она с диска уже после загрузки каталога. В этом
+    // промежутке в памяти лежит корзина прежнего города, и любое сохранение ушло бы под ключ
+    // нового: опустошаем сразу, чтобы чужие строки не переехали.
+    cart = {};
     // живые остатки и цены из облака поверх файла (файл остаётся запасным)
     try { applyStock(await cloudStock()); } catch (e) {}
   }
@@ -444,35 +487,52 @@ window.KV = (function () {
     if (!(cfg.SUPABASE_URL && cfg.SUPABASE_ANON_KEY) || cfg.BACKEND !== 'supabase') return null;
     try {
       const res = await fetch(cfg.SUPABASE_URL.replace(/\/$/, '') + '/rest/v1/products?city=eq.' +
-        encodeURIComponent(city) + '&select=id,flavor,price,qty,tiers,hit,labels', {
+        encodeURIComponent(city) + '&select=id,flavor,price,qty,tiers,hit,labels,tint', {
         headers: { apikey: cfg.SUPABASE_ANON_KEY }, cache: 'no-store'
       });
       if (!res.ok) return null;
       return await res.json();
     } catch (e) { return null; }
   }
+  // Живой каталог это база; файл в data/ задаёт структуру и остаётся запасным на случай, когда
+  // облако молчит. Поэтому состав вкусов берётся из базы целиком, а не накладывается поверх
+  // файла: раньше вкус, удалённый в панели, продолжал висеть на витрине «в наличии» со старым
+  // остатком из файла, а заведённый в панели вкус не появлялся у товара, у которого в файле
+  // вкусов нет. Пока облако не ответило (rows == null), витрина живёт файлом, как и жила.
   function applyStock(rows) {
     if (!rows || !rows.length || !db) return;
+    // на какие вкусы сейчас показывает корзина: состав ниже меняется, номера вместе с ним
+    const seats = cartFlavorNames();
     const byId = {};
     rows.forEach(r => { (byId[r.id] = byId[r.id] || []).push(r); });
     db.categories.forEach(cat => cat.items.forEach(it => {
-      const rs = byId[it.id]; if (!rs) return;
-      if (it.flavors && it.flavors.length) {
-        it.flavors.forEach(f => {
-          const r = rs.find(x => (x.flavor || '') === f.name);
-          if (r) f.qty = r.qty;
-        });
-        // вкусы, которые менеджер завёл в облаке, а в файле их ещё нет
-        rs.forEach(r => {
-          if (r.flavor && !it.flavors.some(f => f.name === r.flavor))
-            it.flavors.push({ name: r.flavor, qty: r.qty });
-        });
+      const rs = byId[it.id];
+      // товара в базе нет вовсе: продавать нечего, карточка остаётся с нулём
+      if (!rs) {
+        if (it.flavors) it.flavors.forEach(f => { f.qty = 0; });
+        it.qty = 0;
+        return;
+      }
+      const named = rs.filter(r => r.flavor);
+      if (named.length) {
+        const was = {};
+        (it.flavors || []).forEach(f => { was[f.name] = f; });
+        // Порядок вкусов в файле подобран руками, база отдаёт свой: знакомые идут первыми и
+        // в прежнем порядке, заведённые в панели дописываются в конец.
+        const order = Object.keys(was);
+        const seat = r => { const i = order.indexOf(r.flavor); return i < 0 ? order.length : i; };
+        it.flavors = named.slice().sort((a, b) => seat(a) - seat(b)).map(r =>
+          Object.assign({}, was[r.flavor], { name: r.flavor, qty: r.qty, tint: r.tint || '' }));
+      } else if (it.flavors) {
+        // вкусы кончились, осталась строка без вкуса: карточка становится простой
+        delete it.flavors;
+        it.qty = Number(rs[0].qty) || 0;
       } else {
         const r = rs.find(x => !x.flavor) || rs[0];
         if (r && typeof r.qty === 'number') it.qty = r.qty;
       }
       const pr = rs.find(x => x.price != null);
-      if (pr) it.price = pr.price;
+      if (pr) it.price = Number(pr.price);
       // оптовые ступени из облака (правятся в админке) поверх файла
       const trw = rs.find(x => x.tiers && x.tiers.length);
       if (trw) it.tiers = trw.tiers;
@@ -480,6 +540,7 @@ window.KV = (function () {
       // метки товара: hit оставлен ради старых данных, набор меток главнее
       it.labels = [...new Set([].concat(...rs.map(x => x.labels || [])))];
     }));
+    reseatCart(seats);
   }
 
   // вкусы показываем на английском (решение заказчика): кириллические слова переводим
@@ -587,7 +648,17 @@ window.KV = (function () {
     return null;
   }
 
-  function price(item) { return item.price ? item.price + ' zł' : ''; }
+  // Деньги. Цены бывают с грошами (45,50), поэтому число печатается как в Польше: запятая
+  // и два знака, но только когда гроши есть. Целая цена так и остаётся «40 zł», без хвоста.
+  function money(n) {
+    const v = Math.round(Number(n || 0) * 100) / 100;
+    return (Number.isInteger(v) ? String(v) : v.toFixed(2).replace('.', ',')) + ' zł';
+  }
+  // Складывать деньги в двоичной дробью нельзя без округления: 0.1 + 0.2 даёт 0.30000000000000004,
+  // и в корзине вылезал бы хвост. Округляем до грошей после каждого расчёта.
+  const cash = n => Math.round(Number(n || 0) * 100) / 100;
+
+  function price(item) { return item.price ? money(item.price) : ''; }
 
   // оптовые цены: item.tiers = [{q:1,p:50},{q:3,p:45},{q:5,p:40}].
   // Цена за штуку падает с количеством, набранным по всей модели: вкусы считаются вместе,
@@ -679,6 +750,7 @@ window.KV = (function () {
   }
   function saveCart() {
     localStorage.setItem(cartStoreKey(), JSON.stringify(cart));
+    localStorage.setItem(cartNamesKey(), JSON.stringify(cartFlavorNames()));
     if (hooks.cart) hooks.cart();
     drawDrawer();
   }
@@ -693,23 +765,23 @@ window.KV = (function () {
       const item = find(id); if (!item) continue;
       const flavor = fl !== '' && item.flavors ? item.flavors[+fl] : null;
       const unit = tierPrice(item, groups[tierGroupOf(item)]);
-      lines.push({ key, item, flavor, n: cart[key], unit, sum: unit * cart[key] });
+      lines.push({ key, item, flavor, n: cart[key], unit, sum: cash(unit * cart[key]) });
     }
     return lines;
   }
-  function cartTotal() { return cartLines().reduce((s, l) => s + l.sum, 0); }
+  function cartTotal() { return cash(cartLines().reduce((s, l) => s + l.sum, 0)); }
 
   function orderText() {
     const lines = cartLines().map((l, i) =>
       (i + 1) + ') ' + l.item.name + (l.flavor ? ', ' + flavorName(l.flavor) : '') +
-      ' x' + l.n + (l.item.price ? ', ' + l.sum + ' zł' : ''));
+      ' x' + l.n + (l.item.price ? ', ' + money(l.sum) : ''));
     const disc = discount();
     const discLine = disc
-      ? '\n' + ui('discount') + (appliedPromos.length ? ' ' + promoCodes().join(', ') : '') + ': −' + disc + ' zł' : '';
+      ? '\n' + ui('discount') + (appliedPromos.length ? ' ' + promoCodes().join(', ') : '') + ': −' + money(disc) : '';
     const fee = deliveryFee();
-    const feeLine = fee ? '\n' + t('delivPay') + ': +' + fee + ' zł' : '';
+    const feeLine = fee ? '\n' + t('delivPay') + ': +' + money(fee) : '';
     return t('order') + ' KatoVape (' + cityName(currentCity) + '):\n' + lines.join('\n') +
-      discLine + feeLine + '\n' + t('total') + ': ' + grandTotal() + ' zł\n' + deliveryLine();
+      discLine + feeLine + '\n' + t('total') + ': ' + money(grandTotal()) + '\n' + deliveryLine();
   }
 
   function copyText(text) {
@@ -949,14 +1021,14 @@ window.KV = (function () {
         : '<div class="kvc-pays"><span class="kvc-pays-t">' + t('payWay') + '</span>' +
           ways.map(([k, lbl, sum]) =>
             '<button class="kvc-pay-opt' + (payWay === k ? ' sel' : '') + '" data-payway="' + k + '" type="button">' +
-            '<b>' + lbl + '</b><em>' + sum + ' zł</em>' +
+            '<b>' + lbl + '</b><em>' + money(sum) + '</em>' +
             (k === 'card' ? '<i>' + t('payCardNote') + '</i>' : '') + '</button>').join('') +
           (cashOk ? '' : '<p class="kvc-paynote">' + t('payDelivCard') + '</p>') + '</div>';
       inner = need.map(f =>
         '<div class="kvc-row"><span>' + f.lbl + '</span><b>' + (esc(f.v || '') || '<i class="kvc-none">—</i>') + '</b></div>').join('') +
         '<div class="kvc-row"><span>' + t('delivery') + '</span><b>' + deliveryLabel(cur.method) + '</b></div>' +
         payBox +
-        '<div class="kvc-sum"><span>' + t('total') + '</span><b>' + payTotal() + ' zł</b></div>' +
+        '<div class="kvc-sum"><span>' + t('total') + '</span><b>' + money(payTotal()) + '</b></div>' +
         commentBox('order', orderComment) +
         '<div class="kvc-warn">' + t('dataWarn') + '</div>' + actions;
     }
@@ -1224,9 +1296,9 @@ window.KV = (function () {
           // цену за штуку показываем при количестве больше одного: так видно, что опт
           // посчитан по всей модели, и сумма строки перестаёт выглядеть случайной
           '<span class="kvd-name">' + esc(l.item.name) + (l.flavor ? '<small>' + esc(flavorName(l.flavor)) + '</small>' : '') +
-            (l.n > 1 ? '<small>' + l.n + ' × ' + l.unit + ' zł</small>' : '') + '</span>' +
+            (l.n > 1 ? '<small>' + l.n + ' × ' + money(l.unit) + '</small>' : '') + '</span>' +
           '<span class="kvd-ctr"><button data-minus="' + l.key + '">&minus;</button><b>' + l.n + '</b><button data-plus="' + l.key + '">+</button></span>' +
-          '<span class="kvd-sum">' + l.sum + ' zł</span></div>').join('')
+          '<span class="kvd-sum">' + money(l.sum) + '</span></div>').join('')
       : '<p class="kvd-empty">' + t('cartEmpty') + '</p>';
 
     // подсказка, почему вместо оформления предлагается менеджер
@@ -1246,12 +1318,12 @@ window.KV = (function () {
         (appliedPromos.length
           ? '<div class="kvd-promos">' + appliedPromos.map(p =>
               '<span class="kvd-promo-chip">' + esc(p.code) +
-              '<i>−' + promoValue(p, cartTotal()) + ' zł</i>' +
+              '<i>−' + money(promoValue(p, cartTotal())) + '</i>' +
               '<button class="kvd-promo-del" data-promo="' + esc(p.code) + '" aria-label="' + t('remove') + '">&times;</button></span>').join('') +
             '</div>'
           : '') +
-        (disc ? '<div class="kvd-disc"><span>' + ui('discount') + '</span><span>−' + disc + ' zł</span></div>' : '') +
-        (fee ? '<div class="kvd-disc kvd-fee"><span>' + t('delivPay') + '</span><span>+' + fee + ' zł</span></div>' : '');
+        (disc ? '<div class="kvd-disc"><span>' + ui('discount') + '</span><span>−' + money(disc) + '</span></div>' : '') +
+        (fee ? '<div class="kvd-disc kvd-fee"><span>' + t('delivPay') + '</span><span>+' + money(fee) + '</span></div>' : '');
     } else {
       extra.innerHTML = hasLastOrder()
         ? '<button class="kvd-repeat">' + ui('repeat') + '</button>' : '';
@@ -1259,7 +1331,7 @@ window.KV = (function () {
 
     const disc = discount();
     d.querySelector('.kvd-total').innerHTML = lines.length
-      ? t('total') + ': ' + (disc ? '<s>' + cartTotal() + '</s> ' : '') + grandTotal() + ' zł' : '';
+      ? t('total') + ': ' + (disc ? '<s>' + money(cartTotal()) + '</s> ' : '') + money(grandTotal()) : '';
     d.querySelector('.kvd-go').hidden = !lines.length;
     d.querySelector('.kvd-clear').hidden = !lines.length;
   }
@@ -1446,15 +1518,26 @@ window.KV = (function () {
     [/энерг|energy|energetyk|мохито|mojito|тропик|tropic|микс|mix|барбарис/, ['#67dcf5', '#2b9cc4']],
     [/мят|mint|м’ят|м'ят|mięt|ментол|menthol|лёд|лед|лід|ice|холод|cool|fresh/, ['#5ff3d0', '#25b195']]
   ];
-  function flavorColors(name) {
-    const n = String(name || '').toLowerCase();
+  // Гамма, выбранная в панели, главнее словаря: менеджер видел вкус своими глазами, а
+  // словарь знает только слова. Она приходит в строке товара как products.tint, а сам
+  // набор лежит в shared/tints.js, общий с панелью.
+  function tintColors(id) {
+    if (!id) return null;
+    const t = (window.KV_TINTS || []).find(x => x.id === id);
+    return t ? t.c : null;
+  }
+  // Принимает и объект вкуса, и просто название: у вкуса из файла каталога гаммы нет.
+  function flavorColors(f) {
+    const picked = f && typeof f === 'object' ? tintColors(f.tint) : null;
+    if (picked) return picked;
+    const n = String((f && typeof f === 'object' ? f.name : f) || '').toLowerCase();
     for (const [re, c] of FLAVOR_HUES) if (re.test(n)) return c;
     // вкус не узнали, берём стабильный оттенок из названия, чтобы цвет не прыгал
     const h = hashId(n) % 360;
     return ['hsl(' + h + ' 78% 68%)', 'hsl(' + h + ' 66% 45%)'];
   }
-  function flavorGrad(name) {
-    const c = flavorColors(name);
+  function flavorGrad(f) {
+    const c = flavorColors(f);
     return 'linear-gradient(165deg,' + c[0] + ',' + c[1] + ')';
   }
 
@@ -1574,18 +1657,21 @@ window.KV = (function () {
   // Несколько кодов складываются, и каждый считается от исходной суммы товаров, а не
   // от остатка после предыдущего: так порядок ввода не влияет на итог. Больше корзины
   // скидка не бывает: то же ограничение стоит и на сервере.
+  // Процент считается до гроша, как в promo_check: десять процентов от 45,50 это 4,55,
+  // а не пять. Округляли до злотого, пока цены были целыми, и с дробным прайсом витрина
+  // обещала бы одну скидку, а сервер перед оплатой ставил другую.
   function promoValue(p, sub) {
     const v = Number(p.value);
     return p.type === 'percent' && Number.isFinite(v)
-      ? Math.round(sub * v / 100)
+      ? cash(sub * v / 100)
       : (p.discount != null ? p.discount : v || 0);
   }
   function discount() {
     const sub = cartTotal();
     const d = appliedPromos.reduce((s, p) => s + promoValue(p, sub), 0);
-    return Math.min(Math.max(d, 0), sub);
+    return cash(Math.min(Math.max(d, 0), sub));
   }
-  function grandTotal() { return Math.max(cartTotal() - discount(), 0) + deliveryFee(); }
+  function grandTotal() { return cash(Math.max(cartTotal() - discount(), 0) + deliveryFee()); }
 
   // ==== повтор заказа (3) ====
   function lastOrderKey() { return 'kv_last_' + city; }
@@ -2051,7 +2137,7 @@ window.KV = (function () {
     const flavStrip = hasFl ?
       '<div class="kvm-fpick' + (modal.flOpen ? ' open' : '') + '">' +
         '<button class="kvm-fsel" type="button" data-fl-toggle="1">' +
-          '<span class="kvm-fsel-bar"' + (fl ? ' style="background:' + flavorGrad(fl.name) + '"' : '') + '></span>' +
+          '<span class="kvm-fsel-bar"' + (fl ? ' style="background:' + flavorGrad(fl) + '"' : '') + '></span>' +
           '<span class="kvm-fsel-n">' + esc(picked ? t('pickedN', picked) : t('pickFlavor')) + '</span>' +
           '<span class="kvm-fsel-ch" aria-hidden="true">▼</span>' +
         '</button>' +
@@ -2059,10 +2145,10 @@ window.KV = (function () {
           const room = Math.max((f.qty || 0) - inCart(i), 0);
           const have = room > 0;
           const n = countOf(i);
-          const c = flavorColors(f.name);
+          const c = flavorColors(f);
           return '<div class="kvm-flav' + (i === modal.fl ? ' sel' : '') + (have ? '' : ' off') +
             (n ? ' has' : '') + '" data-fl-sel="' + i + '" style="--fl:' + c[0] + ';--fl2:' + c[1] + '">' +
-            '<span class="kvm-flav-bar" style="background:' + flavorGrad(f.name) + '"></span>' +
+            '<span class="kvm-flav-bar" style="background:' + flavorGrad(f) + '"></span>' +
             '<span class="kvm-flav-n">' + esc(flavorName(f)) + '</span>' +
             '<span class="kvm-flav-q">' + (have ? room + ' ' + t('pcs') : t('qtyNone')) + '</span>' +
             (have
@@ -2098,7 +2184,7 @@ window.KV = (function () {
     const preview = hasFl ?
       '<div class="kvm-pick"><span class="kvm-pick-lbl">' + t('selected') + '</span>' +
         '<div class="kvm-pick-card' + (fl && fl.qty > 0 ? '' : ' off') + '">' +
-          '<span class="kvm-pick-bar"' + (fl ? ' style="background:' + flavorGrad(fl.name) + '"' : '') + '></span>' +
+          '<span class="kvm-pick-bar"' + (fl ? ' style="background:' + flavorGrad(fl) + '"' : '') + '></span>' +
           '<span class="kvm-pick-name">' + esc(fl ? flavorName(fl) : t('pickFlavor')) + '</span>' +
           (fl ? '<span class="kvm-pick-q">' + (fl.qty > 0 ? t('left', fl.qty) : t('qtyNone')) + '</span>' : '') +
         '</div></div>' : '';
@@ -2133,14 +2219,14 @@ window.KV = (function () {
         steps.map(q => {
           const p = tierPrice(item, q) || item.price || 0;
           return '<span class="kvm-tier' + (q === reached ? ' sel' : '') + '">' +
-            '<b>' + q + '</b> ' + t('pcs') + '<em>' + p + ' zł</em></span>';
+            '<b>' + q + '</b> ' + t('pcs') + '<em>' + money(p) + '</em></span>';
         }).join('') + '</div>'
       : '';
 
     const addSum = picked * unit;
     const addBtn = picked > 0
       ? '<button class="kvm-add-cta" data-add-all="' + item.id + '">' + t('add') +
-          ' · ' + picked + ' ' + t('pcs') + (addSum ? ' · ' + addSum + ' zł' : '') + '</button>'
+          ' · ' + picked + ' ' + t('pcs') + (addSum ? ' · ' + money(addSum) : '') + '</button>'
       : (st === 'out'
           ? '<button class="kv-restock kvm-restock" data-notify="' + item.id + '">' + ui('notify') + '</button>'
           : '<button class="kvm-add-cta" disabled>' + t(hasFl ? 'chooseFirst' : 'pickQtyFirst') + '</button>');
@@ -2758,14 +2844,14 @@ window.KV = (function () {
     const cur = currentDelivery();
     if (cur.method === 'pickup') return pickup();
     const fee = deliveryFee();
-    return deliveryLabel(cur.method) + (cur.addr ? ': ' + cur.addr : '') + (fee ? ' (+' + fee + ' zł)' : '');
+    return deliveryLabel(cur.method) + (cur.addr ? ': ' + cur.addr : '') + (fee ? ' (+' + money(fee) + ')' : '');
   }
   function deliveryHTML() {
     const cur = currentDelivery();
     const opts = deliveryMethods().map(m => {
       const fee = m.fee || 0;
       return '<button class="kvd-dopt' + (m.id === cur.method ? ' on' : '') + '" data-deliv="' + m.id + '" type="button">' +
-        '<span>' + deliveryLabel(m.id) + '</span><i>' + (fee ? '+' + fee + ' zł' : t('delFree')) + '</i></button>';
+        '<span>' + deliveryLabel(m.id) + '</span><i>' + (fee ? '+' + money(fee) : t('delFree')) + '</i></button>';
     }).join('');
     let field = '';
     if (cur.method === 'inpost')

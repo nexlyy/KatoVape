@@ -180,16 +180,20 @@ td .sub{display:block;color:var(--muted);font-size:11.5px;margin-top:2px}
 .item-top{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .item-top input{width:auto}
 .i-name{flex:2;min-width:150px}.i-brand{flex:1;min-width:110px}.i-cat{flex:1;min-width:115px}
-.i-nic{width:100px}.i-price{width:92px}.i-tier{width:58px}
+/* ступеням хватало 58px, пока цены были целыми: «45,50» уже не помещалось */
+.i-nic{width:100px}.i-price{width:92px}.i-tier{width:68px}
 .item-id{font-size:11.5px;color:var(--muted);margin:7px 0 2px;font-variant-numeric:tabular-nums}
 .flavs{display:flex;flex-direction:column}
 .flav{display:flex;align-items:center;gap:10px;padding:7px 0;border-top:1px solid var(--line)}
 .flav-n{flex:1;min-width:0;font-size:13px;overflow:hidden;text-overflow:ellipsis}
 .flav input{width:76px;text-align:center}
 .flav .unit{font-size:12px;color:var(--muted)}
+/* гамма вкуса: кружок показывает выбранное, список меняет */
+.tint-dot{width:16px;height:16px;border-radius:50%;flex-shrink:0;border:1px solid var(--line-2)}
+.i-tint{width:132px;flex-shrink:0}
 .add-flav{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
 .add-flav input{width:auto}
-.dirty input{border-color:var(--accent)}
+.dirty input,.dirty .i-tint{border-color:var(--accent)}
 
 /* панель несохранённых изменений */
 .savebar{position:fixed;left:0;right:0;bottom:0;z-index:var(--z-bar);background:var(--surface);
@@ -339,9 +343,11 @@ td .sub{display:block;color:var(--muted);font-size:11.5px;margin-top:2px}
   .i-name,.item-top .btn.danger,.i-hit{grid-column:1 / -1}
   .i-nic,.i-price,.i-tier{width:100%}
   .item-top .btn.danger{justify-content:center}
-  .flav{gap:8px;padding:10px 0}
+  /* в строку вкуса добавился список гамм, на телефоне она переносится */
+  .flav{gap:8px;padding:10px 0;flex-wrap:wrap}
   .flav input{width:72px}
-  .add-flav input{flex:1 0 100%}
+  .flav .i-tint{width:auto;flex:1;min-width:130px}
+  .add-flav input,.add-flav .i-tint{flex:1 0 100%;width:auto}
   .add-flav .btn{flex:1}
   .pform{grid-template-columns:1fr;gap:12px}
 
@@ -367,6 +373,7 @@ td .sub{display:block;color:var(--muted);font-size:11.5px;margin-top:2px}
 
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="../../shared/config.js?v=ed39e448"></script>
+<script src="../../shared/tints.js?v=53a824ed"></script>
 <script src="./export.js?v=d390f344"></script>
 <script type="module">
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.111.0';
@@ -548,7 +555,12 @@ const DICT = {
     'Удалить «': 'Видалити «', '» со всеми вкусами?': '» з усіма смаками?', 'Товар удалён': 'Товар видалено',
     'Удалить вкус «': 'Видалити смак «', 'Вкус удалён': 'Смак видалено', 'Впишите название вкуса': 'Впишіть назву смаку',
     'Вкус добавлен': 'Смак додано', 'Нужен id товара': 'Потрібен id товару', 'Товар добавлен': 'Товар додано',
-    'Цена у «': 'Ціна в «', '» не число': '» не число', 'Сохраняем…': 'Зберігаємо…', 'Сохранено: ': 'Збережено: ',
+    'Гамма вкуса': 'Гама смаку', 'по названию': 'за назвою',
+    'Мята': 'М’ята', 'Лёд': 'Лід', 'Тропик': 'Тропік', 'Яблоко': 'Яблуко', 'Цитрус': 'Цитрус',
+    'Персик': 'Персик', 'Ягоды': 'Ягоди', 'Сладость': 'Солодощі', 'Виноград': 'Виноград',
+    'Черника': 'Чорниця', 'Кофе': 'Кава', 'Табак': 'Тютюн', 'Графит': 'Графіт',
+    'Цена у «': 'Ціна в «', '» не число': '» не число', 'Цена указана неверно': 'Ціну вказано неправильно',
+    'Сохраняем…': 'Зберігаємо…', 'Сохранено: ': 'Збережено: ',
     'Сохранено': 'Збережено',
     'собран': 'зібрано', 'отправлен': 'відправлено',
     'Слишком много попыток. Подождите четверть часа.': 'Забагато спроб. Зачекайте чверть години.',
@@ -972,7 +984,12 @@ const DICT = {
     'Удалить «': 'Usunąć «', '» со всеми вкусами?': '» ze wszystkimi smakami?', 'Товар удалён': 'Produkt usunięty',
     'Удалить вкус «': 'Usunąć smak «', 'Вкус удалён': 'Smak usunięty', 'Впишите название вкуса': 'Wpisz nazwę smaku',
     'Вкус добавлен': 'Smak dodany', 'Нужен id товара': 'Potrzebny jest id produktu', 'Товар добавлен': 'Produkt dodany',
-    'Цена у «': 'Cena w «', '» не число': '» nie jest liczbą', 'Сохраняем…': 'Zapisujemy…', 'Сохранено: ': 'Zapisano: ',
+    'Гамма вкуса': 'Kolor smaku', 'по названию': 'wg nazwy',
+    'Мята': 'Mięta', 'Лёд': 'Lód', 'Тропик': 'Tropik', 'Яблоко': 'Jabłko', 'Цитрус': 'Cytrus',
+    'Персик': 'Brzoskwinia', 'Ягоды': 'Jagody', 'Сладость': 'Słodycz', 'Виноград': 'Winogrono',
+    'Черника': 'Borówka', 'Кофе': 'Kawa', 'Табак': 'Tytoń', 'Графит': 'Grafit',
+    'Цена у «': 'Cena w «', '» не число': '» nie jest liczbą', 'Цена указана неверно': 'Cena podana błędnie',
+    'Сохраняем…': 'Zapisujemy…', 'Сохранено: ': 'Zapisano: ',
     'Сохранено': 'Zapisano',
     'собран': 'skompletowane', 'отправлен': 'wysłane',
     'Слишком много попыток. Подождите четверть часа.': 'Za dużo prób. Odczekaj kwadrans.',
@@ -1646,9 +1663,9 @@ async function renderOrders(m) {
         (o.comment ? `<span class="sub">${L('Комментарий')}: ${esc(o.comment)}</span>` : ''),
       who || '<span class="sub">' + L('нет данных') + '</span>',
       // сумма со скидкой сама по себе непонятна: показываем, каким кодом её сбили
-      `<span class="num">${o.sum || 0} zł</span>` +
+      `<span class="num">${money2(o.sum)}</span>` +
         (o.promo && o.promo.length
-          ? `<span class="sub promo-tag">${esc(o.promo.join(', '))}${o.discount ? ' −' + o.discount + ' zł' : ''}</span>`
+          ? `<span class="sub promo-tag">${esc(o.promo.join(', '))}${o.discount ? ' −' + money2(o.discount) : ''}</span>`
           : ''),
       pill(o.status), `<div class="tools">${acts}</div>`];
   });
@@ -2747,6 +2764,25 @@ const money = n => nf(Math.round(Number(n || 0))) + ' zł';
 const money2 = n => Number(n || 0).toLocaleString('pl-PL',
   { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' zł';
 
+// Деньги в полях ввода. У поставщика скидочная цена дробная (45,50), а набирают её и через
+// запятую, и через точку, смотря какая раскладка. Принимаем оба вида. Лишние знаки режем
+// сразу: колонка всё равно numeric(10,2), и без этого панель после сохранения считала бы
+// себя изменённой, сравнивая набранные 45,505 с приехавшими из базы 45,51.
+const moneyIn = raw => {
+  const s = String(raw == null ? '' : raw).trim().replace(',', '.');
+  if (s === '') return null;
+  const n = Number(s);
+  return Number.isFinite(n) ? Math.round(n * 100) / 100 : NaN;
+};
+// Обратно в поле цена печатается по-польски: запятая и два знака, но только когда гроши
+// есть. Целое так и остаётся «40», иначе весь прайс покрывается лишними нулями.
+const moneyOut = v => {
+  if (v == null || v === '') return '';
+  const n = Number(v);
+  if (!Number.isFinite(n)) return String(v);
+  return Number.isInteger(n) ? String(n) : n.toFixed(2).replace('.', ',');
+};
+
 // Growth against the previous window of the same length. Null when there is nothing to
 // compare with, so an empty history does not render as a triumphant +100%.
 function trend(now, prev) {
@@ -3154,7 +3190,7 @@ async function renderPromo(m) {
     const cond = [
       c.city ? CITY_LABEL[c.city] || c.city : null,
       c.category ? c.category : null,
-      c.min_sum ? L('от') + ' ' + c.min_sum + ' zł' : null,
+      c.min_sum ? L('от') + ' ' + money2(c.min_sum) : null,
       c.per_user ? c.per_user + ' ' + L('раз на человека') : null
     ].filter(Boolean).join(' · ');
     const period = [c.starts_at ? fdate(c.starts_at) : null, c.expires_at ? fdate(c.expires_at) : null]
@@ -3189,7 +3225,7 @@ async function renderPromo(m) {
           <option value="">${L('весь ассортимент')}</option>
           ${PROMO_CATS.map(c => `<option value="${c}">${c}</option>`).join('')}
         </select></label>
-        <label class="f">${L('Минимальная сумма')}<input id="pc_min" inputmode="numeric" placeholder="0"></label>
+        <label class="f">${L('Минимальная сумма')}<input id="pc_min" inputmode="decimal" placeholder="0"></label>
         <label class="f">${L('Лимит всего')}<input id="pc_max" inputmode="numeric" placeholder="${L('без лимита')}"></label>
         <label class="f">${L('Раз на человека')}<input id="pc_per" inputmode="numeric" value="1"></label>
         <label class="f">${L('Действует с')}<input id="pc_from" type="date"></label>
@@ -3221,7 +3257,8 @@ async function renderPromo(m) {
       city: document.getElementById('pc_city').value || null,
       category: document.getElementById('pc_cat').value || null,
       stackable: document.getElementById('pc_stack').value === '1',
-      min_sum: num('pc_min') || 0, max_uses: num('pc_max'), per_user: num('pc_per') ?? 1,
+      min_sum: moneyIn(document.getElementById('pc_min').value) || 0,
+      max_uses: num('pc_max'), per_user: num('pc_per') ?? 1,
       starts_at: day('pc_from'), expires_at: day('pc_to', true),
       note: (document.getElementById('pc_note').value || '').trim() || null
     });
@@ -3335,6 +3372,27 @@ let prodQuery = '', prodScroll = 0;
 // пометки для покупателя. Новая метка добавляется строкой здесь и в реестре витрины.
 const LABELS = [['hit', 'Хит'], ['unique', 'Уникальный'], ['restock', 'Ждём поступления']];
 
+// Гамма вкуса. Цвета лежат в shared/tints.js, общие с витриной, а подписи здесь: словарь
+// панели переводит их на украинский и польский. Пустая гамма значит «по названию»: витрина
+// подбирает цвет сама, как делала всегда.
+const TINT_RU = {
+  mint: 'Мята', ice: 'Лёд', tropic: 'Тропик', apple: 'Яблоко', citrus: 'Цитрус',
+  peach: 'Персик', berry: 'Ягоды', candy: 'Сладость', grape: 'Виноград',
+  blueberry: 'Черника', coffee: 'Кофе', tobacco: 'Табак', graphite: 'Графит'
+};
+const TINTS = () => window.KV_TINTS || [];
+function tintGrad(id) {
+  const t = TINTS().find(x => x.id === id);
+  // без гаммы показываем не цвет, а прочерк: угадать за витрину панель всё равно не может
+  return t ? `linear-gradient(165deg,${t.c[0]},${t.c[1]})` : 'var(--line-2)';
+}
+function tintSelect(attr, cur) {
+  return `<select class="i-tint" ${attr} title="${L('Гамма вкуса')}">` +
+    `<option value=""${cur ? '' : ' selected'}>${L('по названию')}</option>` +
+    TINTS().map(t => `<option value="${t.id}"${t.id === cur ? ' selected' : ''}>` +
+      `${L(TINT_RU[t.id] || t.id)}</option>`).join('') + '</select>';
+}
+
 function tierP(tiers, q) { const t = (tiers || []).find(x => +x.q === q); return t && t.p != null ? t.p : ''; }
 // Нормализованная подпись ступеней: «3:36|5:33|10:30». База отдаёт jsonb со своим порядком
 // ключей ({"p":40,"q":1}), поэтому сравнивать JSON-строки нельзя, панель несохранённых
@@ -3355,11 +3413,11 @@ function productsErr(error) {
     return L('Нет прав на этот товар: проверьте город, закреплённый за вашей ролью.');
   return m || L('Не удалось сохранить');
 }
+// Ступени приходят уже числами (moneyIn их разобрал), пустое поле это null.
 function buildTiers(base, t3, t5, t10) {
   const arr = [];
-  const b = base == null ? null : Number(base);
-  if (b != null && Number.isFinite(b)) arr.push({ q: 1, p: b });
-  [[3, t3], [5, t5], [10, t10]].forEach(([q, v]) => { if (v !== '' && Number.isFinite(Number(v))) arr.push({ q, p: Number(v) }); });
+  if (Number.isFinite(base)) arr.push({ q: 1, p: base });
+  [[3, t3], [5, t5], [10, t10]].forEach(([q, p]) => { if (Number.isFinite(p)) arr.push({ q, p }); });
   return arr.length > 1 ? arr : null;   // только база или пусто, ступеней нет
 }
 function changedItems() {
@@ -3369,29 +3427,37 @@ function changedItems() {
     const card = m.querySelector('.item[data-g="' + gi + '"]'); if (!card) return;
     const gv = k => card.querySelector('[data-p="' + k + '"]').value.trim();
     const name = gv('name'), brand = gv('brand'), category = gv('category'), nic = gv('nic');
-    const costRaw = gv('cost');
-    const cost = costRaw === '' ? null : Number(costRaw.replace(',', '.'));
-    const priceRaw = gv('price');
-    const price = priceRaw === '' ? null : Number(priceRaw);
+    const costRaw = gv('cost'), cost = moneyIn(costRaw);
+    const priceRaw = gv('price'), price = moneyIn(priceRaw);
+    const tierRaw = ['t3', 't5', 't10'].map(gv);
+    const tierNum = tierRaw.map(moneyIn);
     const labels = LABELS.map(([id]) => id).filter(id => card.querySelector('[data-lb="' + id + '"]').checked);
     const hit = labels.includes('hit');
-    const tiers = buildTiers(price, gv('t3'), gv('t5'), gv('t10'));
+    const tiers = buildTiers(price, tierNum[0], tierNum[1], tierNum[2]);
     const tiersChanged = tiersKey(tiers) !== tiersKey(g.head.tiers);
+    const was = v => (v == null ? null : Number(v));   // numeric приезжает из базы по-разному
     const headChanged = name !== (g.head.name || '') || brand !== (g.head.brand || '')
-      || category !== (g.head.category || '') || nic !== (g.head.nic || '') || price !== g.head.price || tiersChanged
+      || category !== (g.head.category || '') || nic !== (g.head.nic || '') || price !== was(g.head.price) || tiersChanged
       || labels.join(',') !== (g.head.labels || []).slice().sort().join(',')
-      || cost !== (g.head.cost == null ? null : Number(g.head.cost));
+      || cost !== was(g.head.cost);
     const rows = [];
     g.items.forEach((r, ri) => {
       const row = card.querySelector('.flav[data-f="' + gi + ':' + ri + '"]'); if (!row) return;
       const qtyRaw = row.querySelector('[data-q]').value.trim();
       const qty = qtyRaw === '' ? 0 : Number(qtyRaw);
-      row.classList.toggle('dirty', qty !== r.qty);
-      if (headChanged || qty !== r.qty) rows.push({ r, qty });
+      // гамма это свойство вкуса, а не товара: у одной модели вкусы разного цвета
+      const tintSel = row.querySelector('[data-t]');
+      const tint = tintSel ? tintSel.value : (r.tint || '');
+      const rowChanged = qty !== r.qty || tint !== (r.tint || '');
+      row.classList.toggle('dirty', rowChanged);
+      if (headChanged || rowChanged) rows.push({ r, qty, tint });
     });
     card.classList.toggle('dirty', headChanged);
+    // Опечатка в ступени раньше проходила молча: нечисло просто не попадало в tiers, и
+    // оптовая цена тихо возвращалась к розничной. Ругаемся на любое поле с деньгами.
+    const notNum = (raw, v) => raw !== '' && !Number.isFinite(v);
     if (rows.length) out.push({ g, name, brand, category, nic, price, tiers, hit, labels, cost, rows,
-      bad: (priceRaw !== '' && !Number.isFinite(price)) || (costRaw !== '' && !Number.isFinite(cost)) });
+      bad: notNum(priceRaw, price) || notNum(costRaw, cost) || tierRaw.some((raw, i) => notNum(raw, tierNum[i])) });
   });
   return out;
 }
@@ -3442,11 +3508,11 @@ async function renderProducts(m) {
         <input class="i-brand" data-p="brand" value="${esc(g.head.brand || '')}" placeholder="${L('Бренд')}">
         <input class="i-cat" data-p="category" value="${esc(g.head.category || '')}" placeholder="${L('Категория')}">
         <input class="i-nic" data-p="nic" value="${esc(g.head.nic || '')}" placeholder="${L('Крепость')}">
-        <input class="i-price" data-p="price" value="${g.head.price == null ? '' : g.head.price}" placeholder="${L('Цена zł')}" inputmode="numeric">
-        <input class="i-price" data-p="cost" value="${g.head.cost == null ? '' : g.head.cost}" placeholder="${L('Закупка zł')}" inputmode="decimal" title="${L('Закупочная цена за штуку')}">
-        <input class="i-tier" data-p="t3" value="${tierP(g.head.tiers, 3)}" placeholder="3 ${L('шт')}" inputmode="numeric" title="${L('Цена за штуку при')} 3 ${L('шт')}">
-        <input class="i-tier" data-p="t5" value="${tierP(g.head.tiers, 5)}" placeholder="5 ${L('шт')}" inputmode="numeric" title="${L('Цена за штуку при')} 5 ${L('шт')}">
-        <input class="i-tier" data-p="t10" value="${tierP(g.head.tiers, 10)}" placeholder="10 ${L('шт')}" inputmode="numeric" title="${L('Цена за штуку при')} 10 ${L('шт')}">
+        <input class="i-price" data-p="price" value="${moneyOut(g.head.price)}" placeholder="${L('Цена zł')}" inputmode="decimal">
+        <input class="i-price" data-p="cost" value="${moneyOut(g.head.cost)}" placeholder="${L('Закупка zł')}" inputmode="decimal" title="${L('Закупочная цена за штуку')}">
+        <input class="i-tier" data-p="t3" value="${moneyOut(tierP(g.head.tiers, 3))}" placeholder="3 ${L('шт')}" inputmode="decimal" title="${L('Цена за штуку при')} 3 ${L('шт')}">
+        <input class="i-tier" data-p="t5" value="${moneyOut(tierP(g.head.tiers, 5))}" placeholder="5 ${L('шт')}" inputmode="decimal" title="${L('Цена за штуку при')} 5 ${L('шт')}">
+        <input class="i-tier" data-p="t10" value="${moneyOut(tierP(g.head.tiers, 10))}" placeholder="10 ${L('шт')}" inputmode="decimal" title="${L('Цена за штуку при')} 10 ${L('шт')}">
         ${LABELS.map(([id, name]) => `<label class="i-hit"><input type="checkbox" data-lb="${id}"
           ${(g.head.labels || []).includes(id) ? 'checked' : ''}> ${L(name)}</label>`).join('')}
         <button class="btn sm danger" data-delp="${gi}">${L('Удалить товар')}</button>
@@ -3457,12 +3523,15 @@ async function renderProducts(m) {
           <span class="flav-n">${esc(r.flavor || L('без вкуса'))}</span>
           <input data-q="1" value="${r.qty == null ? 0 : r.qty}" inputmode="numeric">
           <span class="unit">${L('шт')}</span>
+          <span class="tint-dot" data-tv="${gi}:${ri}" style="background:${tintGrad(r.tint)}"></span>
+          ${tintSelect(`data-t="${gi}:${ri}"`, r.tint || '')}
           <button class="btn sm" data-woff="${gi}:${ri}" title="${L('Списать')}">${L('Списать')}</button>
           <button class="btn sm danger" data-delf="${gi}:${ri}" title="${L('Удалить вкус')}">×</button>
         </div>`).join('')}</div>
       <div class="add-flav">
         <input data-nf="${gi}" placeholder="${L('Новый вкус')}" style="width:180px">
         <input data-nq="${gi}" placeholder="${L('шт')}" style="width:74px" inputmode="numeric">
+        ${tintSelect(`data-nt="${gi}"`, '')}
         <button class="btn sm" data-addf="${gi}">${L('Добавить вкус')}</button>
       </div>
     </div>`).join('') : empty(L('В этом городе пусто'), L('Добавьте первый товар формой ниже.'));
@@ -3473,7 +3542,7 @@ async function renderProducts(m) {
         <input id="np_name" placeholder="${L('Название')}" style="width:170px">
         <input id="np_cat" placeholder="${L('Категория')}" style="width:140px">
         <input id="np_flavor" placeholder="${L('Вкус, можно пусто')}" style="width:170px">
-        <input id="np_price" placeholder="${L('Цена')}" style="width:90px" inputmode="numeric">
+        <input id="np_price" placeholder="${L('Цена')}" style="width:90px" inputmode="decimal">
         <input id="np_qty" placeholder="${L('шт')}" style="width:74px" inputmode="numeric">
         <button class="btn primary" id="np_add">${L('Добавить')}</button>
       </div>
@@ -3502,11 +3571,19 @@ function bindProducts(m) {
   }
   // возвращаем прокрутку туда, где человек работал
   if (prodScroll) { const y = prodScroll; prodScroll = 0; requestAnimationFrame(() => window.scrollTo(0, y)); }
-  // пересчитываем при каждом вводе: вернул значение обратно: панель сама уходит
+  // Пересчитываем при каждом касании поля: вернул значение обратно — панель сама уходит.
+  // Слушаем и input, и change: списку и галочке первое событие не полагается. Раньше в
+  // условии стоял data-p="hit", которого у меток нет, и снятая галочка полосу не поднимала.
+  const FIELDS = '[data-p],[data-q],[data-lb],[data-t]';
   m.querySelectorAll('.item').forEach(card => {
-    card.addEventListener('change', e => { if (e.target.dataset.p === 'hit') updateSaveBar(); });
-    card.addEventListener('input', e => {
-      if (e.target.dataset.p === undefined && e.target.dataset.q === undefined) return;
+    card.addEventListener('input', e => { if (e.target.closest(FIELDS)) updateSaveBar(); });
+    card.addEventListener('change', e => {
+      if (!e.target.closest(FIELDS)) return;
+      // кружок гаммы двигаем сразу: иначе выбранный цвет виден только после сохранения
+      if (e.target.dataset.t) {
+        const dot = card.querySelector('[data-tv="' + e.target.dataset.t + '"]');
+        if (dot) dot.style.background = tintGrad(e.target.value);
+      }
       updateSaveBar();
     });
   });
@@ -3555,12 +3632,15 @@ function bindProducts(m) {
     const gi = +b.dataset.addf, g = groups[gi]; if (!g) return;
     const fl = m.querySelector('[data-nf="' + gi + '"]').value.trim();
     const qv = m.querySelector('[data-nq="' + gi + '"]').value.trim();
+    const nt = m.querySelector('[data-nt="' + gi + '"]');
     if (!fl) return toast(L('Впишите название вкуса'), true);
     const h = g.head;
     const { error } = await sb.from('products').upsert([{
       id: g.id, city: cityNow, flavor: fl, name: h.name, brand: h.brand, category: h.category,
       // новый вкус наследует ярлык и ступени товара, иначе строки одного товара разъедутся
       nic: h.nic, price: h.price, cost: h.cost, tiers: h.tiers || null, labels: h.labels || [],
+      // а гамма у вкуса своя: наследовать её от соседа значит красить всю модель одинаково
+      tint: (nt && nt.value) || null,
       qty: +qv || 0, updated_at: new Date().toISOString()
     }], { onConflict: 'id,city,flavor' });
     if (error) return toast(productsErr(error), true);
@@ -3570,12 +3650,13 @@ function bindProducts(m) {
   if (add) add.onclick = async () => {
     const id = document.getElementById('np_id').value.trim();
     if (!id) return toast(L('Нужен id товара'), true);
-    const priceRaw = document.getElementById('np_price').value.trim();
+    const price = moneyIn(document.getElementById('np_price').value);
+    if (Number.isNaN(price)) return toast(L('Цена указана неверно'), true);
     const { error } = await sb.from('products').upsert([{
       id, city: cityNow, flavor: document.getElementById('np_flavor').value.trim(),
       name: document.getElementById('np_name').value.trim() || id,
       category: document.getElementById('np_cat').value.trim() || null,
-      price: priceRaw === '' ? null : Number(priceRaw),
+      price,
       qty: +document.getElementById('np_qty').value || 0,
       updated_at: new Date().toISOString()
     }], { onConflict: 'id,city,flavor' });
@@ -3593,10 +3674,11 @@ async function saveProducts() {
   const broken = changed.find(x => x.bad);
   if (broken) return toast(L('Цена у «') + (broken.name || broken.g.id) + L('» не число'), true);
   const out = [];
-  changed.forEach(x => x.rows.forEach(({ r, qty }) => out.push({
+  changed.forEach(x => x.rows.forEach(({ r, qty, tint }) => out.push({
     id: r.id, city: r.city, flavor: r.flavor, name: x.name || r.id,
     brand: x.brand || null, category: x.category || null, nic: x.nic || null,
-    price: x.price, cost: x.cost, tiers: x.tiers, labels: x.labels, qty: Number.isFinite(qty) ? qty : 0, updated_at: new Date().toISOString()
+    price: x.price, cost: x.cost, tiers: x.tiers, labels: x.labels, tint: tint || null,
+    qty: Number.isFinite(qty) ? qty : 0, updated_at: new Date().toISOString()
   })));
   if (!out.length) { clearDirty(); return toast(L('Изменений нет')); }
   btn.disabled = true; btn.textContent = L('Сохраняем…');
@@ -3627,7 +3709,7 @@ async function tgAuthFromHash() {
 }
 
 // Отпечаток этой сборки, его проставляет npm run stamp.
-const BUILD = 'e37b0a88';
+const BUILD = 'b957028d';
 
 // Браузер держит саму страницу панели в кеше, и человек видит вчерашний интерфейс, считая,
 // что правки не приехали. Отпечаток рядом лежащего version.json читается мимо кеша: разошлось

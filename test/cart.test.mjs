@@ -20,9 +20,10 @@ const ITEMS = {
 
 const { api, box } = sandbox(
   [
-    slice('function priceTiers(item)', '\n  // ==== повтор заказа'),
-    slice('function cartLines()', 'function orderText()'),
-    'function cartTotal() { return cartLines().reduce((s, l) => s + l.sum, 0); }'
+    // от money(): ниже него лежит cash(), которым корзина округляет гроши
+    slice('function money(n)', '\n  // ==== повтор заказа'),
+    // сюда попадают и cartLines, и cartTotal: формулу в тест не копируем
+    slice('function cartLines()', 'function orderText()')
   ],
   { cart: {}, find: (id) => ITEMS[id] },
   ['cartTotal', 'cartLines', 'unitWithCart', 'tierQtyByGroup']

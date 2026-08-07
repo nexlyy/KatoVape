@@ -19,7 +19,7 @@ const PAGES = [
   'demos/vapor/app/index.html',
   'demos/admin/index.html'
 ];
-const ASSETS = ['config.js', 'core.js', 'auth.js', 'pay.js'];
+const ASSETS = ['config.js', 'tints.js', 'core.js', 'auth.js', 'pay.js'];
 
 // Файлы рядом с панелью: адрес у них фиксированный, а Pages отдаёт их с кешем на десять
 // минут. Без отпечатка человек получал бы вчерашнюю выгрузку при свежей панели.
