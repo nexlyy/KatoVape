@@ -103,6 +103,7 @@ window.KV = (function () {
       noReviews: 'Вы ещё не оставляли отзывов.', noOrders: 'Заказов пока нет.',
       clearData: 'Очистить мои данные', cleared: 'Данные очищены',
       ordersN: 'заказов', reviewsN: 'отзывов', favsN: 'в избранном',
+      pickupCall: 'Точку выдачи подскажет менеджер: он свяжется с вами в Telegram сразу после заказа.',
       pickFlavor: 'Выберите вкус', selected: 'Выбрано', chooseFirst: 'Сначала выберите вкус',
       pickQtyFirst: 'Укажите количество', pickedN: 'Набрано: {n} шт',
       tierLadder: 'Чем больше, тем дешевле', addedPart: 'добавлено, часть не поместилась в остаток',
@@ -169,6 +170,7 @@ window.KV = (function () {
       noReviews: 'Ви ще не залишали відгуків.', noOrders: 'Замовлень поки немає.',
       clearData: 'Очистити мої дані', cleared: 'Дані очищено',
       ordersN: 'замовлень', reviewsN: 'відгуків', favsN: 'в обраному',
+      pickupCall: 'Точку видачі підкаже менеджер: він звʼяжеться з вами в Telegram одразу після замовлення.',
       pickFlavor: 'Оберіть смак', selected: 'Обрано', chooseFirst: 'Спочатку оберіть смак',
       pickQtyFirst: 'Вкажіть кількість', pickedN: 'Набрано: {n} шт',
       tierLadder: 'Що більше, то дешевше', addedPart: 'додано, частина не вмістилася в залишок',
@@ -235,6 +237,7 @@ window.KV = (function () {
       noReviews: 'Nie dodałeś jeszcze opinii.', noOrders: 'Brak zamówień.',
       clearData: 'Wyczyść moje dane', cleared: 'Dane wyczyszczone',
       ordersN: 'zamówień', reviewsN: 'opinii', favsN: 'w ulubionych',
+      pickupCall: 'Punkt odbioru wskaże menedżer: skontaktuje się z Tobą na Telegramie zaraz po zamówieniu.',
       pickFlavor: 'Wybierz smak', selected: 'Wybrano', chooseFirst: 'Najpierw wybierz smak',
       pickQtyFirst: 'Podaj ilość', pickedN: 'Wybrano: {n} szt',
       tierLadder: 'Im więcej, tym taniej', addedPart: 'dodano, część nie zmieściła się w stanie',
@@ -1687,10 +1690,11 @@ window.KV = (function () {
       '<section class="kv-sec kv-howto"><h3>' + loc(h.title) + '</h3><div class="kv-steps">' +
         h.steps.map(s => '<div class="kv-step"><span class="kv-step-n">' + s.ic + '</span>' +
           '<b>' + loc(s.t) + '</b><p>' + loc(s.d) + '</p></div>').join('') + '</div></section>' +
+      // Адрес и карту здесь не показываем: точек выдачи в городе несколько, и куда подъехать,
+      // менеджер говорит сам после заказа. Одна улица на весь город отправляла бы людей не туда.
       (pc ? '<section class="kv-sec kv-pickup"><h3>' + loc(p.title) + ' · ' + cityName(currentCity) + '</h3>' +
-        '<p class="kv-pick-addr">' + esc(pc.addr) + '</p>' +
-        '<p class="kv-pick-h">' + loc(p.hoursLabel) + ': ' + loc(pc.hours) + '</p>' +
-        '<a class="kv-pick-map" href="' + esc(pc.map) + '" target="_blank" rel="noopener">' + loc(p.mapLabel) + ' →</a></section>' : '') +
+        '<p class="kv-pick-addr">' + esc(t('pickupCall')) + '</p>' +
+        '<p class="kv-pick-h">' + loc(p.hoursLabel) + ': ' + loc(pc.hours) + '</p></section>' : '') +
       (a ? '<section class="kv-sec kv-about"><h3>' + loc(a.title) + '</h3><p>' + loc(a.text) + '</p></section>' : '') +
       (f ? '<section class="kv-sec kv-faq"><h3>' + loc(f.title) + '</h3>' +
         f.items.map((q, i) => '<div class="kv-q" data-faq="' + i + '"><button>' + loc(q.q) + '<span>+</span></button>' +
@@ -2769,8 +2773,10 @@ window.KV = (function () {
     else if (cur.method === 'courier')
       field = '<input class="kvd-daddr" type="text" placeholder="' + t('courierPh') + '" value="' + esc(cur.addr || '') + '">';
     else {
-      const pc = content.pickup && content.pickup.cities && content.pickup.cities[city];
-      field = pc ? '<div class="kvd-dnote">' + esc(pc.addr) + '</div>' : '';
+      // Адрес самовывоза не показываем. Точек у магазина несколько, и какая из них удобна,
+      // решают с менеджером: он пишет человеку сам после оформления. Раньше тут стояла одна
+      // улица, и покупатель ехал туда, где его не ждали.
+      field = '<div class="kvd-dnote kvd-dcall">' + esc(t('pickupCall')) + '</div>';
     }
     return '<div class="kvd-deliv"><b>' + t('delivery') + '</b><div class="kvd-dopts">' + opts + '</div>' + field + '</div>';
   }
@@ -3241,7 +3247,7 @@ body.kv-noscroll{overflow:hidden}
   return {
     init, t, ui, loc, catName, cityName, pickup, cityLogo, flavorName, specOf, qty, status,
     isNew, match, find, price, plural, fmtDate, photo, openCart, checkout,
-    cartCount, cartTotal, toast, autoHideHeader, sortItems,
+    cartCount, cartTotal, grandTotal, toast, autoHideHeader, sortItems,
     starsHTML, badgesHTML, filterPass, searchSuggest, track,
     openProduct, openProfile, openFavs, isFav, toggleFav, removeFav, favs, tasteOf, flavorDesc,
     openManager, openChannel, managerLink, managerName, cityLink, bulkOrder,

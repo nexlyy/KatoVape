@@ -154,7 +154,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--mint);outline-o
 <button class="cta" id="cta"></button>
 
 <script src="../../../shared/config.js?v=ed39e448"></script>
-<script src="../../../shared/core.js?v=002cdd26"></script>
+<script src="../../../shared/core.js?v=8393307a"></script>
 <script src="../../../shared/auth.js?v=ca6e25b6"></script>
 <script src="../../../shared/pay.js?v=8e772f69"></script>
 <script>
@@ -212,6 +212,7 @@ const { useState, useEffect, useMemo } = React;
 const tg = window.Telegram && window.Telegram.WebApp;
 const inTg = !!(tg && tg.initData);
 let mainBtnBound = false;   // главную кнопку Telegram подписываем один раз
+let mainBtnTimer = 0;       // серию нажатий схлопываем в одно обновление кнопки
 if (inTg) {
   tg.ready(); tg.expand(); tg.setHeaderColor('#080b10'); tg.setBackgroundColor('#080b10');
 }
@@ -271,15 +272,28 @@ function App(){
     document.getElementById('chips').innerHTML=cs.map(c=>'<button class="chip'+(c.id===cat?' on':'')+'" data-c="'+c.id+'">'+
       (c.name?KV.catName(c):({ru:'Все',uk:'Всі',pl:'Wszystko'}[KV.lang]))+'</button>').join('');
   }
+  // Подпись кнопки корзины. Сумма берётся ТА ЖЕ, что стоит итогом в самой корзине: раньше
+  // тут была стоимость товаров без доставки и скидки, и два числа на одном экране честно
+  // расходились, стоило выбрать доставку или ввести промокод.
+  function cartLabel(n){ return KV.t('cart')+' ('+n+') · '+KV.grandTotal()+' zł'; }
   function cartHook(){ const n=KV.cartCount(); document.getElementById('cartFab').innerHTML=KV.t('cart')+(n?' <b>'+n+'</b>':'');
     // иконка корзины в шапке появляется, только когда в корзине что-то есть
     const tc=document.getElementById('topCart'); if(tc){ tc.hidden=!n; document.getElementById('topCartN').textContent=n||''; }
     const cta=document.getElementById('cta');
-    if(inTg){ tg.MainButton.setParams({text:KV.t('cart')+' ('+n+') · '+KV.cartTotal()+' zł',color:'#5ff3d0',text_color:'#04120e'}); if (n) tg.MainButton.show(); else tg.MainButton.hide();
+    if(inTg){
+      // Кнопку рисует сам Telegram, и каждая правка уезжает к нему отдельным сообщением.
+      // При быстрых нажатиях плюса они копились очередью, и на кнопке висело состояние на
+      // шаг назад. Поэтому серию нажатий схлопываем в одно обновление последним значением.
+      clearTimeout(mainBtnTimer);
+      mainBtnTimer=setTimeout(()=>{
+        const cur=KV.cartCount();
+        tg.MainButton.setParams({text:cartLabel(cur),color:'#5ff3d0',text_color:'#04120e'});
+        if(cur) tg.MainButton.show(); else tg.MainButton.hide();
+      },60);
       // обработчик вешаем один раз: cartHook зовётся на каждое изменение корзины
       if(!mainBtnBound){ mainBtnBound=true; tg.MainButton.onClick(()=>{ if(KV.cartCount()) KV.openCart(); }); }
       cta.style.display='none'; document.body.style.paddingBottom='20px'; }
-    else { cta.style.display=n?'':'none'; cta.textContent=KV.t('cart')+' ('+n+') · '+KV.cartTotal()+' zł'; cta.onclick=()=>KV.openCart(); }
+    else { cta.style.display=n?'':'none'; cta.textContent=cartLabel(n); cta.onclick=()=>KV.openCart(); }
   }
   document.getElementById('chips').onclick=e=>{ const b=e.target.closest('.chip'); if(b){ setCat(b.dataset.c); } };
 

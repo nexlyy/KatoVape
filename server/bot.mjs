@@ -964,12 +964,17 @@ async function notifyOrders() {
   // pending (card checkout started but unpaid) is not shown to managers: only cash on
   // pickup (unpaid) and orders already paid online (paid).
   const list = await sbSelect('orders',
-    'manager_notified_at=is.null&payment_status=in.(unpaid,paid)&select=id,city,items,sum,delivery,address,contact,comment,promo,discount,payment_status,payment_provider,pay_way,profiles(username,telegram_username,telegram_id)').catch(() => []);
+    'manager_notified_at=is.null&payment_status=in.(unpaid,paid)&select=id,city,items,sum,delivery,address,contact,comment,promo,discount,payment_status,payment_provider,pay_way,telegram_id,profiles(username,telegram_username,telegram_id)').catch(() => []);
   for (const o of list || []) {
     const c = o.contact || {};
     const p = o.profiles || {};
     const who = [c.name, c.phone, c.email].filter(Boolean).join('\n');
-    const tgLine = p.telegram_username ? '@' + p.telegram_username : (p.telegram_id ? 'tg ' + p.telegram_id : (p.username || ''));
+    // Телеграм клиента берём и из заказа тоже: заказ из мини-приложения кладётся без профиля,
+    // если человек им ещё не обзавёлся, и тогда связаться с ним было не по чему.
+    const tgId = p.telegram_id || o.telegram_id;
+    const tgLine = p.telegram_username
+      ? '<a href="https://t.me/' + esc(p.telegram_username) + '">@' + esc(p.telegram_username) + '</a>'
+      : (tgId ? '<a href="tg://user?id=' + tgId + '">tg ' + tgId + '</a>' : esc(p.username || ''));
     for (const mid of await managersFor(o.city)) {
       const lang = await langOf(mid);
       const text = [
@@ -986,7 +991,11 @@ async function notifyOrders() {
         tr(lang, 'admOrderDeliv', { deliv: esc(delivLine(lang, o)) }),
         o.comment ? tr(lang, 'admOrderComment', { text: esc(o.comment) }) : '',
         who ? '\n' + tr(lang, 'admOrderClient', { who: esc(who) }) : '',
-        tgLine ? 'Telegram: ' + esc(tgLine) : ''
+        // Ссылка уже размечена, второй раз экранировать нельзя: получились бы видимые теги.
+        tgLine ? 'Telegram: ' + tgLine : '',
+        // Точек выдачи несколько, адрес покупателю не показывается: договориться о месте
+        // должен менеджер, поэтому напоминаем об этом прямо в уведомлении.
+        o.delivery === 'pickup' ? '\n' + tr(lang, 'admPickupCall') : ''
       ].filter(Boolean).join('\n');
       await sendMessage(mid, text).catch(() => {});
     }

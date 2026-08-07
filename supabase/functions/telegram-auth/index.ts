@@ -86,7 +86,21 @@ Deno.serve(async (req) => {
     // City from the questionnaire, so the mini app opens on the right one instead of whatever
     // the previous person left in this phone's storage.
     if (!cur?.city && bu?.city) patch.city = bu.city;
-    await admin.from("profiles").update(patch).eq("id", userId);
+    // The link is checked, not assumed. It used to fail silently when the customer record
+    // bookkeeping raised behind the update: the profile kept no telegram_id, the next login
+    // could not find the account, and the person stayed a guest for good. If the whole patch
+    // cannot be written, the link alone is retried, because that is what login depends on.
+    const { error: uErr } = await admin.from("profiles").update(patch).eq("id", userId);
+    if (uErr) {
+      console.error("profile patch failed for " + userId + ": " + uErr.message);
+      const { error: linkErr } = await admin.from("profiles")
+        .update({ telegram_id: tgUser.id, telegram_username: tgUser.username })
+        .eq("id", userId);
+      if (linkErr) {
+        console.error("telegram link failed for " + userId + ": " + linkErr.message);
+        return json({ error: "cannot link telegram" }, 500);
+      }
+    }
     // Phone and email are unique: a separate request so a conflict cannot undo the link above.
     const contact: Record<string, unknown> = {};
     if (!cur?.phone && bu?.phone) contact.phone = bu.phone;
