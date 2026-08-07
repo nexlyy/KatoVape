@@ -10,7 +10,7 @@ const { api, box } = sandbox(
   [
     slice('function qty(item)', 'function match(item, q)'),
     slice('const BADGES = [', '// Цветная метка вкуса'),
-    slice('function applyStock(rows)', '// вкусы показываем на английском')
+    slice('const SEP =', '// вкусы показываем на английском')
   ],
   {
     db: { updated: '2026-07-29', categories: [] },

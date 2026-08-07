@@ -478,31 +478,62 @@ window.KV = (function () {
     // нового: опустошаем сразу, чтобы чужие строки не переехали.
     cart = {};
     // живые остатки и цены из облака поверх файла (файл остаётся запасным)
-    try { applyStock(await cloudStock()); } catch (e) {}
+    try { await loadCatalog(); } catch (e) {}
   }
 
   // ---- ассортимент из Supabase: остатки и цены правит менеджер в админке ----
-  async function cloudStock() {
+  function cloudOn() {
     const cfg = window.KV_CONFIG || {};
-    if (!(cfg.SUPABASE_URL && cfg.SUPABASE_ANON_KEY) || cfg.BACKEND !== 'supabase') return null;
+    return cfg.SUPABASE_URL && cfg.SUPABASE_ANON_KEY && cfg.BACKEND === 'supabase' ? cfg : null;
+  }
+  async function cloudGet(path) {
+    const cfg = cloudOn(); if (!cfg) return null;
     try {
-      const res = await fetch(cfg.SUPABASE_URL.replace(/\/$/, '') + '/rest/v1/products?city=eq.' +
-        encodeURIComponent(city) + '&select=id,flavor,price,qty,tiers,hit,labels,tint', {
+      const res = await fetch(cfg.SUPABASE_URL.replace(/\/$/, '') + '/rest/v1/' + path, {
         headers: { apikey: cfg.SUPABASE_ANON_KEY }, cache: 'no-store'
       });
-      if (!res.ok) return null;
-      return await res.json();
+      return res.ok ? await res.json() : null;
     } catch (e) { return null; }
+  }
+  function cloudStock() {
+    return cloudGet('products?city=eq.' + encodeURIComponent(city) +
+      '&select=id,flavor,price,qty,tiers,hit,labels');
+  }
+  // Настройки вкуса общие для всех городов, поэтому запрос без города. Их немного, и
+  // ходят они рядом с каталогом: цвет и описание нужны в тот же момент, что и остаток.
+  function cloudMeta() {
+    return cloudGet('flavor_meta?select=product_id,flavor,tint,taste,descr');
+  }
+  // Каталог целиком: остатки города и настройки вкусов одним заходом.
+  async function loadCatalog() {
+    const [rows, meta] = await Promise.all([cloudStock(), cloudMeta()]);
+    applyStock(rows, meta);
+    return rows;
   }
   // Живой каталог это база; файл в data/ задаёт структуру и остаётся запасным на случай, когда
   // облако молчит. Поэтому состав вкусов берётся из базы целиком, а не накладывается поверх
   // файла: раньше вкус, удалённый в панели, продолжал висеть на витрине «в наличии» со старым
   // остатком из файла, а заведённый в панели вкус не появлялся у товара, у которого в файле
   // вкусов нет. Пока облако не ответило (rows == null), витрина живёт файлом, как и жила.
-  function applyStock(rows) {
+  // Настройки вкуса (цвет, профиль, описание) приходят второй таблицей и общие для всех
+  // городов: «Apple Peach» одинаков везде, отличается только остаток на полке.
+  // Разделитель ключа — символ, которого не бывает в названии. Пробел не годится: вкус
+  // «Cola ice» у товара «a» и вкус «ice» у товара «a Cola» дали бы одну и ту же строку.
+  const SEP = String.fromCharCode(0);
+  const metaKey = (id, flavor) => id + SEP + flavor;
+  function metaIndex(meta) {
+    const by = {};
+    (meta || []).forEach(m => { by[metaKey(m.product_id, m.flavor)] = m; });
+    return by;
+  }
+  // Пустой объект описания это не описание: без проверки витрина показала бы undefined.
+  const someText = o => !!o && typeof o === 'object' && ['ru', 'uk', 'pl'].some(l => o[l]);
+
+  function applyStock(rows, meta) {
     if (!rows || !rows.length || !db) return;
     // на какие вкусы сейчас показывает корзина: состав ниже меняется, номера вместе с ним
     const seats = cartFlavorNames();
+    const byMeta = metaIndex(meta);
     const byId = {};
     rows.forEach(r => { (byId[r.id] = byId[r.id] || []).push(r); });
     db.categories.forEach(cat => cat.items.forEach(it => {
@@ -521,8 +552,19 @@ window.KV = (function () {
         // в прежнем порядке, заведённые в панели дописываются в конец.
         const order = Object.keys(was);
         const seat = r => { const i = order.indexOf(r.flavor); return i < 0 ? order.length : i; };
-        it.flavors = named.slice().sort((a, b) => seat(a) - seat(b)).map(r =>
-          Object.assign({}, was[r.flavor], { name: r.flavor, qty: r.qty, tint: r.tint || '' }));
+        it.flavors = named.slice().sort((a, b) => seat(a) - seat(b)).map(r => {
+          const f = Object.assign({}, was[r.flavor], { name: r.flavor, qty: r.qty });
+          const m = byMeta[metaKey(it.id, r.flavor)];
+          if (m) {
+            // Пусто в базе значит «как раньше»: цвет по названию, профиль по названию,
+            // описание из data/flavors.json или собранное по профилю. Поэтому пустое поле
+            // не затирает то, что уже лежит во вкусе из файла каталога.
+            if (m.tint) f.tint = m.tint;
+            if (m.taste) f.taste = m.taste;
+            if (someText(m.descr)) f.desc = m.descr;
+          }
+          return f;
+        });
       } else if (it.flavors) {
         // вкусы кончились, осталась строка без вкуса: карточка становится простой
         delete it.flavors;
@@ -924,9 +966,8 @@ window.KV = (function () {
   // Остатки могли разойтись, пока корзина лежала открытой: кто-то забрал последнюю штуку.
   // Тянем свежие цифры и подрезаем корзину до того, что реально есть.
   async function recheckStock() {
-    const rows = await cloudStock().catch(() => null);
+    const rows = await loadCatalog().catch(() => null);
     if (!rows) return;
-    applyStock(rows);
     let touched = false;
     for (const key in cart) {
       const av = availFor(key);
@@ -1518,15 +1559,13 @@ window.KV = (function () {
     [/энерг|energy|energetyk|мохито|mojito|тропик|tropic|микс|mix|барбарис/, ['#67dcf5', '#2b9cc4']],
     [/мят|mint|м’ят|м'ят|mięt|ментол|menthol|лёд|лед|лід|ice|холод|cool|fresh/, ['#5ff3d0', '#25b195']]
   ];
-  // Гамма, выбранная в панели, главнее словаря: менеджер видел вкус своими глазами, а
-  // словарь знает только слова. Она приходит в строке товара как products.tint, а сам
-  // набор лежит в shared/tints.js, общий с панелью.
-  function tintColors(id) {
-    if (!id) return null;
-    const t = (window.KV_TINTS || []).find(x => x.id === id);
-    return t ? t.c : null;
+  // Цвет, выбранный в панели, главнее словаря: менеджер видел вкус своими глазами, а
+  // словарь знает только слова. В базе хранится один цвет, второй конец градиента
+  // считает shared/tints.js, общий с панелью.
+  function tintColors(v) {
+    return (v && window.KV_TINT && window.KV_TINT.pair(v)) || null;
   }
-  // Принимает и объект вкуса, и просто название: у вкуса из файла каталога гаммы нет.
+  // Принимает и объект вкуса, и просто название: у вкуса из файла каталога цвета нет.
   function flavorColors(f) {
     const picked = f && typeof f === 'object' ? tintColors(f.tint) : null;
     if (picked) return picked;
@@ -2812,7 +2851,7 @@ window.KV = (function () {
     if (!ok) { toast(t('resFail')); return; }
     toast(t('resCancelled'));
     loadCloudProfile();
-    try { applyStock(await cloudStock()); if (hooks.render) hooks.render(); } catch (e) {}
+    try { await loadCatalog(); if (hooks.render) hooks.render(); } catch (e) {}
   }
 
   // ==== способ получения: самовывоз / InPost / курьер ====

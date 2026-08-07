@@ -188,12 +188,55 @@ td .sub{display:block;color:var(--muted);font-size:11.5px;margin-top:2px}
 .flav-n{flex:1;min-width:0;font-size:13px;overflow:hidden;text-overflow:ellipsis}
 .flav input{width:76px;text-align:center}
 .flav .unit{font-size:12px;color:var(--muted)}
-/* гамма вкуса: кружок показывает выбранное, список меняет */
-.tint-dot{width:16px;height:16px;border-radius:50%;flex-shrink:0;border:1px solid var(--line-2)}
-.i-tint{width:132px;flex-shrink:0}
 .add-flav{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
 .add-flav input{width:auto}
-.dirty input,.dirty .i-tint{border-color:var(--accent)}
+.dirty input{border-color:var(--accent)}
+
+/* ---- карточка вкуса: цвет, профиль, описание ---- */
+.tint-dot{width:14px;height:14px;border-radius:50%;flex-shrink:0;border:1px solid var(--line-2)}
+.fl-open{display:inline-flex;align-items:center;gap:7px;white-space:nowrap}
+.fl-open em{font-style:normal;font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+.fl-open.primary em{color:var(--accent-ink);opacity:.7}
+.fl-slot:empty{display:none}
+.fl-edit{background:var(--surface-2);border:1px solid var(--line-2);border-radius:var(--r-lg);
+  padding:14px;margin:2px 0 10px}
+.fl-cols{display:grid;grid-template-columns:minmax(0,260px) minmax(0,1fr);gap:20px}
+.fl-col{min-width:0}
+.fl-h{display:block;font-size:12px;text-transform:uppercase;letter-spacing:.05em;
+  color:var(--muted);margin-bottom:9px}
+
+/* палитра: квадрат насыщенность-светлота и полоса тона */
+.tint-pick{display:flex;flex-direction:column;gap:9px}
+.tint-sv{position:relative;height:120px;border-radius:var(--r);cursor:crosshair;
+  border:1px solid var(--line-2);touch-action:none}
+.tint-hue{position:relative;height:14px;border-radius:99px;cursor:pointer;touch-action:none;
+  background:linear-gradient(to right,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00)}
+.tint-dot-sv,.tint-dot-hue{position:absolute;width:13px;height:13px;border-radius:50%;
+  border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.5);pointer-events:none;transform:translate(-50%,50%)}
+.tint-dot-hue{top:50%;transform:translate(-50%,-50%)}
+.tint-swatches{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.tint-sw{width:24px;height:24px;border-radius:7px;border:1px solid var(--line-2);cursor:pointer}
+.tint-sw:hover{transform:scale(1.12)}
+.tint-row{display:flex;align-items:center;gap:8px;margin-top:10px}
+.tint-prev{width:30px;height:30px;border-radius:8px;flex-shrink:0;border:1px solid var(--line-2)}
+.tint-hex{width:104px;font-variant-numeric:tabular-nums;text-transform:uppercase}
+.fl-edit.bad .tint-hex{border-color:var(--danger)}
+.fl-edit.tint-off .tint-pick{opacity:.5}
+
+/* вкусовой профиль */
+.ts-row{display:flex;align-items:center;gap:10px;margin-bottom:9px;font-size:13px}
+.ts-row > span{width:78px;flex-shrink:0;color:var(--ink-2)}
+.ts-row input[type=range]{flex:1;min-width:0;accent-color:var(--accent)}
+.ts-row input[type=range]:disabled{opacity:.4}
+.ts-row b{width:26px;text-align:right;font-variant-numeric:tabular-nums;color:var(--muted)}
+
+/* описания */
+.fl-desc{margin-top:16px}
+.fl-langs{display:flex;gap:6px;margin-bottom:8px}
+.fl-ta{width:100%;background:var(--field);border:1px solid var(--line);border-radius:var(--r);
+  padding:10px 12px;resize:vertical;line-height:1.5}
+.fl-ta:focus{outline:none;border-color:var(--accent)}
+.fl-acts{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:14px}
 
 /* панель несохранённых изменений */
 .savebar{position:fixed;left:0;right:0;bottom:0;z-index:var(--z-bar);background:var(--surface);
@@ -343,12 +386,14 @@ td .sub{display:block;color:var(--muted);font-size:11.5px;margin-top:2px}
   .i-name,.item-top .btn.danger,.i-hit{grid-column:1 / -1}
   .i-nic,.i-price,.i-tier{width:100%}
   .item-top .btn.danger{justify-content:center}
-  /* в строку вкуса добавился список гамм, на телефоне она переносится */
+  /* в строке вкуса появилась кнопка настройки, на телефоне строка переносится */
   .flav{gap:8px;padding:10px 0;flex-wrap:wrap}
   .flav input{width:72px}
-  .flav .i-tint{width:auto;flex:1;min-width:130px}
-  .add-flav input,.add-flav .i-tint{flex:1 0 100%;width:auto}
+  .add-flav input{flex:1 0 100%}
   .add-flav .btn{flex:1}
+  /* палитра и профиль встают друг под друга: рядом им тесно */
+  .fl-cols{grid-template-columns:1fr;gap:18px}
+  .fl-edit{padding:12px}
   .pform{grid-template-columns:1fr;gap:12px}
 
   /* полоса сохранения: у неё своя строка кнопок, поверх контента, но не поверх меню */
@@ -373,7 +418,7 @@ td .sub{display:block;color:var(--muted);font-size:11.5px;margin-top:2px}
 
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="../../shared/config.js?v=ed39e448"></script>
-<script src="../../shared/tints.js?v=53a824ed"></script>
+<script src="../../shared/tints.js?v=4fe2857b"></script>
 <script src="./export.js?v=d390f344"></script>
 <script type="module">
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.111.0';
@@ -556,6 +601,16 @@ const DICT = {
     'Удалить вкус «': 'Видалити смак «', 'Вкус удалён': 'Смак видалено', 'Впишите название вкуса': 'Впишіть назву смаку',
     'Вкус добавлен': 'Смак додано', 'Нужен id товара': 'Потрібен id товару', 'Товар добавлен': 'Товар додано',
     'Гамма вкуса': 'Гама смаку', 'по названию': 'за назвою',
+    'Настроить': 'Налаштувати', 'Цвет вкуса': 'Колір смаку', 'Вкусовой профиль': 'Смаковий профіль',
+    'Описание': 'Опис', 'Сохранить вкус': 'Зберегти смак', 'Вкус настроен': 'Смак налаштовано',
+    'По названию': 'За назвою', 'Задать вручную': 'Задати вручну',
+    'Холодок': 'Холодок', 'Кислинка': 'Кислинка',
+    'У товара без вкусов настраивать нечего': 'У товару без смаків налаштовувати нічого',
+    'Цвет не разобран: нужен вид #5FF3D0': 'Колір не розібрано: потрібен вигляд #5FF3D0',
+    'Цвет, профиль и описание общие для всех городов.': 'Колір, профіль і опис спільні для всіх міст.',
+    'Пусто: витрина соберёт описание по вкусовому профилю': 'Порожньо: вітрина збере опис за смаковим профілем',
+    'Второй конец градиента считается сам, поэтому вкусы остаются похожими друг на друга. Пусто значит, что цвет подберётся по названию.': 'Другий кінець градієнта рахується сам, тому смаки лишаються схожими один на одного. Порожньо означає, що колір добереться за назвою.',
+    'Шкала 1..10, как её видит покупатель. Пока профиль не задан, витрина считает его по названию вкуса.': 'Шкала 1..10, як її бачить покупець. Поки профіль не задано, вітрина рахує його за назвою смаку.',
     'Мята': 'М’ята', 'Лёд': 'Лід', 'Тропик': 'Тропік', 'Яблоко': 'Яблуко', 'Цитрус': 'Цитрус',
     'Персик': 'Персик', 'Ягоды': 'Ягоди', 'Сладость': 'Солодощі', 'Виноград': 'Виноград',
     'Черника': 'Чорниця', 'Кофе': 'Кава', 'Табак': 'Тютюн', 'Графит': 'Графіт',
@@ -985,6 +1040,16 @@ const DICT = {
     'Удалить вкус «': 'Usunąć smak «', 'Вкус удалён': 'Smak usunięty', 'Впишите название вкуса': 'Wpisz nazwę smaku',
     'Вкус добавлен': 'Smak dodany', 'Нужен id товара': 'Potrzebny jest id produktu', 'Товар добавлен': 'Produkt dodany',
     'Гамма вкуса': 'Kolor smaku', 'по названию': 'wg nazwy',
+    'Настроить': 'Ustaw', 'Цвет вкуса': 'Kolor smaku', 'Вкусовой профиль': 'Profil smaku',
+    'Описание': 'Opis', 'Сохранить вкус': 'Zapisz smak', 'Вкус настроен': 'Smak ustawiony',
+    'По названию': 'Wg nazwy', 'Задать вручную': 'Ustaw ręcznie',
+    'Холодок': 'Chłodek', 'Кислинка': 'Kwaskowatość',
+    'У товара без вкусов настраивать нечего': 'Przy towarze bez smaków nie ma czego ustawiać',
+    'Цвет не разобран: нужен вид #5FF3D0': 'Nie rozpoznano koloru: potrzebny zapis #5FF3D0',
+    'Цвет, профиль и описание общие для всех городов.': 'Kolor, profil i opis są wspólne dla wszystkich miast.',
+    'Пусто: витрина соберёт описание по вкусовому профилю': 'Pusto: sklep złoży opis wg profilu smaku',
+    'Второй конец градиента считается сам, поэтому вкусы остаются похожими друг на друга. Пусто значит, что цвет подберётся по названию.': 'Drugi koniec gradientu liczy się sam, dlatego smaki pozostają do siebie podobne. Pusto znaczy, że kolor dobierze się wg nazwy.',
+    'Шкала 1..10, как её видит покупатель. Пока профиль не задан, витрина считает его по названию вкуса.': 'Skala 1..10, taka jak widzi ją klient. Dopóki profil nie jest zadany, sklep liczy go wg nazwy smaku.',
     'Мята': 'Mięta', 'Лёд': 'Lód', 'Тропик': 'Tropik', 'Яблоко': 'Jabłko', 'Цитрус': 'Cytrus',
     'Персик': 'Brzoskwinia', 'Ягоды': 'Jagody', 'Сладость': 'Słodycz', 'Виноград': 'Winogrono',
     'Черника': 'Borówka', 'Кофе': 'Kawa', 'Табак': 'Tytoń', 'Графит': 'Grafit',
@@ -3375,22 +3440,84 @@ const LABELS = [['hit', 'Хит'], ['unique', 'Уникальный'], ['restock
 // Гамма вкуса. Цвета лежат в shared/tints.js, общие с витриной, а подписи здесь: словарь
 // панели переводит их на украинский и польский. Пустая гамма значит «по названию»: витрина
 // подбирает цвет сама, как делала всегда.
+// Подписи к образцам палитры. Сами цвета лежат в shared/tints.js, общем с витриной.
 const TINT_RU = {
   mint: 'Мята', ice: 'Лёд', tropic: 'Тропик', apple: 'Яблоко', citrus: 'Цитрус',
   peach: 'Персик', berry: 'Ягоды', candy: 'Сладость', grape: 'Виноград',
   blueberry: 'Черника', coffee: 'Кофе', tobacco: 'Табак', graphite: 'Графит'
 };
-const TINTS = () => window.KV_TINTS || [];
-function tintGrad(id) {
-  const t = TINTS().find(x => x.id === id);
-  // без гаммы показываем не цвет, а прочерк: угадать за витрину панель всё равно не может
-  return t ? `linear-gradient(165deg,${t.c[0]},${t.c[1]})` : 'var(--line-2)';
+// Три полосы вкусового профиля. Витрина показывает их шкалой 1..10, хранит 0..100.
+const TASTE_RU = [['sweet', 'Сладость'], ['cool', 'Холодок'], ['sour', 'Кислинка']];
+const DESC_LANGS = [['ru', 'RU'], ['uk', 'UK'], ['pl', 'PL']];
+const TINT = () => window.KV_TINT;
+
+function tintGrad(hex) {
+  const g = TINT().grad(hex);
+  // цвет не выбран: показываем не цвет, а прочерк, потому что угадывать за витрину
+  // панель всё равно не станет, она подберёт его по названию вкуса сама
+  return g || 'var(--line-2)';
 }
-function tintSelect(attr, cur) {
-  return `<select class="i-tint" ${attr} title="${L('Гамма вкуса')}">` +
-    `<option value=""${cur ? '' : ' selected'}>${L('по названию')}</option>` +
-    TINTS().map(t => `<option value="${t.id}"${t.id === cur ? ' selected' : ''}>` +
-      `${L(TINT_RU[t.id] || t.id)}</option>`).join('') + '</select>';
+
+// Настройки вкуса общие для всех городов, поэтому ключ без города.
+const FL_SEP = String.fromCharCode(0);
+const flKey = (id, flavor) => id + FL_SEP + flavor;
+let flavorMeta = {};    // ключ -> строка flavor_meta
+let flOpen = '';        // какой вкус сейчас раскрыт, «gi:ri»
+
+// Карточка вкуса. Раскрывается прямо под строкой, чтобы соседние вкусы оставались перед
+// глазами: цвета подбирают, сравнивая их друг с другом, а не по одному.
+function flavorCard(r) {
+  const m = flavorMeta[flKey(r.id, r.flavor)] || {};
+  const hex = TINT().norm(m.tint) || '';
+  const taste = m.taste || null;
+  const d = m.descr || {};
+  const bar = ([k, name]) => {
+    const v = taste ? Math.round(Number(taste[k]) || 0) : 50;
+    return `<label class="ts-row"><span>${L(name)}</span>
+      <input type="range" min="0" max="100" step="10" value="${v}" data-ts="${k}"${taste ? '' : ' disabled'}>
+      <b data-tsv="${k}">${taste ? Math.max(1, Math.round(v / 10)) : '—'}</b></label>`;
+  };
+  return `<div class="fl-edit">
+    <div class="fl-cols">
+      <div class="fl-col">
+        <b class="fl-h">${L('Цвет вкуса')}</b>
+        <div class="tint-pick">
+          <div class="tint-sv" data-sv tabindex="0"><i class="tint-dot-sv"></i></div>
+          <div class="tint-hue" data-hue tabindex="0"><i class="tint-dot-hue"></i></div>
+        </div>
+        <div class="tint-swatches">${TINT().PRESETS.map(p =>
+          `<button type="button" class="tint-sw" data-sw="${p.c}" title="${L(TINT_RU[p.id] || p.id)}"
+            style="background:${TINT().grad(p.c)}"></button>`).join('')}</div>
+        <div class="tint-row">
+          <span class="tint-prev" data-prev style="background:${tintGrad(hex)}"></span>
+          <input class="tint-hex" data-hex value="${hex}" placeholder="#5FF3D0" maxlength="7" spellcheck="false">
+          <button type="button" class="btn sm quiet" data-tint-off>${L('по названию')}</button>
+        </div>
+        <p class="hint">${L('Второй конец градиента считается сам, поэтому вкусы остаются похожими друг на друга. Пусто значит, что цвет подберётся по названию.')}</p>
+      </div>
+      <div class="fl-col">
+        <b class="fl-h">${L('Вкусовой профиль')}</b>
+        ${TASTE_RU.map(bar).join('')}
+        <div class="tools">
+          <button type="button" class="btn sm ${taste ? '' : 'primary'}" data-ts-auto>${L('По названию')}</button>
+          <button type="button" class="btn sm ${taste ? 'primary' : ''}" data-ts-on>${L('Задать вручную')}</button>
+        </div>
+        <p class="hint">${L('Шкала 1..10, как её видит покупатель. Пока профиль не задан, витрина считает его по названию вкуса.')}</p>
+      </div>
+    </div>
+    <div class="fl-desc">
+      <b class="fl-h">${L('Описание')}</b>
+      <div class="fl-langs">${DESC_LANGS.map(([l], i) =>
+        `<button type="button" class="btn sm ${i ? '' : 'primary'}" data-dl="${l}">${l.toUpperCase()}</button>`).join('')}</div>
+      ${DESC_LANGS.map(([l], i) =>
+        `<textarea class="fl-ta" data-d="${l}" rows="4" maxlength="900"${i ? ' hidden' : ''}
+          placeholder="${L('Пусто: витрина соберёт описание по вкусовому профилю')}">${esc(d[l] || '')}</textarea>`).join('')}
+    </div>
+    <div class="fl-acts">
+      <button type="button" class="btn primary" data-fl-save>${L('Сохранить вкус')}</button>
+      <span class="hint">${L('Цвет, профиль и описание общие для всех городов.')}</span>
+    </div>
+  </div>`;
 }
 
 function tierP(tiers, q) { const t = (tiers || []).find(x => +x.q === q); return t && t.p != null ? t.p : ''; }
@@ -3445,12 +3572,10 @@ function changedItems() {
       const row = card.querySelector('.flav[data-f="' + gi + ':' + ri + '"]'); if (!row) return;
       const qtyRaw = row.querySelector('[data-q]').value.trim();
       const qty = qtyRaw === '' ? 0 : Number(qtyRaw);
-      // гамма это свойство вкуса, а не товара: у одной модели вкусы разного цвета
-      const tintSel = row.querySelector('[data-t]');
-      const tint = tintSel ? tintSel.value : (r.tint || '');
-      const rowChanged = qty !== r.qty || tint !== (r.tint || '');
-      row.classList.toggle('dirty', rowChanged);
-      if (headChanged || rowChanged) rows.push({ r, qty, tint });
+      // цвет, профиль и описание живут в flavor_meta и сохраняются своей кнопкой:
+      // они общие для городов, а здесь считаются правки этого города
+      row.classList.toggle('dirty', qty !== r.qty);
+      if (headChanged || qty !== r.qty) rows.push({ r, qty });
     });
     card.classList.toggle('dirty', headChanged);
     // Опечатка в ступени раньше проходила молча: нечисло просто не попадало в tiers, и
@@ -3477,7 +3602,13 @@ window.addEventListener('beforeunload', e => { if (hasChanges()) { e.preventDefa
 async function renderProducts(m) {
   // менеджер не должен даже случайно открыть чужой город (RLS его всё равно не пустит)
   if (myCity() && cityNow !== myCity()) cityNow = myCity();
-  const { data } = await sb.from('products').select('*').eq('city', cityNow).order('id').order('flavor');
+  // Настройки вкусов идут рядом с ассортиментом: они общие для городов, поэтому без фильтра.
+  const [{ data }, { data: meta }] = await Promise.all([
+    sb.from('products').select('*').eq('city', cityNow).order('id').order('flavor'),
+    sb.from('flavor_meta').select('product_id,flavor,tint,taste,descr')
+  ]);
+  flavorMeta = {};
+  (meta || []).forEach(m => { flavorMeta[flKey(m.product_id, m.flavor)] = m; });
   const rows = data || [];
   groups = []; const byId = {};
   rows.forEach(r => {
@@ -3518,20 +3649,27 @@ async function renderProducts(m) {
         <button class="btn sm danger" data-delp="${gi}">${L('Удалить товар')}</button>
       </div>
       <div class="item-id">${esc(g.id)}</div>
-      <div class="flavs">${g.items.map((r, ri) => `
+      <div class="flavs">${g.items.map((r, ri) => {
+        const meta = flavorMeta[flKey(r.id, r.flavor)] || {};
+        const set = [meta.tint, meta.taste, meta.descr && Object.keys(meta.descr).length].filter(Boolean).length;
+        return `
         <div class="flav" data-f="${gi}:${ri}">
           <span class="flav-n">${esc(r.flavor || L('без вкуса'))}</span>
           <input data-q="1" value="${r.qty == null ? 0 : r.qty}" inputmode="numeric">
           <span class="unit">${L('шт')}</span>
-          <span class="tint-dot" data-tv="${gi}:${ri}" style="background:${tintGrad(r.tint)}"></span>
-          ${tintSelect(`data-t="${gi}:${ri}"`, r.tint || '')}
+          <button class="btn sm fl-open${flOpen === gi + ':' + ri ? ' primary' : ''}" data-fl="${gi}:${ri}"
+            ${r.flavor ? '' : 'disabled title="' + L('У товара без вкусов настраивать нечего') + '"'}>
+            <span class="tint-dot" style="background:${tintGrad(meta.tint)}"></span>
+            ${L('Настроить')}${set ? ` <em>${set}/3</em>` : ''}
+          </button>
           <button class="btn sm" data-woff="${gi}:${ri}" title="${L('Списать')}">${L('Списать')}</button>
           <button class="btn sm danger" data-delf="${gi}:${ri}" title="${L('Удалить вкус')}">×</button>
-        </div>`).join('')}</div>
+        </div>
+        <div class="fl-slot" data-fs="${gi}:${ri}">${flOpen === gi + ':' + ri ? flavorCard(r) : ''}</div>`;
+      }).join('')}</div>
       <div class="add-flav">
         <input data-nf="${gi}" placeholder="${L('Новый вкус')}" style="width:180px">
         <input data-nq="${gi}" placeholder="${L('шт')}" style="width:74px" inputmode="numeric">
-        ${tintSelect(`data-nt="${gi}"`, '')}
         <button class="btn sm" data-addf="${gi}">${L('Добавить вкус')}</button>
       </div>
     </div>`).join('') : empty(L('В этом городе пусто'), L('Добавьте первый товар формой ниже.'));
@@ -3553,7 +3691,136 @@ async function renderProducts(m) {
   updateSaveBar();
 }
 
+// ---- карточка вкуса: палитра, профиль, описания ----
+//
+// Палитра собрана руками, без библиотек: страница панели ходит только на свои файлы и в
+// Supabase, и тянуть ради выбора цвета чужой скрипт с CDN мимо этой политики не хочется.
+// Внутри всё живёт в HSV, наружу отдаётся #rrggbb.
+function bindFlavorCard(slot, r) {
+  const card = slot.querySelector('.fl-edit'); if (!card) return;
+  const $ = s => card.querySelector(s);
+  const sv = $('[data-sv]'), hue = $('[data-hue]'), hexIn = $('[data-hex]'), prev = $('[data-prev]');
+  const T = TINT();
+  let hsv = T.toHsv(T.norm(hexIn.value) || '#5ff3d0');
+  let on = !!T.norm(hexIn.value);          // цвет назначен или «по названию»
+
+  function paint(writeField) {
+    const hex = T.fromHsv(hsv.h, hsv.s, hsv.v);
+    sv.style.background = 'linear-gradient(to top,#000,transparent),' +
+      'linear-gradient(to right,#fff,' + T.fromHsv(hsv.h, 100, 100) + ')';
+    sv.querySelector('.tint-dot-sv').style.left = hsv.s + '%';
+    sv.querySelector('.tint-dot-sv').style.bottom = hsv.v + '%';
+    hue.querySelector('.tint-dot-hue').style.left = (hsv.h / 360 * 100) + '%';
+    prev.style.background = on ? T.grad(hex) : 'var(--line-2)';
+    card.classList.toggle('tint-off', !on);
+    if (writeField) hexIn.value = on ? hex : '';
+  }
+  // Тянем и мышью, и пальцем: pointer-события покрывают оба, а setPointerCapture не даёт
+  // потерять курсор, когда его уводят за край квадрата.
+  function drag(el, onMove) {
+    const go = e => {
+      const b = el.getBoundingClientRect();
+      onMove(Math.min(Math.max((e.clientX - b.left) / b.width, 0), 1),
+             Math.min(Math.max((e.clientY - b.top) / b.height, 0), 1));
+      on = true; paint(true);
+    };
+    el.addEventListener('pointerdown', e => {
+      e.preventDefault(); el.setPointerCapture(e.pointerId); go(e);
+      const move = ev => go(ev);
+      const up = ev => {
+        el.releasePointerCapture(ev.pointerId);
+        el.removeEventListener('pointermove', move);
+        el.removeEventListener('pointerup', up);
+      };
+      el.addEventListener('pointermove', move);
+      el.addEventListener('pointerup', up);
+    });
+  }
+  drag(sv, (x, y) => { hsv.s = x * 100; hsv.v = (1 - y) * 100; });
+  drag(hue, x => { hsv.h = x * 360; });
+
+  hexIn.oninput = () => {
+    const hex = T.norm(hexIn.value);
+    if (!hex) { on = hexIn.value.trim() === '' ? false : on; card.classList.toggle('bad', !!hexIn.value.trim()); return; }
+    card.classList.remove('bad');
+    hsv = T.toHsv(hex); on = true; paint(false);
+  };
+  card.querySelectorAll('[data-sw]').forEach(b => b.onclick = () => {
+    hsv = T.toHsv(b.dataset.sw); on = true; paint(true); card.classList.remove('bad');
+  });
+  $('[data-tint-off]').onclick = () => { on = false; paint(true); card.classList.remove('bad'); };
+
+  // ---- вкусовой профиль ----
+  const sliders = [...card.querySelectorAll('[data-ts]')];
+  const setAuto = auto => {
+    sliders.forEach(s => { s.disabled = auto; });
+    card.querySelectorAll('[data-tsv]').forEach(b => {
+      const s = card.querySelector('[data-ts="' + b.dataset.tsv + '"]');
+      b.textContent = auto ? '—' : Math.max(1, Math.round(s.value / 10));
+    });
+    $('[data-ts-auto]').classList.toggle('primary', auto);
+    $('[data-ts-on]').classList.toggle('primary', !auto);
+  };
+  sliders.forEach(s => s.oninput = () => {
+    card.querySelector('[data-tsv="' + s.dataset.ts + '"]').textContent = Math.max(1, Math.round(s.value / 10));
+  });
+  $('[data-ts-auto]').onclick = () => setAuto(true);
+  $('[data-ts-on]').onclick = () => setAuto(false);
+
+  // ---- описания: язык переключается вкладками, тексты живут все три сразу ----
+  card.querySelectorAll('[data-dl]').forEach(b => b.onclick = () => {
+    card.querySelectorAll('[data-dl]').forEach(x => x.classList.toggle('primary', x === b));
+    card.querySelectorAll('[data-d]').forEach(t => { t.hidden = t.dataset.d !== b.dataset.dl; });
+  });
+
+  $('[data-fl-save]').onclick = async (e) => {
+    const btn = e.currentTarget;
+    const hex = T.norm(hexIn.value);
+    if (hexIn.value.trim() && !hex) return toast(L('Цвет не разобран: нужен вид #5FF3D0'), true);
+    const auto = sliders[0].disabled;
+    const descr = {};
+    card.querySelectorAll('[data-d]').forEach(t => {
+      const v = t.value.trim();
+      if (v) descr[t.dataset.d] = v;
+    });
+    const row = {
+      product_id: r.id, flavor: r.flavor,
+      tint: on && hex ? hex : null,
+      taste: auto ? null : Object.fromEntries(sliders.map(s => [s.dataset.ts, +s.value])),
+      descr: Object.keys(descr).length ? descr : null,
+      updated_at: new Date().toISOString()
+    };
+    btn.disabled = true;
+    const { error } = await sb.from('flavor_meta').upsert([row], { onConflict: 'product_id,flavor' });
+    btn.disabled = false;
+    if (error) return toast(productsErr(error), true);
+    flavorMeta[flKey(r.id, r.flavor)] = row;
+    toast(L('Вкус настроен'));
+    render();
+  };
+
+  paint(false);
+}
+
 function bindProducts(m) {
+  // Раскрытие карточки не перерисовывает список: иначе пропала бы прокрутка и правки
+  // в соседних полях, которые ещё не сохранены.
+  m.querySelectorAll('[data-fl]').forEach(b => b.onclick = () => {
+    const key = b.dataset.fl;
+    const [gi, ri] = key.split(':').map(Number);
+    const r = groups[gi] && groups[gi].items[ri]; if (!r || !r.flavor) return;
+    const slot = m.querySelector('.fl-slot[data-fs="' + key + '"]');
+    const openNow = flOpen === key;
+    // открыт всегда один: две палитры рядом сбивают с толку, а место занимают
+    m.querySelectorAll('.fl-slot').forEach(s => { s.innerHTML = ''; });
+    m.querySelectorAll('[data-fl]').forEach(x => x.classList.remove('primary'));
+    flOpen = openNow ? '' : key;
+    if (openNow) return;
+    b.classList.add('primary');
+    slot.innerHTML = flavorCard(r);
+    bindFlavorCard(slot, r);
+    slot.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  });
   m.querySelectorAll('[data-city]').forEach(b => b.onclick = () => {
     if (hasChanges() && !confirm(L('Есть несохранённые изменения. Сменить город и потерять их?'))) return;
     clearDirty(); cityNow = b.dataset.city; render();
@@ -3574,18 +3841,11 @@ function bindProducts(m) {
   // Пересчитываем при каждом касании поля: вернул значение обратно — панель сама уходит.
   // Слушаем и input, и change: списку и галочке первое событие не полагается. Раньше в
   // условии стоял data-p="hit", которого у меток нет, и снятая галочка полосу не поднимала.
-  const FIELDS = '[data-p],[data-q],[data-lb],[data-t]';
+  // Поля товара и остатки; карточка вкуса сохраняется своей кнопкой и сюда не входит.
+  const FIELDS = '[data-p],[data-q],[data-lb]';
   m.querySelectorAll('.item').forEach(card => {
     card.addEventListener('input', e => { if (e.target.closest(FIELDS)) updateSaveBar(); });
-    card.addEventListener('change', e => {
-      if (!e.target.closest(FIELDS)) return;
-      // кружок гаммы двигаем сразу: иначе выбранный цвет виден только после сохранения
-      if (e.target.dataset.t) {
-        const dot = card.querySelector('[data-tv="' + e.target.dataset.t + '"]');
-        if (dot) dot.style.background = tintGrad(e.target.value);
-      }
-      updateSaveBar();
-    });
+    card.addEventListener('change', e => { if (e.target.closest(FIELDS)) updateSaveBar(); });
   });
   m.querySelectorAll('[data-delp]').forEach(b => b.onclick = async () => {
     const g = groups[+b.dataset.delp]; if (!g) return;
@@ -3632,15 +3892,12 @@ function bindProducts(m) {
     const gi = +b.dataset.addf, g = groups[gi]; if (!g) return;
     const fl = m.querySelector('[data-nf="' + gi + '"]').value.trim();
     const qv = m.querySelector('[data-nq="' + gi + '"]').value.trim();
-    const nt = m.querySelector('[data-nt="' + gi + '"]');
     if (!fl) return toast(L('Впишите название вкуса'), true);
     const h = g.head;
     const { error } = await sb.from('products').upsert([{
       id: g.id, city: cityNow, flavor: fl, name: h.name, brand: h.brand, category: h.category,
       // новый вкус наследует ярлык и ступени товара, иначе строки одного товара разъедутся
       nic: h.nic, price: h.price, cost: h.cost, tiers: h.tiers || null, labels: h.labels || [],
-      // а гамма у вкуса своя: наследовать её от соседа значит красить всю модель одинаково
-      tint: (nt && nt.value) || null,
       qty: +qv || 0, updated_at: new Date().toISOString()
     }], { onConflict: 'id,city,flavor' });
     if (error) return toast(productsErr(error), true);
@@ -3674,10 +3931,10 @@ async function saveProducts() {
   const broken = changed.find(x => x.bad);
   if (broken) return toast(L('Цена у «') + (broken.name || broken.g.id) + L('» не число'), true);
   const out = [];
-  changed.forEach(x => x.rows.forEach(({ r, qty, tint }) => out.push({
+  changed.forEach(x => x.rows.forEach(({ r, qty }) => out.push({
     id: r.id, city: r.city, flavor: r.flavor, name: x.name || r.id,
     brand: x.brand || null, category: x.category || null, nic: x.nic || null,
-    price: x.price, cost: x.cost, tiers: x.tiers, labels: x.labels, tint: tint || null,
+    price: x.price, cost: x.cost, tiers: x.tiers, labels: x.labels,
     qty: Number.isFinite(qty) ? qty : 0, updated_at: new Date().toISOString()
   })));
   if (!out.length) { clearDirty(); return toast(L('Изменений нет')); }
@@ -3709,7 +3966,7 @@ async function tgAuthFromHash() {
 }
 
 // Отпечаток этой сборки, его проставляет npm run stamp.
-const BUILD = 'b957028d';
+const BUILD = '376a9e5d';
 
 // Браузер держит саму страницу панели в кеше, и человек видит вчерашний интерфейс, считая,
 // что правки не приехали. Отпечаток рядом лежащего version.json читается мимо кеша: разошлось

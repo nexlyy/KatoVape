@@ -53,7 +53,7 @@ window.KV_GUIDE_PL = {
           ['note', 'tip', 'Cena hurtowa liczy się po modelu, nie po smaku.', 'Trzy truskawki, dwa mango i pięć coli to dziesięć sztuk jednego modelu i cały koszyk pójdzie po cenie dziesiątki. Różne modele się nie sumują.'],
           ['h3', 'Smaki'],
           ['p', 'Przycisk «Dodaj smak» tworzy nowy wiersz przy tym samym modelu. Nowy smak bierze cenę i etykiety towaru. Usunąć można pojedynczy smak albo cały towar.'],
-          ['p', 'Obok stanu jest lista kolorów. To kolor paska smaku w karcie na sklepie. «Wg nazwy» znaczy, że kolor sklep dobierze sam: arbuz czerwonym, miętę zieloną. Nazwa nieznana — kolor wyjdzie przypadkowy, wtedy właśnie wybierz kolor ręcznie.'],
+          ['p', 'Przycisk «Ustaw» przy smaku rozwija jego kartę: kolor, profil smaku i opis. Cyfra na przycisku mówi, ile z trzech jest już wypełnione. Ustawienia są wspólne dla wszystkich miast: smak wszędzie jest ten sam, różni się tylko stan na półce. Kolor bierze się z palety albo wpisuje kodem w rodzaju #FF5F7D, drugi koniec gradientu liczy się sam. Profil to trzy paski, które klient widzi jako skalę do dziesięciu. Opis pisze się w trzech językach osobnymi zakładkami, pusty język podstawi rosyjski. Każde puste pole znaczy «jak wcześniej»: sklep dobierze kolor i tekst wg nazwy smaku.'],
           ['note', 'warn', 'Stan to jest to, co naprawdę leży na półce.', 'Witryna pokazuje te liczby od razu. Wpiszesz zero — towar idzie do «brak w magazynie», a u klienta pojawia się przycisk «powiadom o dostawie». Wpiszesz od jednego do trzech — zapala się «zostało mało».'],
           ['h3', 'Odpisanie'],
           ['p', 'Przycisk «Odpisz» zdejmuje towar z półki bez sprzedaży: wada, zniszczenie, niedobór albo wzięliśmy sobie. Zapyta o ilość i powód.'],

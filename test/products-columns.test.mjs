@@ -22,6 +22,11 @@ function productColumns() {
   for (const m of all.matchAll(/alter table public\.products\s+add column if not exists ([a-z_]+)/g)) {
     if (!cols.includes(m[1])) cols.push(m[1]);
   }
+  // Колонку могли и убрать: гамма пожила в products, пока не уехала в flavor_meta.
+  for (const m of all.matchAll(/alter table public\.products\s+drop column if exists ([a-z_]+)/g)) {
+    const at = cols.indexOf(m[1]);
+    if (at >= 0) cols.splice(at, 1);
+  }
   return cols;
 }
 
@@ -48,7 +53,8 @@ test('анониму открыто всё, кроме закупочной це
 
 test('витрина не просит закупочную цену', () => {
   const core = repoFile('shared/core.js');
-  const sel = core.match(/select=id,flavor,price,qty,tiers,hit,labels,tint/);
+  const sel = core.match(/select=id,flavor,price,qty,tiers,hit,labels/);
   assert.ok(sel, 'не найден запрос каталога, проверьте, что он не начал брать всё подряд');
   assert.ok(!/products\?[^']*select=\*/.test(core), 'витрина просит все колонки, закупка утечёт');
+  assert.ok(!/flavor_meta\?[^']*select=\*/.test(core), 'настройки вкуса тоже просим поимённо');
 });

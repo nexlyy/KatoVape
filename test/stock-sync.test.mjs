@@ -6,19 +6,21 @@
 // удаление соседа не должно подменять человеку выбор.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { slice, sandbox, plain } from './helpers/core-src.mjs';
-
-const TINTS = [{ id: 'berry', c: ['#ff5f7d', '#d22a4b'] }, { id: 'mint', c: ['#5ff3d0', '#25b195'] }];
+import { slice, sandbox, plain, repoFile } from './helpers/core-src.mjs';
 
 // applyStock переставляет корзину, поэтому в песочницу идут и функции корзины. Хранилища
-// в Node нет: подменяем его словарём, чтобы saveCart не падал.
+// в Node нет: подменяем его словарём, чтобы saveCart не падал. Палитру берём настоящую,
+// файлом: копия набора цветов в тесте разошлась бы с витриной в первую же правку.
 function box(items, cart) {
   const store = {};
+  const win = {};
   const env = sandbox(
     [
+      'const window = globalThis.window;',
+      repoFile('shared/tints.js'),
       slice('function cartStoreKey()', 'function t(key, n)'),
       slice('function saveCart()', 'function cartCount()'),
-      slice('function applyStock(rows)', '// вкусы показываем на английском'),
+      slice('const SEP =', '// вкусы показываем на английском'),
       slice('function flavorColors(f)', '// ==== "с этим берут"'),
       slice('const FLAVOR_HUES = [', 'function flavorColors(f)'),
       'function hashId(s) { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0; return h; }'
@@ -28,7 +30,8 @@ function box(items, cart) {
       city: 'katowice',
       cart: { ...cart },
       hooks: {},
-      window: { KV_TINTS: TINTS },
+      window: win,
+      globalThis: { window: win },
       drawDrawer: () => {},
       localStorage: {
         getItem: (k) => (k in store ? store[k] : null),
@@ -38,8 +41,11 @@ function box(items, cart) {
     },
     ['applyStock', 'flavorColors', 'loadCart', 'saveCart']
   );
+  env.win = win;
   return env;
 }
+// строка flavor_meta: настройки вкуса общие для всех городов
+const meta = (id, flavor, over) => Object.assign({ product_id: id, flavor }, over || {});
 
 const row = (id, flavor, over) => Object.assign({ id, flavor, qty: 5 }, over || {});
 // список вкусов собран внутри песочницы, у него чужой Array.prototype
@@ -135,19 +141,55 @@ test('отложенная корзина находит свой вкус по�
   assert.deepEqual({ ...env.cart }, { 'hqd::0': 2 }, 'Mango должен остаться Mango');
 });
 
-test('гамма из панели главнее угаданной по названию', () => {
+test('цвет из панели главнее угаданного по названию', () => {
+  const items = [{ id: 'hqd', name: 'HQD', flavors: [{ name: 'Mango', qty: 3 }] }];
+  const { api, win } = box(items, {});
+  api.applyStock([row('hqd', 'Mango')], [meta('hqd', 'Mango', { tint: '#ff5f7d' })]);
+  assert.equal(items[0].flavors[0].tint, '#ff5f7d');
+  // второй конец градиента считает палитра, а не база
+  assert.deepEqual(plain(api.flavorColors(items[0].flavors[0])), plain(win.KV_TINT.pair('#ff5f7d')));
+});
+
+test('вкусовой профиль и описание доезжают из базы', () => {
   const items = [{ id: 'hqd', name: 'HQD', flavors: [{ name: 'Mango', qty: 3 }] }];
   const { api } = box(items, {});
-  api.applyStock([row('hqd', 'Mango', { tint: 'berry' })]);
-  assert.equal(items[0].flavors[0].tint, 'berry');
-  assert.deepEqual(plain(api.flavorColors(items[0].flavors[0])), TINTS[0].c);
+  api.applyStock([row('hqd', 'Mango')], [meta('hqd', 'Mango', {
+    taste: { sweet: 90, cool: 10, sour: 20 }, descr: { ru: 'Спелое манго', pl: 'Dojrzałe mango' }
+  })]);
+  const f = items[0].flavors[0];
+  assert.deepEqual({ ...f.taste }, { sweet: 90, cool: 10, sour: 20 });
+  assert.equal(f.desc.ru, 'Спелое манго');
 });
 
-test('без гаммы цвет по-прежнему подбирается по названию', () => {
-  assert.deepEqual(plain(api0.flavorColors({ name: 'Mango', tint: '' })),
-    plain(api0.flavorColors('Mango')), 'объект и строка должны давать один цвет');
-  assert.deepEqual(plain(api0.flavorColors({ name: 'Mango', tint: 'нет-такой' })),
-    plain(api0.flavorColors('Mango')), 'незнакомая гамма не должна ломать цвет');
+test('пустые настройки ничего не затирают', () => {
+  const items = [{ id: 'hqd', name: 'HQD', flavors: [
+    { name: 'Mango', qty: 3, taste: { sweet: 50, cool: 50, sour: 50 } }] }];
+  const { api } = box(items, {});
+  // строка в базе есть, но поля пустые: значит «как раньше», а не «сотри»
+  api.applyStock([row('hqd', 'Mango')], [meta('hqd', 'Mango', { tint: null, taste: null, descr: {} })]);
+  const f = items[0].flavors[0];
+  assert.equal(f.tint, undefined);
+  assert.equal(f.desc, undefined, 'пустой объект описания не должен становиться описанием');
+  assert.deepEqual({ ...f.taste }, { sweet: 50, cool: 50, sour: 50 }, 'профиль из файла потерян');
 });
 
-const api0 = box([], {}).api;
+test('настройки не путаются между похожими парами товар+вкус', () => {
+  const items = [
+    { id: 'a', name: 'A', flavors: [{ name: 'Cola ice', qty: 1 }] },
+    { id: 'a Cola', name: 'B', flavors: [{ name: 'ice', qty: 1 }] }
+  ];
+  const { api } = box(items, {});
+  api.applyStock(
+    [row('a', 'Cola ice'), row('a Cola', 'ice')],
+    [meta('a', 'Cola ice', { tint: '#ff5f7d' }), meta('a Cola', 'ice', { tint: '#5ff3d0' })]);
+  assert.equal(items[0].flavors[0].tint, '#ff5f7d');
+  assert.equal(items[1].flavors[0].tint, '#5ff3d0');
+});
+
+test('без цвета он по-прежнему подбирается по названию', () => {
+  const { api } = box([], {});
+  assert.deepEqual(plain(api.flavorColors({ name: 'Mango', tint: '' })),
+    plain(api.flavorColors('Mango')), 'объект и строка должны давать один цвет');
+  assert.deepEqual(plain(api.flavorColors({ name: 'Mango', tint: 'не-цвет' })),
+    plain(api.flavorColors('Mango')), 'мусор в поле цвета не должен ломать карточку');
+});
