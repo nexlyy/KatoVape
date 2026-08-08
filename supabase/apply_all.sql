@@ -1,4 +1,4 @@
--- KatoVape: вся схема одним файлом (0001..0060).
+-- KatoVape: вся схема одним файлом (0001..0061).
 --
 -- Файл собран автоматически: npm run schema. Руками не правьте, правьте миграцию.
 -- Обычный путь раскатки это `supabase db push`; этот файл на случай, когда CLI недоступен:
@@ -4674,5 +4674,23 @@ create policy flavors_update on storage.objects for update to authenticated
 drop policy if exists flavors_delete on storage.objects;
 create policy flavors_delete on storage.objects for delete to authenticated
   using (bucket_id = 'flavors' and public.is_admin());
+
+notify pgrst, 'reload schema';
+
+
+-- ================= 0061_flavor_meta_columns.sql ================
+
+-- Права на настройки вкуса выдаются поимённо по колонкам.
+--
+-- 0058 открыла анониму таблицу flavor_meta целиком. Секретов в ней сейчас нет, но правило,
+-- заведённое в 0053 для products, ровно об этом: колонка, добавленная завтра, окажется
+-- открытой сама собой, и заметит это никто. Достаточно завести поле вроде «комментарий для
+-- менеджера» или «закупка у поставщика вкуса», и оно уедет в браузер вместе с каталогом.
+--
+-- Витрине нужны ровно те пять полей, которые она и просит.
+
+revoke select on public.flavor_meta from anon;
+grant select (product_id, flavor, tint, taste, descr, photo)
+  on public.flavor_meta to anon;
 
 notify pgrst, 'reload schema';

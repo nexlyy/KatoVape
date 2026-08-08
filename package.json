@@ -9,6 +9,8 @@
     "stamp:check": "node tools/stamp-assets.mjs --check",
     "schema": "node tools/build-schema.mjs",
     "schema:check": "node tools/build-schema.mjs --check",
+    "security": "node tools/security-report.mjs",
+    "security:live": "node tools/security-live.mjs",
     "tiers": "node tools/seed-tiers.mjs"
   },
   "engines": {
