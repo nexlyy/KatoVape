@@ -34,6 +34,9 @@
   --t:170ms cubic-bezier(.22,.61,.36,1);
 }
 *{margin:0;padding:0;box-sizing:border-box}
+/* Свой display у класса перебивает [hidden] из браузера, и скрытая кнопка оставалась
+   на экране. Правило общее, чтобы ловушка не повторялась у следующего элемента. */
+[hidden]{display:none!important}
 html{-webkit-text-size-adjust:100%}
 body{background:var(--bg);color:var(--ink);font-family:'Hanken Grotesk',system-ui,sans-serif;
   font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
@@ -200,7 +203,7 @@ td .sub{display:block;color:var(--muted);font-size:11.5px;margin-top:2px}
 .fl-slot:empty{display:none}
 .fl-edit{background:var(--surface-2);border:1px solid var(--line-2);border-radius:var(--r-lg);
   padding:14px;margin:2px 0 10px}
-.fl-cols{display:grid;grid-template-columns:minmax(0,260px) minmax(0,1fr);gap:20px}
+.fl-cols{display:grid;grid-template-columns:minmax(0,260px) minmax(0,1fr) minmax(0,240px);gap:20px}
 .fl-col{min-width:0}
 .fl-h{display:block;font-size:12px;text-transform:uppercase;letter-spacing:.05em;
   color:var(--muted);margin-bottom:9px}
@@ -237,6 +240,34 @@ td .sub{display:block;color:var(--muted);font-size:11.5px;margin-top:2px}
   padding:10px 12px;resize:vertical;line-height:1.5}
 .fl-ta:focus{outline:none;border-color:var(--accent)}
 .fl-acts{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:14px}
+
+/* фото вкуса */
+.fl-photo{display:flex;gap:10px;align-items:flex-start}
+.fl-ph-box{position:relative;width:84px;height:84px;flex-shrink:0;border-radius:var(--r);
+  overflow:hidden;background:#fff;border:1px solid var(--line-2);display:grid;place-items:center}
+.fl-ph-box img{width:100%;height:100%;object-fit:contain}
+.fl-ph-box span{font-size:10.5px;color:#8b98a4;text-align:center;padding:0 6px}
+.fl-ph-box.busy{opacity:.5}
+.fl-ph-acts{display:flex;flex-direction:column;gap:6px}
+.fl-ph-acts .btn{cursor:pointer}
+
+/* предпросмотр: тот же порядок, что видит покупатель в карточке товара */
+.fl-prev{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:12px}
+.fl-prev-ph{width:100%;aspect-ratio:1/1;border-radius:10px;overflow:hidden;background:#fff;
+  display:grid;place-items:center;margin-bottom:10px}
+.fl-prev-ph img{width:100%;height:100%;object-fit:contain}
+.fl-prev-ph span{font-size:11px;color:#8b98a4}
+.fl-prev-row{display:flex;align-items:center;gap:9px;margin-bottom:10px}
+.fl-prev-bar{width:5px;height:20px;border-radius:99px;flex-shrink:0}
+.fl-prev-bar.auto{opacity:.45}
+.fl-prev-n{font-weight:700;font-size:13px}
+.fl-prev-bar-row{display:flex;align-items:center;gap:8px;font-size:11.5px;margin-bottom:5px;color:var(--ink-2)}
+.fl-prev-bar-row > span{width:58px;flex-shrink:0}
+.fl-prev-bar-row i{flex:1;height:5px;border-radius:99px;background:var(--field);overflow:hidden}
+.fl-prev-bar-row i b{display:block;height:100%;border-radius:99px;background:var(--accent)}
+.fl-prev-bar-row em{font-style:normal;width:14px;text-align:right;color:var(--muted);font-variant-numeric:tabular-nums}
+.fl-prev-d{font-size:12px;line-height:1.5;color:var(--ink-2);margin-top:10px}
+.fl-prev-auto{color:var(--muted);font-style:italic}
 
 /* панель несохранённых изменений */
 .savebar{position:fixed;left:0;right:0;bottom:0;z-index:var(--z-bar);background:var(--surface);
@@ -409,12 +440,42 @@ td .sub{display:block;color:var(--muted);font-size:11.5px;margin-top:2px}
   padding:10px 18px;border-radius:99px;opacity:0;pointer-events:none;transition:opacity var(--t),transform var(--t)}
 .toast.show{opacity:1;transform:translate(-50%,0)}
 .toast.bad{background:var(--danger);color:#2a0710}
+
+/* быстрый поиск: одно поле на всю панель, живёт в боковом меню под названием */
+.gosearch{position:relative;margin:0 0 12px}
+.gosearch input{width:100%}
+.gos-drop{position:absolute;top:calc(100% + 6px);left:0;right:0;z-index:var(--z-nav);
+  background:var(--surface-2);border:1px solid var(--line-2);border-radius:var(--r-lg);
+  padding:5px;box-shadow:0 18px 40px rgba(0,0,0,.5);max-height:60vh;overflow:auto}
+.gos-i{display:block;width:100%;text-align:left;padding:8px 10px;border-radius:8px;color:var(--ink)}
+.gos-i:hover{background:var(--surface)}
+.gos-k{display:inline-block;font-size:10px;text-transform:uppercase;letter-spacing:.05em;
+  color:var(--accent);margin-right:7px}
+.gos-n{font-weight:600;font-size:13px}
+.gos-s{display:block;font-size:11.5px;color:var(--muted);margin-top:2px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gos-none{padding:10px;font-size:12.5px;color:var(--muted)}
+/* строка, к которой привёл поиск */
+tr.found > td{background:var(--accent-dim);transition:background var(--t)}
+
+/* полоска отмены удаления: ниже тоста, чтобы они не перекрывали друг друга */
+.undo{position:fixed;left:50%;bottom:26px;transform:translate(-50%,14px);z-index:var(--z-toast);
+  display:flex;align-items:center;gap:14px;background:var(--surface-2);color:var(--ink);
+  border:1px solid var(--line-2);border-radius:99px;padding:9px 10px 9px 18px;font-size:13px;
+  box-shadow:0 14px 34px rgba(0,0,0,.45);opacity:0;pointer-events:none;
+  transition:opacity var(--t),transform var(--t);max-width:calc(100vw - 28px)}
+.undo.show{opacity:1;transform:translate(-50%,0);pointer-events:auto}
+.undo-t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.undo-go{background:var(--accent);color:var(--accent-ink);border-radius:99px;
+  padding:7px 15px;font-weight:700;font-size:12.5px;flex-shrink:0}
+.undo-go:hover{background:#77f7d9}
 .hint{font-size:12px;color:var(--muted);line-height:1.55;margin-top:9px}
 </style>
 </head>
 <body>
 <div id="app"></div>
 <div class="toast" id="toast"></div>
+<div class="undo" id="undo"><span class="undo-t"></span><button class="undo-go" type="button"></button></div>
 
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="../../shared/config.js?v=ed39e448"></script>
@@ -601,7 +662,19 @@ const DICT = {
     'Удалить вкус «': 'Видалити смак «', 'Вкус удалён': 'Смак видалено', 'Впишите название вкуса': 'Впишіть назву смаку',
     'Вкус добавлен': 'Смак додано', 'Нужен id товара': 'Потрібен id товару', 'Товар добавлен': 'Товар додано',
     'Гамма вкуса': 'Гама смаку', 'по названию': 'за назвою',
+    'Заказ, клиент, товар': 'Замовлення, клієнт, товар', 'Ничего не нашлось': 'Нічого не знайшлося',
+    'зак.': 'зам.', 'Вернуть': 'Повернути', 'Возвращено': 'Повернуто',
+    'Товар удалён: ': 'Товар видалено: ', 'Вкус удалён: ': 'Смак видалено: ',
     'Настроить': 'Налаштувати', 'Цвет вкуса': 'Колір смаку', 'Вкусовой профиль': 'Смаковий профіль',
+    'Фото вкуса': 'Фото смаку', 'нет фото': 'немає фото', 'Загрузить': 'Завантажити', 'Убрать': 'Прибрати',
+    'Как увидит покупатель': 'Як побачить покупець', 'фото товара': 'фото товару',
+    'Это не картинка': 'Це не картинка', 'Не удалось загрузить фото': 'Не вдалося завантажити фото',
+    'Фото загружено, не забудьте сохранить вкус': 'Фото завантажено, не забудьте зберегти смак',
+    'Фото убрано, не забудьте сохранить вкус': 'Фото прибрано, не забудьте зберегти смак',
+    'профиль посчитается по названию': 'профіль порахується за назвою',
+    'описание соберётся по профилю': 'опис збереться за профілем',
+    'Фото этого вкуса. Пока его нет, показывается общее фото товара. Картинка ужимается до 800 точек и уходит в хранилище.': 'Фото цього смаку. Поки його немає, показується спільне фото товару. Картинка стискається до 800 точок і йде у сховище.',
+    'Обновляется на лету, пока правите. Язык описания переключается вкладками ниже.': 'Оновлюється на льоту, поки правите. Мова опису перемикається вкладками нижче.',
     'Описание': 'Опис', 'Сохранить вкус': 'Зберегти смак', 'Вкус настроен': 'Смак налаштовано',
     'По названию': 'За назвою', 'Задать вручную': 'Задати вручну',
     'Холодок': 'Холодок', 'Кислинка': 'Кислинка',
@@ -1040,7 +1113,19 @@ const DICT = {
     'Удалить вкус «': 'Usunąć smak «', 'Вкус удалён': 'Smak usunięty', 'Впишите название вкуса': 'Wpisz nazwę smaku',
     'Вкус добавлен': 'Smak dodany', 'Нужен id товара': 'Potrzebny jest id produktu', 'Товар добавлен': 'Produkt dodany',
     'Гамма вкуса': 'Kolor smaku', 'по названию': 'wg nazwy',
+    'Заказ, клиент, товар': 'Zamówienie, klient, towar', 'Ничего не нашлось': 'Nic nie znaleziono',
+    'зак.': 'zam.', 'Вернуть': 'Przywróć', 'Возвращено': 'Przywrócono',
+    'Товар удалён: ': 'Towar usunięty: ', 'Вкус удалён: ': 'Smak usunięty: ',
     'Настроить': 'Ustaw', 'Цвет вкуса': 'Kolor smaku', 'Вкусовой профиль': 'Profil smaku',
+    'Фото вкуса': 'Zdjęcie smaku', 'нет фото': 'brak zdjęcia', 'Загрузить': 'Wgraj', 'Убрать': 'Usuń',
+    'Как увидит покупатель': 'Jak zobaczy klient', 'фото товара': 'zdjęcie towaru',
+    'Это не картинка': 'To nie jest obrazek', 'Не удалось загрузить фото': 'Nie udało się wgrać zdjęcia',
+    'Фото загружено, не забудьте сохранить вкус': 'Zdjęcie wgrane, pamiętaj zapisać smak',
+    'Фото убрано, не забудьте сохранить вкус': 'Zdjęcie usunięte, pamiętaj zapisać smak',
+    'профиль посчитается по названию': 'profil policzy się wg nazwy',
+    'описание соберётся по профилю': 'opis złoży się wg profilu',
+    'Фото этого вкуса. Пока его нет, показывается общее фото товара. Картинка ужимается до 800 точек и уходит в хранилище.': 'Zdjęcie tego smaku. Dopóki go nie ma, pokazuje się wspólne zdjęcie towaru. Obrazek jest zmniejszany do 800 punktów i trafia do magazynu plików.',
+    'Обновляется на лету, пока правите. Язык описания переключается вкладками ниже.': 'Odświeża się na bieżąco podczas edycji. Język opisu przełącza się zakładkami niżej.',
     'Описание': 'Opis', 'Сохранить вкус': 'Zapisz smak', 'Вкус настроен': 'Smak ustawiony',
     'По названию': 'Wg nazwy', 'Задать вручную': 'Ustaw ręcznie',
     'Холодок': 'Chłodek', 'Кислинка': 'Kwaskowatość',
@@ -1382,6 +1467,144 @@ function toast(text, bad) {
   el._t = setTimeout(() => el.classList.remove('show'), 2600);
 }
 
+/* ================= быстрый поиск по панели ================= */
+// Одно поле вместо «вспомни, в какой вкладке искать»: номер заказа, телефон или имя клиента,
+// название товара. Находит и уводит сразу в нужный раздел с уже наведённым фильтром.
+let gosTimer = null, jumpOrder = 0;
+// PostgREST разбирает or() по запятым и скобкам, поэтому в шаблон они попасть не должны:
+// иначе запрос либо сломается, либо изменит смысл.
+const gosSafe = q => q.replace(/[,()*\\%]/g, ' ').trim();
+
+async function gosFind(q) {
+  const safe = gosSafe(q);
+  const num = /^#?\d+$/.test(q.trim()) ? Number(q.trim().replace('#', '')) : null;
+  const digits = q.replace(/\D/g, '');
+  const out = [];
+
+  const jobs = [
+    // заказ по номеру, а если ввели телефон — по контакту в снимке заказа
+    (async () => {
+      let sel = sb.from('orders').select('id,city,status,sum,contact,created_at').order('id', { ascending: false }).limit(5);
+      if (num) sel = sel.eq('id', num);
+      else if (digits.length >= 4) sel = sel.filter('contact->>phone', 'ilike', '%' + digits.slice(-9) + '%');
+      else if (safe) sel = sel.filter('contact->>name', 'ilike', '%' + safe + '%');
+      else return;
+      const { data } = await sel;
+      (data || []).forEach(o => out.push({
+        kind: 'order', title: '#' + o.id + ' · ' + money2(o.sum),
+        sub: [CITY_LABEL[o.city] || o.city, (o.contact || {}).name, ST[o.status] ? L(ST[o.status][0]) : o.status]
+          .filter(Boolean).join(' · '),
+        go: { tab: 'orders', order: o.id }
+      }));
+    })(),
+    // клиент: crm_contacts уже умеет искать по имени, телефону и телеграму
+    (async () => {
+      if (!safe && !digits) return;
+      const { data } = await sb.rpc('crm_contacts', { p_query: q.trim(), p_limit: 5 });
+      (data || []).forEach(c => out.push({
+        kind: 'customer', title: c.full_name || L('без имени'),
+        sub: [c.phone, c.telegram_username ? '@' + c.telegram_username : '',
+          (c.orders || 0) + ' ' + L('зак.')].filter(Boolean).join(' · '),
+        go: { tab: 'customers', query: c.phone || c.full_name || '' }
+      }));
+    })(),
+    // товар по названию или id; строки одного товара схлопываем в одну подсказку
+    (async () => {
+      if (!safe) return;
+      const { data } = await sb.from('products')
+        .select('id,city,name,category').or('name.ilike.%' + safe + '%,id.ilike.%' + safe + '%').limit(40);
+      const seen = new Set();
+      (data || []).forEach(p => {
+        const key = p.id + '|' + p.city;
+        if (seen.has(key)) return;
+        seen.add(key);
+        if (seen.size > 5) return;
+        out.push({
+          kind: 'product', title: p.name || p.id,
+          sub: [CITY_LABEL[p.city] || p.city, p.category].filter(Boolean).join(' · '),
+          go: { tab: 'products', city: p.city, query: p.id }
+        });
+      });
+    })()
+  ];
+  await Promise.all(jobs.map(j => Promise.resolve(j).catch(() => {})));
+  return out;
+}
+
+function bindSearch() {
+  const inp = document.getElementById('gos'); if (!inp) return;
+  const drop = document.getElementById('gosdrop');
+  const close = () => { drop.hidden = true; drop.innerHTML = ''; };
+  const KINDS = { order: 'Заказ', customer: 'Клиент', product: 'Товар' };
+
+  const run = async (q) => {
+    const found = await gosFind(q);
+    if (inp.value.trim() !== q) return;        // пока искали, успели набрать другое
+    if (!found.length) {
+      drop.innerHTML = '<div class="gos-none">' + L('Ничего не нашлось') + '</div>';
+      drop.hidden = false;
+      return;
+    }
+    drop.innerHTML = found.map((f, i) =>
+      `<button type="button" class="gos-i" data-i="${i}">
+        <span class="gos-k">${L(KINDS[f.kind])}</span>
+        <span class="gos-n">${esc(f.title)}</span>
+        <span class="gos-s">${esc(f.sub)}</span>
+      </button>`).join('');
+    drop.hidden = false;
+    drop.querySelectorAll('[data-i]').forEach(b => b.onclick = () => {
+      const g = found[+b.dataset.i].go;
+      inp.value = ''; close(); hideUndo();
+      if (g.tab === 'products') { cityNow = g.city || cityNow; prodQuery = g.query || ''; flOpen = ''; }
+      if (g.tab === 'customers') cQuery = g.query || '';
+      if (g.tab === 'orders') jumpOrder = g.order || 0;
+      clearDirty(); tab = g.tab; shell();
+    });
+  };
+
+  inp.oninput = () => {
+    clearTimeout(gosTimer);
+    const q = inp.value.trim();
+    if (q.length < 2) return close();
+    gosTimer = setTimeout(() => run(q), 250);
+  };
+  inp.onkeydown = e => {
+    if (e.key === 'Escape') { inp.value = ''; close(); inp.blur(); }
+    if (e.key === 'Enter') { const first = drop.querySelector('[data-i]'); if (first) first.click(); }
+  };
+  document.addEventListener('click', e => { if (!e.target.closest('.gosearch')) close(); });
+}
+
+// Отмена последнего удаления.
+//
+// Удаление товара или вкуса необратимо, а спрашивал о нём только confirm, который жмут не
+// глядя. Полоска держится десять секунд и возвращает строки как были: настройки вкуса при
+// этом никуда не девались, они лежат в flavor_meta и подхватятся сами.
+let undoAt = 0;
+function offerUndo(text, restore) {
+  const bar = document.getElementById('undo');
+  bar.querySelector('.undo-t').textContent = text;
+  bar.querySelector('.undo-go').textContent = L('Вернуть');
+  bar.classList.add('show');
+  const mine = ++undoAt;
+  clearTimeout(bar._t);
+  bar._t = setTimeout(() => { if (mine === undoAt) bar.classList.remove('show'); }, 10000);
+  bar.querySelector('.undo-go').onclick = async () => {
+    hideUndo();
+    const err = await restore();
+    if (err) return toast(err, true);
+    toast(L('Возвращено'));
+    render();
+  };
+}
+function hideUndo() {
+  const bar = document.getElementById('undo');
+  if (!bar) return;
+  undoAt++;
+  clearTimeout(bar._t);
+  bar.classList.remove('show');
+}
+
 /* ================= вход ================= */
 function authView(errText) {
   app.innerHTML = `
@@ -1546,6 +1769,11 @@ function shell() {
       <aside class="side">
         <div class="brand"><img src="../../data/photos/cat.png" alt=""><div>
           <b>KatoVape</b><span>${L('управление')}</span></div></div>
+        <div class="gosearch">
+          <input id="gos" type="search" autocomplete="off" spellcheck="false"
+            placeholder="${L('Заказ, клиент, товар')}" aria-label="${L('Заказ, клиент, товар')}">
+          <div class="gos-drop" id="gosdrop" hidden></div>
+        </div>
         <nav class="nav" id="nav">
           ${TABS().filter(([k]) => tabAllowed(k)).map(([k, label, badge]) => {
             const n = badge && overview ? badge(overview) : 0;
@@ -1574,11 +1802,14 @@ function shell() {
       <button class="btn quiet" id="sb-reset">${L('Отменить')}</button>
       <button class="btn primary" id="sb-apply">${L('Применить')}</button>
     </div>`;
+  bindSearch();
   document.getElementById('nav').onclick = e => {
     const b = e.target.closest('[data-t]');
     if (!b || b.dataset.t === tab) { closeMenu(); return; }
     if (hasChanges() && !confirm(L('Есть несохранённые изменения в ассортименте. Уйти и потерять их?'))) return;
     closeMenu();
+    // ушли из раздела — возвращать уже нечего, полоска только мешала бы
+    hideUndo();
     clearDirty(); tab = b.dataset.t; shell();
   };
   // на телефоне разделы прячутся за бургер: экран узкий, список длинный
@@ -1739,6 +1970,19 @@ async function renderOrders(m) {
     : empty(L('Заказов пока нет'), L('Как только кто-то оформит заказ на витрине, он появится здесь.'))));
   bindStatus(m, 'ost', 'orders');
   bindStatusSelect(m);
+  // Пришли сюда из быстрого поиска: сам заказ подсвечиваем и подкручиваем к нему список,
+  // иначе человек оказывается в начале двухсот строк и ищет глазами то, что уже нашёл.
+  if (jumpOrder) {
+    const want = '#' + jumpOrder;
+    const hit = [...m.querySelectorAll('td .num')].find(el => el.textContent.trim() === want);
+    jumpOrder = 0;
+    if (hit) {
+      const tr = hit.closest('tr');
+      tr.classList.add('found');
+      tr.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setTimeout(() => tr.classList.remove('found'), 3200);
+    }
+  }
 }
 
 async function renderReservations(m) {
@@ -3466,6 +3710,43 @@ const flKey = (id, flavor) => id + FL_SEP + flavor;
 let flavorMeta = {};    // ключ -> строка flavor_meta
 let flOpen = '';        // какой вкус сейчас раскрыт, «gi:ri»
 
+// Адрес картинки в Storage. В базе лежит только путь внутри корзины: полный адрес привязан
+// к домену проекта. Та же сборка, что во витрине.
+const PHOTO_BUCKET = 'flavors';
+function photoUrl(path) {
+  const base = (window.KV_CONFIG || {}).SUPABASE_URL || '';
+  return base.replace(/\/$/, '') + '/storage/v1/object/public/' + PHOTO_BUCKET + '/' +
+    String(path).split('/').map(encodeURIComponent).join('/');
+}
+// Имя файла собираем сами: в названии вкуса бывают пробелы и кириллица, а ключ объекта
+// должен оставаться простым. Случайная часть не даёт браузеру показать старую картинку
+// из кеша после замены.
+function photoPath(productId) {
+  const safe = String(productId).toLowerCase().replace(/[^a-z0-9_-]+/g, '-').replace(/^-+|-+$/g, '') || 'item';
+  const rnd = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random()).replace(/[^a-z0-9]/gi, '').slice(0, 16).toLowerCase();
+  return safe + '/' + rnd + '.jpg';
+}
+// Ужимаем до 800 точек по длинной стороне и переводим в jpeg. Снимок с телефона весит
+// несколько мегабайт, а в карточке он показывается размером в палец.
+function shrinkPhoto(file, max = 800) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const k = Math.min(1, max / Math.max(img.width, img.height));
+      const cv = document.createElement('canvas');
+      cv.width = Math.round(img.width * k); cv.height = Math.round(img.height * k);
+      const ctx = cv.getContext('2d');
+      ctx.fillStyle = '#fff';                       // прозрачный фон png стал бы чёрным
+      ctx.fillRect(0, 0, cv.width, cv.height);
+      ctx.drawImage(img, 0, 0, cv.width, cv.height);
+      URL.revokeObjectURL(img.src);
+      cv.toBlob(b => (b ? resolve(b) : reject(new Error('canvas'))), 'image/jpeg', 0.85);
+    };
+    img.onerror = () => { URL.revokeObjectURL(img.src); reject(new Error('image')); };
+    img.src = URL.createObjectURL(file);
+  });
+}
+
 // Карточка вкуса. Раскрывается прямо под строкой, чтобы соседние вкусы оставались перед
 // глазами: цвета подбирают, сравнивая их друг с другом, а не по одному.
 function flavorCard(r) {
@@ -3482,7 +3763,18 @@ function flavorCard(r) {
   return `<div class="fl-edit">
     <div class="fl-cols">
       <div class="fl-col">
-        <b class="fl-h">${L('Цвет вкуса')}</b>
+        <b class="fl-h">${L('Фото вкуса')}</b>
+        <div class="fl-photo">
+          <div class="fl-ph-box" data-ph-box>${m.photo
+            ? `<img src="${esc(photoUrl(m.photo))}" alt="">`
+            : `<span>${L('нет фото')}</span>`}</div>
+          <div class="fl-ph-acts">
+            <label class="btn sm">${L('Загрузить')}<input type="file" accept="image/*" data-ph hidden></label>
+            <button type="button" class="btn sm danger" data-ph-del${m.photo ? '' : ' hidden'}>${L('Убрать')}</button>
+          </div>
+        </div>
+        <p class="hint">${L('Фото этого вкуса. Пока его нет, показывается общее фото товара. Картинка ужимается до 800 точек и уходит в хранилище.')}</p>
+        <b class="fl-h" style="margin-top:16px">${L('Цвет вкуса')}</b>
         <div class="tint-pick">
           <div class="tint-sv" data-sv tabindex="0"><i class="tint-dot-sv"></i></div>
           <div class="tint-hue" data-hue tabindex="0"><i class="tint-dot-hue"></i></div>
@@ -3505,6 +3797,19 @@ function flavorCard(r) {
           <button type="button" class="btn sm ${taste ? 'primary' : ''}" data-ts-on>${L('Задать вручную')}</button>
         </div>
         <p class="hint">${L('Шкала 1..10, как её видит покупатель. Пока профиль не задан, витрина считает его по названию вкуса.')}</p>
+      </div>
+      <div class="fl-col">
+        <b class="fl-h">${L('Как увидит покупатель')}</b>
+        <div class="fl-prev" data-preview>
+          <div class="fl-prev-ph" data-pv-ph></div>
+          <div class="fl-prev-row">
+            <span class="fl-prev-bar" data-pv-bar></span>
+            <span class="fl-prev-n" data-pv-n>${esc(r.flavor)}</span>
+          </div>
+          <div data-pv-taste></div>
+          <p class="fl-prev-d" data-pv-desc></p>
+        </div>
+        <p class="hint">${L('Обновляется на лету, пока правите. Язык описания переключается вкладками ниже.')}</p>
       </div>
     </div>
     <div class="fl-desc">
@@ -3607,7 +3912,7 @@ async function renderProducts(m) {
   // Настройки вкусов идут рядом с ассортиментом: они общие для городов, поэтому без фильтра.
   const [{ data }, { data: meta }] = await Promise.all([
     sb.from('products').select('*').eq('city', cityNow).order('id').order('flavor'),
-    sb.from('flavor_meta').select('product_id,flavor,tint,taste,descr')
+    sb.from('flavor_meta').select('product_id,flavor,tint,taste,descr,photo')
   ]);
   flavorMeta = {};
   (meta || []).forEach(m => { flavorMeta[flKey(m.product_id, m.flavor)] = m; });
@@ -3653,7 +3958,8 @@ async function renderProducts(m) {
       <div class="item-id">${esc(g.id)}</div>
       <div class="flavs">${g.items.map((r, ri) => {
         const meta = flavorMeta[flKey(r.id, r.flavor)] || {};
-        const set = [meta.tint, meta.taste, meta.descr && Object.keys(meta.descr).length].filter(Boolean).length;
+        const set = [meta.photo, meta.tint, meta.taste,
+          meta.descr && Object.keys(meta.descr).length].filter(Boolean).length;
         return `
         <div class="flav" data-f="${gi}:${ri}">
           <span class="flav-n">${esc(r.flavor || L('без вкуса'))}</span>
@@ -3662,7 +3968,7 @@ async function renderProducts(m) {
           <button class="btn sm fl-open${flOpen === gi + ':' + ri ? ' primary' : ''}" data-fl="${gi}:${ri}"
             ${r.flavor ? '' : 'disabled title="' + L('У товара без вкусов настраивать нечего') + '"'}>
             <span class="tint-dot" style="background:${tintGrad(meta.tint)}"></span>
-            ${L('Настроить')}${set ? ` <em>${set}/3</em>` : ''}
+            ${L('Настроить')}${set ? ` <em>${set}/4</em>` : ''}
           </button>
           <button class="btn sm" data-woff="${gi}:${ri}" title="${L('Списать')}">${L('Списать')}</button>
           <button class="btn sm danger" data-delf="${gi}:${ri}" title="${L('Удалить вкус')}">×</button>
@@ -3716,6 +4022,7 @@ function bindFlavorCard(slot, r) {
     prev.style.background = on ? T.grad(hex) : 'var(--line-2)';
     card.classList.toggle('tint-off', !on);
     if (writeField) hexIn.value = on ? hex : '';
+    preview();
   }
   // Тянем и мышью, и пальцем: pointer-события покрывают оба, а setPointerCapture не даёт
   // потерять курсор, когда его уводят за край квадрата.
@@ -3762,9 +4069,11 @@ function bindFlavorCard(slot, r) {
     });
     $('[data-ts-auto]').classList.toggle('primary', auto);
     $('[data-ts-on]').classList.toggle('primary', !auto);
+    preview();
   };
   sliders.forEach(s => s.oninput = () => {
     card.querySelector('[data-tsv="' + s.dataset.ts + '"]').textContent = Math.max(1, Math.round(s.value / 10));
+    preview();
   });
   $('[data-ts-auto]').onclick = () => setAuto(true);
   $('[data-ts-on]').onclick = () => setAuto(false);
@@ -3773,7 +4082,73 @@ function bindFlavorCard(slot, r) {
   card.querySelectorAll('[data-dl]').forEach(b => b.onclick = () => {
     card.querySelectorAll('[data-dl]').forEach(x => x.classList.toggle('primary', x === b));
     card.querySelectorAll('[data-d]').forEach(t => { t.hidden = t.dataset.d !== b.dataset.dl; });
+    preview();
   });
+
+  // ---- фото вкуса ----
+  let photo = (flavorMeta[flKey(r.id, r.flavor)] || {}).photo || null;
+  const phBox = $('[data-ph-box]'), phDel = $('[data-ph-del]');
+  function showPhoto() {
+    phBox.innerHTML = photo ? '<img src="' + esc(photoUrl(photo)) + '" alt="">'
+      : '<span>' + L('нет фото') + '</span>';
+    phDel.hidden = !photo;
+    preview();
+  }
+  $('[data-ph]').onchange = async (e) => {
+    const file = e.target.files && e.target.files[0];
+    e.target.value = '';                       // тот же файл можно выбрать снова
+    if (!file) return;
+    if (!/^image\//.test(file.type)) return toast(L('Это не картинка'), true);
+    phBox.classList.add('busy');
+    try {
+      const blob = await shrinkPhoto(file);
+      const path = photoPath(r.id);
+      const { error } = await sb.storage.from(PHOTO_BUCKET).upload(path, blob, {
+        contentType: 'image/jpeg', cacheControl: '3600'
+      });
+      if (error) throw error;
+      const old = photo;
+      photo = path;
+      showPhoto();
+      // Старый файл убираем только после того, как новый лёг: иначе неудачная загрузка
+      // оставила бы вкус вообще без картинки.
+      if (old) await sb.storage.from(PHOTO_BUCKET).remove([old]).catch(() => {});
+      toast(L('Фото загружено, не забудьте сохранить вкус'));
+    } catch (err) {
+      toast((err && err.message) || L('Не удалось загрузить фото'), true);
+    } finally { phBox.classList.remove('busy'); }
+  };
+  phDel.onclick = () => { photo = null; showPhoto(); toast(L('Фото убрано, не забудьте сохранить вкус')); };
+
+  // ---- предпросмотр ----
+  // Показываем то, что задано руками. Там, где поле пустое, витрина подбирает значение
+  // сама по названию вкуса, и панель честно пишет об этом, а не изображает результат:
+  // формула живёт в shared/core.js, и её копия здесь разошлась бы с оригиналом.
+  function preview() {
+    const hex = on ? T.norm(hexIn.value) : null;
+    const bar = $('[data-pv-bar]');
+    bar.style.background = hex ? T.grad(hex) : 'var(--line-2)';
+    bar.classList.toggle('auto', !hex);
+    $('[data-pv-ph]').innerHTML = photo
+      ? '<img src="' + esc(photoUrl(photo)) + '" alt="">'
+      : '<span>' + L('фото товара') + '</span>';
+    const auto = sliders[0].disabled;
+    $('[data-pv-taste]').innerHTML = auto
+      ? '<p class="fl-prev-auto">' + L('профиль посчитается по названию') + '</p>'
+      : TASTE_RU.map(([k, name]) => {
+          const n = Math.max(1, Math.round(card.querySelector('[data-ts="' + k + '"]').value / 10));
+          return '<div class="fl-prev-bar-row"><span>' + L(name) + '</span>' +
+            '<i><b style="width:' + (n * 10) + '%"></b></i><em>' + n + '</em></div>';
+        }).join('');
+    const lang = (card.querySelector('[data-dl].primary') || {}).dataset.dl || 'ru';
+    const txt = (card.querySelector('[data-d="' + lang + '"]') || {}).value || '';
+    const ru = (card.querySelector('[data-d="ru"]') || {}).value || '';
+    const desc = $('[data-pv-desc]');
+    if (txt) { desc.textContent = txt; desc.className = 'fl-prev-d'; }
+    else if (ru) { desc.textContent = ru; desc.className = 'fl-prev-d fl-prev-auto'; }
+    else { desc.textContent = L('описание соберётся по профилю'); desc.className = 'fl-prev-d fl-prev-auto'; }
+  }
+  card.querySelectorAll('[data-d]').forEach(t => t.addEventListener('input', preview));
 
   $('[data-fl-save]').onclick = async (e) => {
     const btn = e.currentTarget;
@@ -3790,6 +4165,7 @@ function bindFlavorCard(slot, r) {
       tint: on && hex ? hex : null,
       taste: auto ? null : Object.fromEntries(sliders.map(s => [s.dataset.ts, +s.value])),
       descr: Object.keys(descr).length ? descr : null,
+      photo,
       updated_at: new Date().toISOString()
     };
     btn.disabled = true;
@@ -3863,9 +4239,15 @@ function bindProducts(m) {
   m.querySelectorAll('[data-delp]').forEach(b => b.onclick = async () => {
     const g = groups[+b.dataset.delp]; if (!g) return;
     if (!confirm(L('Удалить «') + (g.head.name || g.id) + L('» со всеми вкусами?'))) return;
+    // строки запоминаем целиком до удаления: вернуть их потом можно только полностью
+    const gone = g.items.map(x => ({ ...x }));
     const { error } = await sb.from('products').delete().match({ id: g.id, city: cityNow });
     if (error) return toast(error.message, true);
-    toast(L('Товар удалён')); clearDirty(); render();
+    clearDirty(); render();
+    offerUndo(L('Товар удалён: ') + (g.head.name || g.id), async () => {
+      const { error: e2 } = await sb.from('products').upsert(gone, { onConflict: 'id,city,flavor' });
+      return e2 ? productsErr(e2) : null;
+    });
   });
   // Списание: брак, порча, недостача или взяли себе. Меняет и остаток, и деньги, поэтому
   // уходит документом, но живёт кнопкой в карточке товара, а не отдельным разделом.
@@ -3893,13 +4275,20 @@ function bindProducts(m) {
       toast(L('Списано')); clearDirty(); render();
     };
   });
+  // Вкус удаляется без вопроса: строка одна, а полоска внизу вернёт её целиком. Настройки
+  // вкуса (цвет, профиль, описание, фото) при этом не трогаются и подхватятся при возврате.
   m.querySelectorAll('[data-delf]').forEach(b => b.onclick = async () => {
     const [gi, ri] = b.dataset.delf.split(':').map(Number);
     const r = groups[gi] && groups[gi].items[ri]; if (!r) return;
-    if (!confirm(L('Удалить вкус «') + (r.flavor || L('без вкуса')) + '»?')) return;
+    const gone = { ...r };
     const { error } = await sb.from('products').delete().match({ id: r.id, city: r.city, flavor: r.flavor });
     if (error) return toast(error.message, true);
-    toast(L('Вкус удалён')); clearDirty(); render();
+    if (flOpen === gi + ':' + ri) flOpen = '';
+    clearDirty(); render();
+    offerUndo(L('Вкус удалён: ') + (r.flavor || L('без вкуса')), async () => {
+      const { error: e2 } = await sb.from('products').upsert([gone], { onConflict: 'id,city,flavor' });
+      return e2 ? productsErr(e2) : null;
+    });
   });
   m.querySelectorAll('[data-addf]').forEach(b => b.onclick = async () => {
     const gi = +b.dataset.addf, g = groups[gi]; if (!g) return;
@@ -3979,7 +4368,7 @@ async function tgAuthFromHash() {
 }
 
 // Отпечаток этой сборки, его проставляет npm run stamp.
-const BUILD = 'bf5e1ad9';
+const BUILD = '3d27b577';
 
 // Браузер держит саму страницу панели в кеше, и человек видит вчерашний интерфейс, считая,
 // что правки не приехали. Отпечаток рядом лежащего version.json читается мимо кеша: разошлось

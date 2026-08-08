@@ -1,0 +1,954 @@
+<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KatoVape · примерка карточки вкуса</title>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0b0f14; --surface:#121821; --surface-2:#171f29; --field:#0e141b;
+  --line:#212b36; --line-2:#2e3b48;
+  --ink:#e9eff4; --ink-2:#b3c0cc; --muted:#7f8d9a;
+  --accent:#5ff3d0; --accent-ink:#04120e; --accent-dim:rgba(95,243,208,.13);
+  --ok:#4ade80; --warn:#f5b83d; --danger:#fb7185; --info:#67d9f5;
+  --r:10px; --r-lg:14px;
+  --z-nav:20; --z-bar:60; --z-toast:80;
+  --t:170ms cubic-bezier(.22,.61,.36,1);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--bg);color:var(--ink);font-family:'Hanken Grotesk',system-ui,sans-serif;
+  font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+a{color:var(--accent);text-decoration:none}
+button,input,textarea,select{font-family:inherit;font-size:inherit;color:inherit}
+button{cursor:pointer;background:none;border:none}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
+
+/* ---- элементы управления ---- */
+.btn{display:inline-flex;align-items:center;gap:7px;background:var(--surface-2);border:1px solid var(--line-2);
+  color:var(--ink);border-radius:var(--r);padding:9px 14px;font-weight:600;font-size:13px;
+  transition:background var(--t),border-color var(--t),color var(--t),opacity var(--t)}
+.btn:hover{background:#1d2733;border-color:#3a4957}
+.btn:active{background:#161e28}
+.btn[disabled]{opacity:.45;cursor:default}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.primary:hover{background:#77f7d9;border-color:#77f7d9}
+.btn.primary:active{background:#4ee0be}
+.btn.quiet{background:transparent;border-color:transparent;color:var(--ink-2)}
+.btn.quiet:hover{background:var(--surface-2);color:var(--ink)}
+.btn.danger{color:var(--danger);border-color:transparent;background:transparent}
+.btn.danger:hover{background:rgba(251,113,133,.12);border-color:rgba(251,113,133,.4)}
+.btn.sm{padding:6px 10px;font-size:12px;border-radius:8px}
+input,textarea{background:var(--field);border:1px solid var(--line);border-radius:var(--r);
+  padding:9px 12px;width:100%;transition:border-color var(--t),background var(--t)}
+input::placeholder,textarea::placeholder{color:var(--muted)}
+input:hover,textarea:hover{border-color:var(--line-2)}
+input:focus,textarea:focus{outline:none;border-color:var(--accent);background:#101821}
+label.f{display:flex;flex-direction:column;gap:6px;font-size:12px;font-weight:600;color:var(--ink-2)}
+select{background:var(--field);border:1px solid var(--line);border-radius:var(--r);padding:9px 12px;
+  transition:border-color var(--t)}
+select:hover{border-color:var(--line-2)}
+select:focus{outline:none;border-color:var(--accent)}
+
+/* ---- вход ---- */
+.auth{min-height:100dvh;display:grid;place-items:center;padding:24px}
+.auth-box{width:min(380px,100%)}
+.auth-mark{display:flex;align-items:center;gap:10px;margin-bottom:22px}
+.auth-mark img{width:34px;height:34px;border-radius:9px}
+.auth-mark b{font-size:16px;font-weight:600;display:block;line-height:1.2}
+.auth-mark span{display:block;color:var(--muted);font-size:13px}
+.auth h1{font-size:19px;font-weight:600;margin-bottom:6px}
+.auth p.lead{color:var(--muted);font-size:13px;margin-bottom:20px}
+.auth form{display:flex;flex-direction:column;gap:12px}
+.auth .btn.primary{justify-content:center;padding:11px}
+.sep{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:12px;margin:18px 0 14px}
+.sep::before,.sep::after{content:"";flex:1;height:1px;background:var(--line)}
+.tgwrap{display:flex;justify-content:center;min-height:40px}
+.btn.tg{width:100%;background:#2aabee;border-color:#2aabee;color:#fff;font-weight:600}
+.btn.tg:hover{filter:brightness(1.06)}
+.msg{border-radius:var(--r);padding:9px 12px;font-size:12.5px;line-height:1.45;margin-top:12px}
+.msg.err{background:rgba(251,113,133,.1);border:1px solid rgba(251,113,133,.35);color:#ffa7b5}
+
+/* ---- каркас ---- */
+.shell{display:grid;grid-template-columns:212px 1fr;min-height:100dvh}
+@media(max-width:820px){.shell{grid-template-columns:1fr}}
+.side{border-right:1px solid var(--line);background:var(--surface);display:flex;flex-direction:column;
+  position:sticky;top:0;height:100dvh;z-index:var(--z-nav)}
+@media(max-width:820px){.side{position:static;height:auto;border-right:none;border-bottom:1px solid var(--line)}}
+.brand{display:flex;align-items:center;gap:10px;padding:16px 16px 14px}
+.brand img{width:30px;height:30px;border-radius:8px}
+.brand b{font-size:14.5px;font-weight:600;letter-spacing:-.01em}
+.brand span{display:block;font-size:11.5px;color:var(--muted);font-weight:500}
+.nav{display:flex;flex-direction:column;gap:2px;padding:6px 10px;flex:1}
+@media(max-width:820px){.nav{flex-direction:row;overflow-x:auto;flex:none;padding:0 10px 10px;scrollbar-width:none}
+  .nav::-webkit-scrollbar{display:none}}
+.nav button{display:flex;align-items:center;gap:9px;width:100%;text-align:left;color:var(--ink-2);
+  padding:9px 11px;border-radius:9px;font-size:13.5px;font-weight:500;white-space:nowrap;
+  transition:background var(--t),color var(--t)}
+.nav button:hover{background:var(--surface-2);color:var(--ink)}
+.nav button.on{background:var(--accent-dim);color:var(--accent);font-weight:600}
+.nav .count{margin-left:auto;font-size:11.5px;font-weight:600;color:var(--muted);
+  background:var(--surface-2);border-radius:99px;padding:1px 7px}
+.nav button.on .count{background:rgba(4,18,14,.25);color:var(--accent)}
+@media(max-width:820px){.nav .count{margin-left:6px}}
+.who{border-top:1px solid var(--line);padding:12px 14px;display:flex;align-items:center;gap:10px}
+@media(max-width:820px){.who{display:none}}
+.who-ava{width:30px;height:30px;border-radius:50%;background:var(--accent);color:var(--accent-ink);
+  display:grid;place-items:center;font-weight:700;font-size:13px;flex-shrink:0;overflow:hidden}
+.who-ava img{width:100%;height:100%;object-fit:cover}
+.who-name{flex:1;min-width:0}
+.who-name b{display:block;font-size:12.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.who-name span{font-size:11px;color:var(--muted)}
+/* ссылка на инструкцию: тише разделов, но всегда на виду в боковой колонке */
+.guide-link{display:block;margin:6px 10px 10px;padding:8px 11px;border-radius:9px;font-size:12.5px;
+  color:var(--muted);border:1px dashed var(--line-2);transition:color var(--t),border-color var(--t)}
+.guide-link:hover{color:var(--accent);border-color:var(--accent)}
+.admlang{display:flex;gap:4px;padding:0 14px 10px}
+.admlang button{flex:1;border:1px solid var(--line);border-radius:8px;padding:5px 0;font-size:11.5px;font-weight:700;color:var(--muted)}
+.admlang button.on{border-color:var(--accent);color:var(--accent);background:var(--accent-dim)}
+@media(max-width:820px){.admlang{padding:0 10px 10px}}
+
+.main{min-width:0;padding:22px clamp(16px,3vw,28px) 96px}
+.head{display:flex;align-items:baseline;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:6px}
+.head h1{font-size:20px;font-weight:600;letter-spacing:-.01em}
+.head p{color:var(--muted);font-size:13px}
+
+/* сводка одной плотной строкой, без витринных плиток */
+.summary{display:flex;flex-wrap:wrap;gap:2px 26px;padding:14px 0 18px;margin-bottom:18px;
+  border-bottom:1px solid var(--line)}
+.summary div{display:flex;align-items:baseline;gap:7px}
+.summary b{font-size:15px;font-weight:600;font-variant-numeric:tabular-nums}
+.summary span{font-size:12.5px;color:var(--muted)}
+.summary div.hot b{color:var(--accent)}
+
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden}
+.panel + .panel{margin-top:14px}
+.panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+  padding:13px 16px;border-bottom:1px solid var(--line)}
+.panel-head h2{font-size:14px;font-weight:600}
+.panel-body{padding:16px}
+.tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.tools input{width:auto}
+
+.scroll{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{position:sticky;top:0;background:var(--surface);text-align:left;font-size:11px;font-weight:600;
+  text-transform:uppercase;letter-spacing:.05em;color:var(--muted);padding:10px 14px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:11px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+tbody tr:last-child td{border-bottom:none}
+tbody tr{transition:background var(--t)}
+tbody tr:hover{background:var(--surface-2)}
+td .sub{display:block;color:var(--muted);font-size:11.5px;margin-top:2px}
+.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+
+.pill{display:inline-block;font-size:11px;font-weight:600;padding:3px 9px;border-radius:99px;
+  background:var(--surface-2);color:var(--ink-2);white-space:nowrap}
+.pill.new{background:rgba(245,184,61,.14);color:var(--warn)}
+.pill.ok{background:rgba(74,222,128,.13);color:var(--ok)}
+.pill.live{background:var(--accent-dim);color:var(--accent)}
+.pill.off{background:var(--surface-2);color:var(--muted)}
+
+.empty{padding:34px 16px;text-align:center;color:var(--muted);font-size:13px;line-height:1.6}
+.empty b{display:block;color:var(--ink-2);font-size:14px;font-weight:600;margin-bottom:5px}
+.skeleton{padding:16px;display:flex;flex-direction:column;gap:9px}
+.skeleton i{display:block;height:13px;border-radius:6px;background:linear-gradient(90deg,var(--surface-2),#1f2937,var(--surface-2));
+  background-size:200% 100%;animation:sk 1.1s linear infinite}
+.skeleton i:nth-child(2){width:78%}.skeleton i:nth-child(3){width:88%}.skeleton i:nth-child(4){width:64%}
+@keyframes sk{from{background-position:200% 0}to{background-position:-200% 0}}
+
+/* ---- ассортимент ---- */
+.item{border-bottom:1px solid var(--line);padding:14px 16px}
+.item:last-of-type{border-bottom:none}
+.item-top{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.item-top input{width:auto}
+.i-name{flex:2;min-width:150px}.i-brand{flex:1;min-width:110px}.i-cat{flex:1;min-width:115px}
+/* ступеням хватало 58px, пока цены были целыми: «45,50» уже не помещалось */
+.i-nic{width:100px}.i-price{width:92px}.i-tier{width:68px}
+.item-id{font-size:11.5px;color:var(--muted);margin:7px 0 2px;font-variant-numeric:tabular-nums}
+.flavs{display:flex;flex-direction:column}
+.flav{display:flex;align-items:center;gap:10px;padding:7px 0;border-top:1px solid var(--line)}
+.flav-n{flex:1;min-width:0;font-size:13px;overflow:hidden;text-overflow:ellipsis}
+.flav input{width:76px;text-align:center}
+.flav .unit{font-size:12px;color:var(--muted)}
+.add-flav{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.add-flav input{width:auto}
+.dirty input{border-color:var(--accent)}
+
+/* ---- карточка вкуса: цвет, профиль, описание ---- */
+.tint-dot{width:14px;height:14px;border-radius:50%;flex-shrink:0;border:1px solid var(--line-2)}
+.fl-open{display:inline-flex;align-items:center;gap:7px;white-space:nowrap}
+.fl-open em{font-style:normal;font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+.fl-open.primary em{color:var(--accent-ink);opacity:.7}
+.fl-slot:empty{display:none}
+.fl-edit{background:var(--surface-2);border:1px solid var(--line-2);border-radius:var(--r-lg);
+  padding:14px;margin:2px 0 10px}
+.fl-cols{display:grid;grid-template-columns:minmax(0,260px) minmax(0,1fr) minmax(0,240px);gap:20px}
+.fl-col{min-width:0}
+.fl-h{display:block;font-size:12px;text-transform:uppercase;letter-spacing:.05em;
+  color:var(--muted);margin-bottom:9px}
+
+/* палитра: квадрат насыщенность-светлота и полоса тона */
+.tint-pick{display:flex;flex-direction:column;gap:9px}
+.tint-sv{position:relative;height:120px;border-radius:var(--r);cursor:crosshair;
+  border:1px solid var(--line-2);touch-action:none}
+.tint-hue{position:relative;height:14px;border-radius:99px;cursor:pointer;touch-action:none;
+  background:linear-gradient(to right,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00)}
+.tint-dot-sv,.tint-dot-hue{position:absolute;width:13px;height:13px;border-radius:50%;
+  border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.5);pointer-events:none;transform:translate(-50%,50%)}
+.tint-dot-hue{top:50%;transform:translate(-50%,-50%)}
+.tint-swatches{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.tint-sw{width:24px;height:24px;border-radius:7px;border:1px solid var(--line-2);cursor:pointer}
+.tint-sw:hover{transform:scale(1.12)}
+.tint-row{display:flex;align-items:center;gap:8px;margin-top:10px}
+.tint-prev{width:30px;height:30px;border-radius:8px;flex-shrink:0;border:1px solid var(--line-2)}
+.tint-hex{width:104px;font-variant-numeric:tabular-nums;text-transform:uppercase}
+.fl-edit.bad .tint-hex{border-color:var(--danger)}
+.fl-edit.tint-off .tint-pick{opacity:.5}
+
+/* вкусовой профиль */
+.ts-row{display:flex;align-items:center;gap:10px;margin-bottom:9px;font-size:13px}
+.ts-row > span{width:78px;flex-shrink:0;color:var(--ink-2)}
+.ts-row input[type=range]{flex:1;min-width:0;accent-color:var(--accent)}
+.ts-row input[type=range]:disabled{opacity:.4}
+.ts-row b{width:26px;text-align:right;font-variant-numeric:tabular-nums;color:var(--muted)}
+
+/* описания */
+.fl-desc{margin-top:16px}
+.fl-langs{display:flex;gap:6px;margin-bottom:8px}
+.fl-ta{width:100%;background:var(--field);border:1px solid var(--line);border-radius:var(--r);
+  padding:10px 12px;resize:vertical;line-height:1.5}
+.fl-ta:focus{outline:none;border-color:var(--accent)}
+.fl-acts{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:14px}
+
+/* фото вкуса */
+.fl-photo{display:flex;gap:10px;align-items:flex-start}
+.fl-ph-box{position:relative;width:84px;height:84px;flex-shrink:0;border-radius:var(--r);
+  overflow:hidden;background:#fff;border:1px solid var(--line-2);display:grid;place-items:center}
+.fl-ph-box img{width:100%;height:100%;object-fit:contain}
+.fl-ph-box span{font-size:10.5px;color:#8b98a4;text-align:center;padding:0 6px}
+.fl-ph-box.busy{opacity:.5}
+.fl-ph-acts{display:flex;flex-direction:column;gap:6px}
+.fl-ph-acts .btn{cursor:pointer}
+
+/* предпросмотр: тот же порядок, что видит покупатель в карточке товара */
+.fl-prev{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:12px}
+.fl-prev-ph{width:100%;aspect-ratio:1/1;border-radius:10px;overflow:hidden;background:#fff;
+  display:grid;place-items:center;margin-bottom:10px}
+.fl-prev-ph img{width:100%;height:100%;object-fit:contain}
+.fl-prev-ph span{font-size:11px;color:#8b98a4}
+.fl-prev-row{display:flex;align-items:center;gap:9px;margin-bottom:10px}
+.fl-prev-bar{width:5px;height:20px;border-radius:99px;flex-shrink:0}
+.fl-prev-bar.auto{opacity:.45}
+.fl-prev-n{font-weight:700;font-size:13px}
+.fl-prev-bar-row{display:flex;align-items:center;gap:8px;font-size:11.5px;margin-bottom:5px;color:var(--ink-2)}
+.fl-prev-bar-row > span{width:58px;flex-shrink:0}
+.fl-prev-bar-row i{flex:1;height:5px;border-radius:99px;background:var(--field);overflow:hidden}
+.fl-prev-bar-row i b{display:block;height:100%;border-radius:99px;background:var(--accent)}
+.fl-prev-bar-row em{font-style:normal;width:14px;text-align:right;color:var(--muted);font-variant-numeric:tabular-nums}
+.fl-prev-d{font-size:12px;line-height:1.5;color:var(--ink-2);margin-top:10px}
+.fl-prev-auto{color:var(--muted);font-style:italic}
+
+/* панель несохранённых изменений */
+.savebar{position:fixed;left:0;right:0;bottom:0;z-index:var(--z-bar);background:var(--surface);
+  border-top:1px solid var(--line-2);padding:12px clamp(16px,3vw,28px);
+  display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+  box-shadow:0 -12px 32px -18px rgba(0,0,0,.9);
+  transform:translateY(110%);transition:transform var(--t)}
+.savebar.show{transform:none}
+.savebar b{font-size:13.5px;font-weight:600}
+.savebar span{color:var(--muted);font-size:12.5px}
+.savebar .grow{flex:1}
+@media(prefers-reduced-motion:reduce){
+  *{animation-duration:.01ms!important;transition-duration:.01ms!important}
+  .savebar{transition:none}
+}
+
+.pform{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px}
+.pform-wide{grid-column:1 / -1}
+/* Строка «подпись и значение». Класс использовался в карточке менеджера, у поставщиков, в
+   метках и в карточке клиента, но правила у него не было вовсе: подпись и значение стояли
+   вплотную и читались как «Рольменеджер». */
+.prow{display:flex;align-items:center;gap:10px;padding:8px 0;font-size:13px;
+  border-bottom:1px solid var(--line)}
+.prow:last-child{border-bottom:none}
+.prow > :first-child{flex:1;min-width:0;color:var(--ink-2)}
+.prow .sub{display:block;font-size:11.5px;color:var(--muted);margin-top:1px}
+/* Сведения о человеке: подпись с двоеточием, значение сразу за ней, каждая пара своей строкой. */
+.irow{display:flex;align-items:baseline;gap:7px;padding:5px 0;font-size:13px;flex-wrap:wrap}
+.irow > b{color:var(--muted);font-weight:600}
+/* полоса выгрузки отчёта под цифрами дашборда */
+.exp-bar{margin-top:16px;padding-top:14px;border-top:1px solid var(--line);align-items:center}
+.exp-t{font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.irow > span{color:var(--ink)}
+/* dashboard */
+.kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:10px;margin-top:4px}
+.kpi{background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r);padding:12px 13px;
+  display:flex;flex-direction:column;gap:3px;min-width:0}
+.kpi-l{font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.kpi-v{font-size:19px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.kpi-t{font-size:11.5px;font-weight:700}
+.dash-g{margin-top:18px}
+.dash-g-t{font-size:13px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:8px}
+.kpis-hero .kpi{background:var(--surface-2);border-color:var(--accent)}
+.kpis-hero .kpi-v{font-size:26px}
+.fold{margin-top:14px;border:1px solid var(--line);border-radius:14px;background:var(--surface);overflow:hidden}
+.fold>summary{cursor:pointer;padding:14px 18px;font-weight:700;font-size:14px;list-style:none;user-select:none}
+.fold>summary::-webkit-details-marker{display:none}
+.fold>summary::before{content:"▸";display:inline-block;margin-right:9px;color:var(--muted);transition:transform .15s}
+.fold[open]>summary::before{transform:rotate(90deg)}
+.fold>summary:hover{background:var(--surface-2)}
+.fold .panel{margin:0 12px 12px;border:none;background:none}
+@media(max-width:700px){.dash-g-t{font-size:12px}.kpis-hero .kpi-v{font-size:22px}}
+.kpi-t.up{color:var(--ok)}.kpi-t.down{color:var(--danger)}.kpi-t.flat{color:var(--muted)}
+.dash-2{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:16px}
+.dash-none{color:var(--muted);font-size:13px;padding:14px 0;text-align:center}
+.chart{width:100%;height:170px;display:block;overflow:visible}
+.chart-line{fill:none;stroke:var(--accent);stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.chart-area{fill:var(--accent-dim);stroke:none}
+.chart circle{fill:var(--accent)}
+.chart .grid{stroke:var(--line);stroke-width:1;vector-effect:non-scaling-stroke}
+.chart .grid-t{fill:var(--muted);font-size:9px;vector-effect:non-scaling-stroke}
+.chart-bar{fill:var(--accent)}
+.chart-x{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:6px}
+.bars{display:flex;flex-direction:column;gap:7px}
+.bar-row{display:grid;grid-template-columns:minmax(90px,1.4fr) 2fr auto;gap:10px;align-items:center;font-size:12.5px}
+.bar-l{color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar-t{background:var(--field);border-radius:99px;height:8px;overflow:hidden}
+.bar-t i{display:block;height:100%;background:var(--accent);border-radius:99px}
+.bar-v{font-variant-numeric:tabular-nums;white-space:nowrap;font-size:12px}
+.donut-wrap{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.donut{width:140px;height:140px;flex-shrink:0;transform:rotate(-90deg)}
+.donut .ring{fill:none;stroke-width:16}
+.donut-legend{list-style:none;display:flex;flex-direction:column;gap:6px;font-size:12.5px;min-width:0}
+.donut-legend li{display:flex;align-items:center;gap:8px;color:var(--ink-2)}
+.donut-legend i{width:10px;height:10px;border-radius:3px;flex-shrink:0}
+.donut-legend b{margin-left:auto;font-variant-numeric:tabular-nums;color:var(--ink)}
+@media(max-width:640px){.kpis{grid-template-columns:repeat(auto-fill,minmax(140px,1fr))}
+  .bar-row{grid-template-columns:minmax(70px,1fr) 1.4fr auto}}
+.promo-tag{color:var(--accent)}
+.i-hit{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;color:var(--ink-2);white-space:nowrap}
+.i-hit input{width:auto;margin:0}
+.bcphoto{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px}
+.bcpreview{display:block;max-width:220px;max-height:150px;object-fit:cover;border:1px solid var(--line);border-radius:var(--r);margin-top:10px}
+.bcpreview[hidden]{display:none}
+
+/* ================= телефон: свой формат панели =================
+   Разделы прячем за бургер, шапка липкая сверху, таблицы становятся карточками.
+   Всё, что нажимают пальцем, не ниже 44px. */
+.mtop{display:none}
+.mscrim{display:none}
+
+@media(max-width:700px){
+  .mtop{position:sticky;top:0;z-index:calc(var(--z-nav) + 2);display:flex;align-items:center;gap:10px;
+    padding:10px 12px;background:var(--surface);border-bottom:1px solid var(--line)}
+  .mburger{display:grid;place-items:center;width:42px;height:42px;flex:0 0 auto;
+    border:1px solid var(--line);border-radius:11px;color:var(--ink);background:var(--surface-2)}
+  .mtitle{flex:1;min-width:0;font-size:15px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .mlang{display:flex;gap:4px;padding:0;width:auto;flex:0 0 auto}
+  .mlang button{min-width:40px;height:34px;border-radius:9px}
+
+  .mscrim{display:block;position:fixed;inset:0;z-index:var(--z-nav);background:rgba(0,0,0,.5)}
+  .mscrim[hidden]{display:none}
+
+  .shell{grid-template-columns:1fr}
+  /* меню-ящик выезжает слева и закрывается по выбору раздела или тапу по затемнению */
+  .side{position:fixed;top:0;bottom:0;left:0;width:min(78vw,300px);height:100dvh;z-index:calc(var(--z-nav) + 1);
+    border-right:1px solid var(--line);background:var(--surface);
+    transform:translateX(-102%);transition:transform var(--t);overflow-y:auto}
+  body.menu-open .side{transform:none}
+  .brand{padding:16px 16px 12px}
+  .nav{flex-direction:column;padding:6px 10px;gap:2px;flex:1;overflow:visible}
+  .nav button{width:100%;flex-direction:row;justify-content:flex-start;gap:10px;
+    min-height:46px;padding:10px 12px;font-size:14px;border-radius:10px}
+  .nav .count{margin-left:auto}
+  .side .admlang{display:none}      /* язык живёт в верхней шапке */
+  .who{display:flex}
+
+  .main{padding:14px 12px 96px}
+  .head h1{font-size:18px}
+  .head p{font-size:12.5px;line-height:1.45}
+  .summary{gap:6px 16px;padding:10px 0 12px;margin-bottom:12px}
+  .panel-head,.panel-body{padding:12px}
+  .tools{gap:8px}
+  .tools input,.tools select,.tools textarea{width:100%;min-height:44px}
+  .tools .btn{flex:1 0 46%;justify-content:center;min-height:44px}
+  .btn{min-height:40px}
+  .btn.sm{min-height:36px;padding:8px 12px;font-size:12.5px}
+  input,select,textarea{font-size:16px;min-height:44px}   /* 16px не даёт iOS зумить поле */
+
+  /* таблица в узком экране читается только карточками */
+  table,thead,tbody,tr,th,td{display:block}
+  thead{display:none}
+  .scroll{overflow:visible}
+  tr{border:1px solid var(--line);border-radius:12px;margin-bottom:10px;background:var(--surface-2);overflow:hidden}
+  td{border-bottom:1px solid var(--line);padding:10px 12px;display:flex;gap:10px;align-items:flex-start;font-size:13px}
+  td:last-child{border-bottom:none}
+  td::before{content:attr(data-l);flex:0 0 38%;max-width:38%;color:var(--muted);font-size:10.5px;
+    text-transform:uppercase;letter-spacing:.04em;font-weight:700;padding-top:3px}
+  td:empty{display:none}
+  td .tools{width:100%}
+  td .btn.sm{flex:1}
+
+  .item{padding:12px}
+  .item-top{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .item-top input{width:100%}
+  .i-name,.item-top .btn.danger,.i-hit{grid-column:1 / -1}
+  .i-nic,.i-price,.i-tier{width:100%}
+  .item-top .btn.danger{justify-content:center}
+  /* в строке вкуса появилась кнопка настройки, на телефоне строка переносится */
+  .flav{gap:8px;padding:10px 0;flex-wrap:wrap}
+  .flav input{width:72px}
+  .add-flav input{flex:1 0 100%}
+  .add-flav .btn{flex:1}
+  /* палитра и профиль встают друг под друга: рядом им тесно */
+  .fl-cols{grid-template-columns:1fr;gap:18px}
+  .fl-edit{padding:12px}
+  .pform{grid-template-columns:1fr;gap:12px}
+
+  /* полоса сохранения: у неё своя строка кнопок, поверх контента, но не поверх меню */
+  .savebar{bottom:0;padding:10px 12px calc(10px + env(safe-area-inset-bottom));gap:8px;z-index:var(--z-bar)}
+  .savebar b{width:100%;font-size:12.5px}
+  .savebar span{display:none}
+  .savebar .btn{flex:1;justify-content:center}
+  .toast{bottom:104px}
+}
+
+.toast{position:fixed;left:50%;bottom:88px;transform:translate(-50%,14px);z-index:var(--z-toast);
+  background:var(--accent);color:var(--accent-ink);font-weight:600;font-size:13px;
+  padding:10px 18px;border-radius:99px;opacity:0;pointer-events:none;transition:opacity var(--t),transform var(--t)}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.toast.bad{background:var(--danger);color:#2a0710}
+.hint{font-size:12px;color:var(--muted);line-height:1.55;margin-top:9px}
+</style></head>
+<body><div id="app"><div style="max-width:1160px;margin:0 auto;padding:24px">
+<div class="panel"><div class="panel-h"><h2>Товары · katowice</h2></div>
+<div class="panel-body" id="main"></div></div></div></div>
+<script>// Гамма вкуса: цвет полоски и подложки в карточке товара.
+//
+// Витрина умеет подбирать цвет по названию (арбуз красный, мята зелёная), но словарь знает
+// не всё, а незнакомое имя получало оттенок из хеша: стабильный, зато случайный, из-за чего
+// половина новых вкусов выходила фиолетовой. Поэтому цвет можно назначить руками в панели.
+//
+// В базе лежит ОДИН цвет как #rrggbb. Второй конец градиента считается из него: пара,
+// подобранная человеком на глаз, каждый раз выходила бы разной по характеру, а так вся
+// витрина остаётся одинаковой на вид, кто бы ни заводил вкус. Пресеты ниже это просто
+// удобные образцы, они хранятся тем же способом и ничем не отличаются от набранного руками.
+//
+// Модуль общий у панели с витриной, поэтому лежит отдельным файлом.
+window.KV_TINT = (function () {
+  // Образцы под привычные вкусы. id нигде не хранится, он нужен панели для подписи.
+  const PRESETS = [
+    { id: 'mint',      c: '#5ff3d0' },
+    { id: 'ice',       c: '#8fd8ff' },
+    { id: 'tropic',    c: '#67dcf5' },
+    { id: 'apple',     c: '#8fe264' },
+    { id: 'citrus',    c: '#ffd95e' },
+    { id: 'peach',     c: '#ffa15c' },
+    { id: 'berry',     c: '#ff5f7d' },
+    { id: 'candy',     c: '#ff8ad2' },
+    { id: 'grape',     c: '#b46bff' },
+    { id: 'blueberry', c: '#7f8cff' },
+    { id: 'coffee',    c: '#c68d5c' },
+    { id: 'tobacco',   c: '#b9a48a' },
+    { id: 'graphite',  c: '#b3c0cc' }
+  ];
+
+  // Приводим к #rrggbb. Принимаем и без решётки, и в три знака (#f0a), и с пробелами:
+  // цвет часто копируют из чужого макета, и придираться к форме незачем.
+  function norm(v) {
+    let s = String(v == null ? '' : v).trim().toLowerCase().replace(/^#/, '');
+    if (/^[0-9a-f]{3}$/.test(s)) s = s[0] + s[0] + s[1] + s[1] + s[2] + s[2];
+    return /^[0-9a-f]{6}$/.test(s) ? '#' + s : null;
+  }
+
+  function toHsl(hex) {
+    const n = parseInt(hex.slice(1), 16);
+    const r = ((n >> 16) & 255) / 255, g = ((n >> 8) & 255) / 255, b = (n & 255) / 255;
+    const max = Math.max(r, g, b), min = Math.min(r, g, b), d = max - min;
+    const l = (max + min) / 2;
+    let h = 0, s = 0;
+    if (d) {
+      s = d / (1 - Math.abs(2 * l - 1));
+      if (max === r) h = ((g - b) / d) % 6;
+      else if (max === g) h = (b - r) / d + 2;
+      else h = (r - g) / d + 4;
+      h *= 60;
+      if (h < 0) h += 360;
+    }
+    return { h, s: s * 100, l: l * 100 };
+  }
+
+  function toHex(h, s, l) {
+    s /= 100; l /= 100;
+    const c = (1 - Math.abs(2 * l - 1)) * s, x = c * (1 - Math.abs((h / 60) % 2 - 1)), m = l - c / 2;
+    const t = h < 60 ? [c, x, 0] : h < 120 ? [x, c, 0] : h < 180 ? [0, c, x]
+            : h < 240 ? [0, x, c] : h < 300 ? [x, 0, c] : [c, 0, x];
+    const p = v => Math.round((v + m) * 255).toString(16).padStart(2, '0');
+    return '#' + p(t[0]) + p(t[1]) + p(t[2]);
+  }
+
+  // Второй конец градиента. Числа сняты с прежних пар, подобранных на глаз: тон тот же,
+  // светлота ниже примерно на четверть, насыщенность чуть мягче.
+  function deep(hex) {
+    const c = toHsl(hex);
+    // У почти чёрного темнеть некуда, и градиент выродился бы в пятно: уходим в свет.
+    const l = c.l < 30 ? Math.min(c.l + 24, 92) : Math.max(c.l - 22, 18);
+    // Насыщенность только гасим и никогда не выдумываем: у белого и серого её нет вовсе,
+    // а тон у них формально красный, поэтому любой минимум красил их в розовое.
+    return toHex(c.h, c.s * 0.74, l);
+  }
+
+  // Пара цветов для градиента. Возвращает null, если цвет не разобрали: тогда витрина
+  // подбирает его по названию вкуса, как делала всегда.
+  function pair(v) {
+    const hex = norm(v);
+    return hex ? [hex, deep(hex)] : null;
+  }
+
+  function grad(v) {
+    const p = pair(v);
+    return p ? 'linear-gradient(165deg,' + p[0] + ',' + p[1] + ')' : '';
+  }
+
+  // HSV нужен палитре в панели: квадрат «насыщенность на светлоту» и полоса тона это
+  // именно он, а не HSL. Живёт здесь, чтобы вся возня с цветом лежала в одном месте.
+  function toHsv(hex) {
+    const n = parseInt(hex.slice(1), 16);
+    const r = ((n >> 16) & 255) / 255, g = ((n >> 8) & 255) / 255, b = (n & 255) / 255;
+    const max = Math.max(r, g, b), min = Math.min(r, g, b), d = max - min;
+    let h = 0;
+    if (d) {
+      if (max === r) h = ((g - b) / d) % 6;
+      else if (max === g) h = (b - r) / d + 2;
+      else h = (r - g) / d + 4;
+      h *= 60;
+      if (h < 0) h += 360;
+    }
+    return { h, s: max ? (d / max) * 100 : 0, v: max * 100 };
+  }
+  function fromHsv(h, s, v) {
+    s /= 100; v /= 100;
+    const c = v * s, x = c * (1 - Math.abs((h / 60) % 2 - 1)), m = v - c;
+    const t = h < 60 ? [c, x, 0] : h < 120 ? [x, c, 0] : h < 180 ? [0, c, x]
+            : h < 240 ? [0, x, c] : h < 300 ? [x, 0, c] : [c, 0, x];
+    const p = q => Math.round((q + m) * 255).toString(16).padStart(2, '0');
+    return '#' + p(t[0]) + p(t[1]) + p(t[2]);
+  }
+
+  return { PRESETS, norm, pair, grad, deep, toHsl, toHex, toHsv, fromHsv };
+})();
+</script>
+<script>
+const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const L = s => s;
+const toast = (s) => console.log('toast:', s);
+const render = () => console.log('render()');
+window.KV_CONFIG = { SUPABASE_URL: 'https://example.supabase.co' };
+const sb = { storage: { from: () => ({ upload: async () => ({}), remove: async () => ({}) }) } };
+const groups = [{"id":"hqd","head":{"name":"HQD","brand":"HQD","category":"liquids","nic":"50 мг","price":45.5,"cost":28.4,"tiers":[{"q":1,"p":45.5},{"q":3,"p":42.5},{"q":10,"p":38.99}],"labels":["hit"]},"items":[{"id":"hqd","flavor":"Watermelon","qty":4},{"id":"hqd","flavor":"Mango ice","qty":3},{"id":"hqd","flavor":"Blue Razz","qty":0}]}];
+const LABELS = [['hit', 'Хит'], ['unique', 'Уникальный'], ['restock', 'Ждём поступления']];
+
+// Гамма вкуса. Цвета лежат в shared/tints.js, общие с витриной, а подписи здесь: словарь
+// панели переводит их на украинский и польский. Пустая гамма значит «по названию»: витрина
+// подбирает цвет сама, как делала всегда.
+// Подписи к образцам палитры. Сами цвета лежат в shared/tints.js, общем с витриной.
+const TINT_RU = {
+  mint: 'Мята', ice: 'Лёд', tropic: 'Тропик', apple: 'Яблоко', citrus: 'Цитрус',
+  peach: 'Персик', berry: 'Ягоды', candy: 'Сладость', grape: 'Виноград',
+  blueberry: 'Черника', coffee: 'Кофе', tobacco: 'Табак', graphite: 'Графит'
+};
+// Три полосы вкусового профиля. Витрина показывает их шкалой 1..10, хранит 0..100.
+const TASTE_RU = [['sweet', 'Сладость'], ['cool', 'Холодок'], ['sour', 'Кислинка']];
+// Код языка в базе украинский по стандарту (uk), а подписывается он как UA: так его пишут
+// на витрине и в переключателе самой панели, и расхождение сбивало с толку.
+const DESC_LANGS = [['ru', 'RU'], ['uk', 'UA'], ['pl', 'PL']];
+const TINT = () => window.KV_TINT;
+
+function tintGrad(hex) {
+  const g = TINT().grad(hex);
+  // цвет не выбран: показываем не цвет, а прочерк, потому что угадывать за витрину
+  // панель всё равно не станет, она подберёт его по названию вкуса сама
+  return g || 'var(--line-2)';
+}
+
+// Настройки вкуса общие для всех городов, поэтому ключ без города.
+const FL_SEP = String.fromCharCode(0);
+const flKey = (id, flavor) => id + FL_SEP + flavor;
+let flavorMeta = {};    // ключ -> строка flavor_meta
+let flOpen = '';        // какой вкус сейчас раскрыт, «gi:ri»
+
+// Адрес картинки в Storage. В базе лежит только путь внутри корзины: полный адрес привязан
+// к домену проекта. Та же сборка, что во витрине.
+const PHOTO_BUCKET = 'flavors';
+function photoUrl(path) {
+  const base = (window.KV_CONFIG || {}).SUPABASE_URL || '';
+  return base.replace(/\/$/, '') + '/storage/v1/object/public/' + PHOTO_BUCKET + '/' +
+    String(path).split('/').map(encodeURIComponent).join('/');
+}
+// Имя файла собираем сами: в названии вкуса бывают пробелы и кириллица, а ключ объекта
+// должен оставаться простым. Случайная часть не даёт браузеру показать старую картинку
+// из кеша после замены.
+function photoPath(productId) {
+  const safe = String(productId).toLowerCase().replace(/[^a-z0-9_-]+/g, '-').replace(/^-+|-+$/g, '') || 'item';
+  const rnd = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random()).replace(/[^a-z0-9]/gi, '').slice(0, 16).toLowerCase();
+  return safe + '/' + rnd + '.jpg';
+}
+// Ужимаем до 800 точек по длинной стороне и переводим в jpeg. Снимок с телефона весит
+// несколько мегабайт, а в карточке он показывается размером в палец.
+function shrinkPhoto(file, max = 800) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const k = Math.min(1, max / Math.max(img.width, img.height));
+      const cv = document.createElement('canvas');
+      cv.width = Math.round(img.width * k); cv.height = Math.round(img.height * k);
+      const ctx = cv.getContext('2d');
+      ctx.fillStyle = '#fff';                       // прозрачный фон png стал бы чёрным
+      ctx.fillRect(0, 0, cv.width, cv.height);
+      ctx.drawImage(img, 0, 0, cv.width, cv.height);
+      URL.revokeObjectURL(img.src);
+      cv.toBlob(b => (b ? resolve(b) : reject(new Error('canvas'))), 'image/jpeg', 0.85);
+    };
+    img.onerror = () => { URL.revokeObjectURL(img.src); reject(new Error('image')); };
+    img.src = URL.createObjectURL(file);
+  });
+}
+
+// Карточка вкуса. Раскрывается прямо под строкой, чтобы соседние вкусы оставались перед
+// глазами: цвета подбирают, сравнивая их друг с другом, а не по одному.
+function flavorCard(r) {
+  const m = flavorMeta[flKey(r.id, r.flavor)] || {};
+  const hex = TINT().norm(m.tint) || '';
+  const taste = m.taste || null;
+  const d = m.descr || {};
+  const bar = ([k, name]) => {
+    const v = taste ? Math.round(Number(taste[k]) || 0) : 50;
+    return `<label class="ts-row"><span>${L(name)}</span>
+      <input type="range" min="0" max="100" step="10" value="${v}" data-ts="${k}"${taste ? '' : ' disabled'}>
+      <b data-tsv="${k}">${taste ? Math.max(1, Math.round(v / 10)) : '—'}</b></label>`;
+  };
+  return `<div class="fl-edit">
+    <div class="fl-cols">
+      <div class="fl-col">
+        <b class="fl-h">${L('Фото вкуса')}</b>
+        <div class="fl-photo">
+          <div class="fl-ph-box" data-ph-box>${m.photo
+            ? `<img src="${esc(photoUrl(m.photo))}" alt="">`
+            : `<span>${L('нет фото')}</span>`}</div>
+          <div class="fl-ph-acts">
+            <label class="btn sm">${L('Загрузить')}<input type="file" accept="image/*" data-ph hidden></label>
+            <button type="button" class="btn sm danger" data-ph-del${m.photo ? '' : ' hidden'}>${L('Убрать')}</button>
+          </div>
+        </div>
+        <p class="hint">${L('Фото этого вкуса. Пока его нет, показывается общее фото товара. Картинка ужимается до 800 точек и уходит в хранилище.')}</p>
+        <b class="fl-h" style="margin-top:16px">${L('Цвет вкуса')}</b>
+        <div class="tint-pick">
+          <div class="tint-sv" data-sv tabindex="0"><i class="tint-dot-sv"></i></div>
+          <div class="tint-hue" data-hue tabindex="0"><i class="tint-dot-hue"></i></div>
+        </div>
+        <div class="tint-swatches">${TINT().PRESETS.map(p =>
+          `<button type="button" class="tint-sw" data-sw="${p.c}" title="${L(TINT_RU[p.id] || p.id)}"
+            style="background:${TINT().grad(p.c)}"></button>`).join('')}</div>
+        <div class="tint-row">
+          <span class="tint-prev" data-prev style="background:${tintGrad(hex)}"></span>
+          <input class="tint-hex" data-hex value="${hex}" placeholder="#5FF3D0" maxlength="7" spellcheck="false">
+          <button type="button" class="btn sm quiet" data-tint-off>${L('по названию')}</button>
+        </div>
+        <p class="hint">${L('Второй конец градиента считается сам, поэтому вкусы остаются похожими друг на друга. Пусто значит, что цвет подберётся по названию.')}</p>
+      </div>
+      <div class="fl-col">
+        <b class="fl-h">${L('Вкусовой профиль')}</b>
+        ${TASTE_RU.map(bar).join('')}
+        <div class="tools">
+          <button type="button" class="btn sm ${taste ? '' : 'primary'}" data-ts-auto>${L('По названию')}</button>
+          <button type="button" class="btn sm ${taste ? 'primary' : ''}" data-ts-on>${L('Задать вручную')}</button>
+        </div>
+        <p class="hint">${L('Шкала 1..10, как её видит покупатель. Пока профиль не задан, витрина считает его по названию вкуса.')}</p>
+      </div>
+      <div class="fl-col">
+        <b class="fl-h">${L('Как увидит покупатель')}</b>
+        <div class="fl-prev" data-preview>
+          <div class="fl-prev-ph" data-pv-ph></div>
+          <div class="fl-prev-row">
+            <span class="fl-prev-bar" data-pv-bar></span>
+            <span class="fl-prev-n" data-pv-n>${esc(r.flavor)}</span>
+          </div>
+          <div data-pv-taste></div>
+          <p class="fl-prev-d" data-pv-desc></p>
+        </div>
+        <p class="hint">${L('Обновляется на лету, пока правите. Язык описания переключается вкладками ниже.')}</p>
+      </div>
+    </div>
+    <div class="fl-desc">
+      <b class="fl-h">${L('Описание')}</b>
+      <div class="fl-langs">${DESC_LANGS.map(([l, label], i) =>
+        `<button type="button" class="btn sm ${i ? '' : 'primary'}" data-dl="${l}">${label}</button>`).join('')}</div>
+      ${DESC_LANGS.map(([l], i) =>
+        `<textarea class="fl-ta" data-d="${l}" rows="4" maxlength="900"${i ? ' hidden' : ''}
+          placeholder="${L('Пусто: витрина соберёт описание по вкусовому профилю')}">${esc(d[l] || '')}</textarea>`).join('')}
+    </div>
+    <div class="fl-acts">
+      <button type="button" class="btn primary" data-fl-save>${L('Сохранить вкус')}</button>
+      <span class="hint">${L('Цвет, профиль и описание общие для всех городов.')}</span>
+    </div>
+  </div>`;
+}
+
+function tierP(tiers, q) { const t = (tiers || []).find(x => +x.q === q); return t && t.p != null ? t.p : ''; }
+// Нормализованная подпись ступеней: «3:36|5:33|10:30». База отдаёт jsonb со своим порядком
+// ключей ({"p":40,"q":1}), поэтому сравнивать JSON-строки нельзя, панель несохранённых
+// правок из-за этого висела всегда, даже когда ничего не меняли.
+
+const moneyIn = raw => {
+  const s = String(raw == null ? '' : raw).trim().replace(',', '.');
+  if (s === '') return null;
+  const n = Number(s);
+  return Number.isFinite(n) ? Math.round(n * 100) / 100 : NaN;
+};
+// Обратно в поле цена печатается по-польски: запятая и два знака, но только когда гроши
+// есть. Целое так и остаётся «40», иначе весь прайс покрывается лишними нулями.
+const moneyOut = v => {
+  if (v == null || v === '') return '';
+  const n = Number(v);
+  if (!Number.isFinite(n)) return String(v);
+  return Number.isInteger(n) ? String(n) : n.toFixed(2).replace('.', ',');
+};
+
+
+function bindFlavorCard(slot, r) {
+  const card = slot.querySelector('.fl-edit'); if (!card) return;
+  const $ = s => card.querySelector(s);
+  const sv = $('[data-sv]'), hue = $('[data-hue]'), hexIn = $('[data-hex]'), prev = $('[data-prev]');
+  const T = TINT();
+  let hsv = T.toHsv(T.norm(hexIn.value) || '#5ff3d0');
+  let on = !!T.norm(hexIn.value);          // цвет назначен или «по названию»
+
+  function paint(writeField) {
+    const hex = T.fromHsv(hsv.h, hsv.s, hsv.v);
+    sv.style.background = 'linear-gradient(to top,#000,transparent),' +
+      'linear-gradient(to right,#fff,' + T.fromHsv(hsv.h, 100, 100) + ')';
+    sv.querySelector('.tint-dot-sv').style.left = hsv.s + '%';
+    sv.querySelector('.tint-dot-sv').style.bottom = hsv.v + '%';
+    hue.querySelector('.tint-dot-hue').style.left = (hsv.h / 360 * 100) + '%';
+    prev.style.background = on ? T.grad(hex) : 'var(--line-2)';
+    card.classList.toggle('tint-off', !on);
+    if (writeField) hexIn.value = on ? hex : '';
+    preview();
+  }
+  // Тянем и мышью, и пальцем: pointer-события покрывают оба, а setPointerCapture не даёт
+  // потерять курсор, когда его уводят за край квадрата.
+  function drag(el, onMove) {
+    const go = e => {
+      const b = el.getBoundingClientRect();
+      onMove(Math.min(Math.max((e.clientX - b.left) / b.width, 0), 1),
+             Math.min(Math.max((e.clientY - b.top) / b.height, 0), 1));
+      on = true; paint(true);
+    };
+    el.addEventListener('pointerdown', e => {
+      e.preventDefault(); el.setPointerCapture(e.pointerId); go(e);
+      const move = ev => go(ev);
+      const up = ev => {
+        el.releasePointerCapture(ev.pointerId);
+        el.removeEventListener('pointermove', move);
+        el.removeEventListener('pointerup', up);
+      };
+      el.addEventListener('pointermove', move);
+      el.addEventListener('pointerup', up);
+    });
+  }
+  drag(sv, (x, y) => { hsv.s = x * 100; hsv.v = (1 - y) * 100; });
+  drag(hue, x => { hsv.h = x * 360; });
+
+  hexIn.oninput = () => {
+    const hex = T.norm(hexIn.value);
+    if (!hex) { on = hexIn.value.trim() === '' ? false : on; card.classList.toggle('bad', !!hexIn.value.trim()); return; }
+    card.classList.remove('bad');
+    hsv = T.toHsv(hex); on = true; paint(false);
+  };
+  card.querySelectorAll('[data-sw]').forEach(b => b.onclick = () => {
+    hsv = T.toHsv(b.dataset.sw); on = true; paint(true); card.classList.remove('bad');
+  });
+  $('[data-tint-off]').onclick = () => { on = false; paint(true); card.classList.remove('bad'); };
+
+  // ---- вкусовой профиль ----
+  const sliders = [...card.querySelectorAll('[data-ts]')];
+  const setAuto = auto => {
+    sliders.forEach(s => { s.disabled = auto; });
+    card.querySelectorAll('[data-tsv]').forEach(b => {
+      const s = card.querySelector('[data-ts="' + b.dataset.tsv + '"]');
+      b.textContent = auto ? '—' : Math.max(1, Math.round(s.value / 10));
+    });
+    $('[data-ts-auto]').classList.toggle('primary', auto);
+    $('[data-ts-on]').classList.toggle('primary', !auto);
+    preview();
+  };
+  sliders.forEach(s => s.oninput = () => {
+    card.querySelector('[data-tsv="' + s.dataset.ts + '"]').textContent = Math.max(1, Math.round(s.value / 10));
+    preview();
+  });
+  $('[data-ts-auto]').onclick = () => setAuto(true);
+  $('[data-ts-on]').onclick = () => setAuto(false);
+
+  // ---- описания: язык переключается вкладками, тексты живут все три сразу ----
+  card.querySelectorAll('[data-dl]').forEach(b => b.onclick = () => {
+    card.querySelectorAll('[data-dl]').forEach(x => x.classList.toggle('primary', x === b));
+    card.querySelectorAll('[data-d]').forEach(t => { t.hidden = t.dataset.d !== b.dataset.dl; });
+    preview();
+  });
+
+  // ---- фото вкуса ----
+  let photo = (flavorMeta[flKey(r.id, r.flavor)] || {}).photo || null;
+  const phBox = $('[data-ph-box]'), phDel = $('[data-ph-del]');
+  function showPhoto() {
+    phBox.innerHTML = photo ? '<img src="' + esc(photoUrl(photo)) + '" alt="">'
+      : '<span>' + L('нет фото') + '</span>';
+    phDel.hidden = !photo;
+    preview();
+  }
+  $('[data-ph]').onchange = async (e) => {
+    const file = e.target.files && e.target.files[0];
+    e.target.value = '';                       // тот же файл можно выбрать снова
+    if (!file) return;
+    if (!/^image\//.test(file.type)) return toast(L('Это не картинка'), true);
+    phBox.classList.add('busy');
+    try {
+      const blob = await shrinkPhoto(file);
+      const path = photoPath(r.id);
+      const { error } = await sb.storage.from(PHOTO_BUCKET).upload(path, blob, {
+        contentType: 'image/jpeg', cacheControl: '3600'
+      });
+      if (error) throw error;
+      const old = photo;
+      photo = path;
+      showPhoto();
+      // Старый файл убираем только после того, как новый лёг: иначе неудачная загрузка
+      // оставила бы вкус вообще без картинки.
+      if (old) await sb.storage.from(PHOTO_BUCKET).remove([old]).catch(() => {});
+      toast(L('Фото загружено, не забудьте сохранить вкус'));
+    } catch (err) {
+      toast((err && err.message) || L('Не удалось загрузить фото'), true);
+    } finally { phBox.classList.remove('busy'); }
+  };
+  phDel.onclick = () => { photo = null; showPhoto(); toast(L('Фото убрано, не забудьте сохранить вкус')); };
+
+  // ---- предпросмотр ----
+  // Показываем то, что задано руками. Там, где поле пустое, витрина подбирает значение
+  // сама по названию вкуса, и панель честно пишет об этом, а не изображает результат:
+  // формула живёт в shared/core.js, и её копия здесь разошлась бы с оригиналом.
+  function preview() {
+    const hex = on ? T.norm(hexIn.value) : null;
+    const bar = $('[data-pv-bar]');
+    bar.style.background = hex ? T.grad(hex) : 'var(--line-2)';
+    bar.classList.toggle('auto', !hex);
+    $('[data-pv-ph]').innerHTML = photo
+      ? '<img src="' + esc(photoUrl(photo)) + '" alt="">'
+      : '<span>' + L('фото товара') + '</span>';
+    const auto = sliders[0].disabled;
+    $('[data-pv-taste]').innerHTML = auto
+      ? '<p class="fl-prev-auto">' + L('профиль посчитается по названию') + '</p>'
+      : TASTE_RU.map(([k, name]) => {
+          const n = Math.max(1, Math.round(card.querySelector('[data-ts="' + k + '"]').value / 10));
+          return '<div class="fl-prev-bar-row"><span>' + L(name) + '</span>' +
+            '<i><b style="width:' + (n * 10) + '%"></b></i><em>' + n + '</em></div>';
+        }).join('');
+    const lang = (card.querySelector('[data-dl].primary') || {}).dataset.dl || 'ru';
+    const txt = (card.querySelector('[data-d="' + lang + '"]') || {}).value || '';
+    const ru = (card.querySelector('[data-d="ru"]') || {}).value || '';
+    const desc = $('[data-pv-desc]');
+    if (txt) { desc.textContent = txt; desc.className = 'fl-prev-d'; }
+    else if (ru) { desc.textContent = ru; desc.className = 'fl-prev-d fl-prev-auto'; }
+    else { desc.textContent = L('описание соберётся по профилю'); desc.className = 'fl-prev-d fl-prev-auto'; }
+  }
+  card.querySelectorAll('[data-d]').forEach(t => t.addEventListener('input', preview));
+
+  $('[data-fl-save]').onclick = async (e) => {
+    const btn = e.currentTarget;
+    const hex = T.norm(hexIn.value);
+    if (hexIn.value.trim() && !hex) return toast(L('Цвет не разобран: нужен вид #5FF3D0'), true);
+    const auto = sliders[0].disabled;
+    const descr = {};
+    card.querySelectorAll('[data-d]').forEach(t => {
+      const v = t.value.trim();
+      if (v) descr[t.dataset.d] = v;
+    });
+    const row = {
+      product_id: r.id, flavor: r.flavor,
+      tint: on && hex ? hex : null,
+      taste: auto ? null : Object.fromEntries(sliders.map(s => [s.dataset.ts, +s.value])),
+      descr: Object.keys(descr).length ? descr : null,
+      photo,
+      updated_at: new Date().toISOString()
+    };
+    btn.disabled = true;
+    const { error } = await sb.from('flavor_meta').upsert([row], { onConflict: 'product_id,flavor' });
+    btn.disabled = false;
+    if (error) return toast(productsErr(error), true);
+    flavorMeta[flKey(r.id, r.flavor)] = row;
+    toast(L('Вкус настроен'));
+    render();
+  };
+
+  paint(false);
+}
+
+
+[{"product_id":"hqd","flavor":"Watermelon","tint":"#ff5f7d","taste":{"sweet":80,"cool":20,"sour":30},"descr":{"ru":"Сочный арбуз с лёгкой прохладой.","pl":"Soczysty arbuz z lekkim chłodem."}},{"product_id":"hqd","flavor":"Blue Razz","tint":"#7f8cff","taste":null,"descr":null}].forEach(m => { flavorMeta[flKey(m.product_id, m.flavor)] = m; });
+flOpen = '0:0';   // как после сохранения: карточка раскрыта ещё до отрисовки
+const body = groups.map((g, gi) => `
+    <div class="item" data-g="${gi}" data-search="${esc(((g.head.name || '') + ' ' + g.id).toLowerCase())}">
+      <div class="item-top">
+        <input class="i-name" data-p="name" value="${esc(g.head.name || '')}" placeholder="${L('Название')}">
+        <input class="i-brand" data-p="brand" value="${esc(g.head.brand || '')}" placeholder="${L('Бренд')}">
+        <input class="i-cat" data-p="category" value="${esc(g.head.category || '')}" placeholder="${L('Категория')}">
+        <input class="i-nic" data-p="nic" value="${esc(g.head.nic || '')}" placeholder="${L('Крепость')}">
+        <input class="i-price" data-p="price" value="${moneyOut(g.head.price)}" placeholder="${L('Цена zł')}" inputmode="decimal">
+        <input class="i-price" data-p="cost" value="${moneyOut(g.head.cost)}" placeholder="${L('Закупка zł')}" inputmode="decimal" title="${L('Закупочная цена за штуку')}">
+        <input class="i-tier" data-p="t3" value="${moneyOut(tierP(g.head.tiers, 3))}" placeholder="3 ${L('шт')}" inputmode="decimal" title="${L('Цена за штуку при')} 3 ${L('шт')}">
+        <input class="i-tier" data-p="t5" value="${moneyOut(tierP(g.head.tiers, 5))}" placeholder="5 ${L('шт')}" inputmode="decimal" title="${L('Цена за штуку при')} 5 ${L('шт')}">
+        <input class="i-tier" data-p="t10" value="${moneyOut(tierP(g.head.tiers, 10))}" placeholder="10 ${L('шт')}" inputmode="decimal" title="${L('Цена за штуку при')} 10 ${L('шт')}">
+        ${LABELS.map(([id, name]) => `<label class="i-hit"><input type="checkbox" data-lb="${id}"
+          ${(g.head.labels || []).includes(id) ? 'checked' : ''}> ${L(name)}</label>`).join('')}
+        <button class="btn sm danger" data-delp="${gi}">${L('Удалить товар')}</button>
+      </div>
+      <div class="item-id">${esc(g.id)}</div>
+      <div class="flavs">${g.items.map((r, ri) => {
+        const meta = flavorMeta[flKey(r.id, r.flavor)] || {};
+        const set = [meta.photo, meta.tint, meta.taste,
+          meta.descr && Object.keys(meta.descr).length].filter(Boolean).length;
+        return `
+        <div class="flav" data-f="${gi}:${ri}">
+          <span class="flav-n">${esc(r.flavor || L('без вкуса'))}</span>
+          <input data-q="1" value="${r.qty == null ? 0 : r.qty}" inputmode="numeric">
+          <span class="unit">${L('шт')}</span>
+          <button class="btn sm fl-open${flOpen === gi + ':' + ri ? ' primary' : ''}" data-fl="${gi}:${ri}"
+            ${r.flavor ? '' : 'disabled title="' + L('У товара без вкусов настраивать нечего') + '"'}>
+            <span class="tint-dot" style="background:${tintGrad(meta.tint)}"></span>
+            ${L('Настроить')}${set ? ` <em>${set}/4</em>` : ''}
+          </button>
+          <button class="btn sm" data-woff="${gi}:${ri}" title="${L('Списать')}">${L('Списать')}</button>
+          <button class="btn sm danger" data-delf="${gi}:${ri}" title="${L('Удалить вкус')}">×</button>
+        </div>
+        <div class="fl-slot" data-fs="${gi}:${ri}">${flOpen === gi + ':' + ri ? flavorCard(r) : ''}</div>`;
+      }).join('')}</div>
+      <div class="add-flav">
+        <input data-nf="${gi}" placeholder="${L('Новый вкус')}" style="width:180px">
+        <input data-nq="${gi}" placeholder="${L('шт')}" style="width:74px" inputmode="numeric">
+        <button class="btn sm" data-addf="${gi}">${L('Добавить вкус')}</button>
+      </div>
+    </div>`).join('');
+const m = document.getElementById('main');
+m.innerHTML = body;
+if (flOpen) { const [gi,ri]=flOpen.split(':').map(Number); const slot=m.querySelector('.fl-slot[data-fs="'+flOpen+'"]'); if (slot && slot.firstElementChild) bindFlavorCard(slot, groups[gi].items[ri]); }
+m.querySelectorAll('[data-fl]').forEach(b => b.onclick = () => {
+  const key = b.dataset.fl, [gi, ri] = key.split(':').map(Number);
+  const r = groups[gi].items[ri];
+  const slot = m.querySelector('.fl-slot[data-fs="' + key + '"]');
+  const openNow = flOpen === key;
+  m.querySelectorAll('.fl-slot').forEach(s => { s.innerHTML = ''; });
+  m.querySelectorAll('[data-fl]').forEach(x => x.classList.remove('primary'));
+  flOpen = openNow ? '' : key;
+  if (openNow) return;
+  b.classList.add('primary');
+  slot.innerHTML = flavorCard(r);
+  bindFlavorCard(slot, r);
+});
+</script></body></html>

@@ -502,7 +502,7 @@ window.KV = (function () {
   // Настройки вкуса общие для всех городов, поэтому запрос без города. Их немного, и
   // ходят они рядом с каталогом: цвет и описание нужны в тот же момент, что и остаток.
   function cloudMeta() {
-    return cloudGet('flavor_meta?select=product_id,flavor,tint,taste,descr');
+    return cloudGet('flavor_meta?select=product_id,flavor,tint,taste,descr,photo');
   }
   // Каталог целиком: остатки города и настройки вкусов одним заходом.
   async function loadCatalog() {
@@ -562,6 +562,7 @@ window.KV = (function () {
             if (m.tint) f.tint = m.tint;
             if (m.taste) f.taste = m.taste;
             if (someText(m.descr)) f.desc = m.descr;
+            if (m.photo) f.photo = m.photo;
           }
           return f;
         });
@@ -754,10 +755,23 @@ window.KV = (function () {
 
   // фото кладутся в data/photos/<id>.jpg руками или скриптом.
   // пока файла нет, видна буква-заглушка, картинка сама встанет сверху когда появится
-  function photo(item) {
+  // Адрес фото вкуса. В базе лежит только путь внутри корзины Storage: полный адрес привязан
+  // к домену проекта и переехал бы вместе с ним.
+  function flavorPhoto(f) {
+    const cfg = cloudOn();
+    const p = f && typeof f === 'object' ? f.photo : null;
+    if (!cfg || !p) return null;
+    return cfg.SUPABASE_URL.replace(/\/$/, '') + '/storage/v1/object/public/flavors/' +
+      p.split('/').map(encodeURIComponent).join('/');
+  }
+  // Фото товара, а при выбранном вкусе — его собственное, если менеджер такое загрузил.
+  // Файл в data/photos остаётся запасным: он есть у всех позиций, снятых до появления
+  // загрузки из панели.
+  function photo(item, flavor) {
     const letter = item.name.replace(/[^A-Za-zА-Яа-я]/g, '')[0] || '?';
+    const own = flavorPhoto(flavor);
     return '<div class="kv-photo"><span>' + letter + '</span>' +
-      '<img src="' + ROOT + 'data/photos/' + item.id + '.jpg" alt="" ' +
+      '<img src="' + (own || (ROOT + 'data/photos/' + item.id + '.jpg')) + '" alt="" ' +
       'loading="lazy" decoding="async" onerror="this.remove()"></div>';
   }
 
@@ -2164,8 +2178,8 @@ window.KV = (function () {
         (isFav(item.id) ? '♥' : '♡') + '</button>' +
       '</div>';
 
-    // фото товара (в эскизе "фото с жижей")
-    const bigPhoto = '<div class="kvm-photo-big">' + photo(item) + '</div>';
+    // фото товара, а у выбранного вкуса своё, если его загрузили в панели
+    const bigPhoto = '<div class="kvm-photo-big">' + photo(item, fl) + '</div>';
 
     // Набор вкусов. У каждой строки свой счётчик, поэтому три разных вкуса набираются за один
     // заход, а не тремя открытиями карточки подряд. Клик по самой строке по-прежнему делает
