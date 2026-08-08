@@ -13,7 +13,7 @@
   script-src 'self' 'unsafe-inline' https://telegram.org https://esm.sh;
   style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
   font-src https://fonts.gstatic.com data:;
-  img-src 'self' data: https:;
+  img-src 'self' data: blob: https:;
   connect-src 'self' https://esm.sh https://vffqnydxofvunwausakv.supabase.co https://telegram.org https://oauth.telegram.org;
   frame-src https://oauth.telegram.org https://telegram.org;
   form-action 'none';
@@ -3672,6 +3672,10 @@ let groups = [], cityNow = 'katowice';
 // Что человек уже настроил в редакторе: поиск и прокрутка переживают перерисовку, иначе
 // после удаления вкуса и «Применить» список возвращался к началу и всё приходилось искать снова.
 let prodQuery = '', prodScroll = 0;
+// Перерисовка раздела с запоминанием места. Список товаров длинный, и любое действие внутри
+// него (сохранение, удаление, списание, новый вкус) отправляло человека в начало страницы:
+// поправил цену у двадцатого товара — ищи его заново.
+function keepPlace() { prodScroll = window.scrollY; render(); }
 
 // Изменения считаем сравнением полей с тем, что пришло из базы. Прежний список
 // «грязных» строк врал: правка одного товара помечала все его вкусы, а возврат
@@ -4174,7 +4178,7 @@ function bindFlavorCard(slot, r) {
     if (error) return toast(productsErr(error), true);
     flavorMeta[flKey(r.id, r.flavor)] = row;
     toast(L('Вкус настроен'));
-    render();
+    keepPlace();
   };
 
   paint(false);
@@ -4226,7 +4230,23 @@ function bindProducts(m) {
     if (prodQuery) { applyFilter(); pq.focus(); pq.setSelectionRange(pq.value.length, pq.value.length); }
   }
   // возвращаем прокрутку туда, где человек работал
-  if (prodScroll) { const y = prodScroll; prodScroll = 0; requestAnimationFrame(() => window.scrollTo(0, y)); }
+  // Возвращаем прокрутку туда, где человек работал.
+  //
+  // Одного кадра не хватало: список рисуется после запроса в базу, и в этот момент страница
+  // короткая. Браузер обрезает прокрутку по текущей высоте, поэтому «вернуть» её сразу
+  // означало вернуть к нулю. Пробуем несколько кадров подряд, пока страница не дорастёт до
+  // нужного места, и сдаёмся, если она честно оказалась короче (например, товар удалили).
+  if (prodScroll) {
+    const y = prodScroll;
+    prodScroll = 0;
+    let tries = 0;
+    const back = () => {
+      window.scrollTo(0, y);
+      const enough = document.documentElement.scrollHeight >= y + window.innerHeight;
+      if ((Math.abs(window.scrollY - y) > 2 || !enough) && ++tries < 20) requestAnimationFrame(back);
+    };
+    requestAnimationFrame(back);
+  }
   // Пересчитываем при каждом касании поля: вернул значение обратно — панель сама уходит.
   // Слушаем и input, и change: списку и галочке первое событие не полагается. Раньше в
   // условии стоял data-p="hit", которого у меток нет, и снятая галочка полосу не поднимала.
@@ -4243,7 +4263,7 @@ function bindProducts(m) {
     const gone = g.items.map(x => ({ ...x }));
     const { error } = await sb.from('products').delete().match({ id: g.id, city: cityNow });
     if (error) return toast(error.message, true);
-    clearDirty(); render();
+    clearDirty(); keepPlace();
     offerUndo(L('Товар удалён: ') + (g.head.name || g.id), async () => {
       const { error: e2 } = await sb.from('products').upsert(gone, { onConflict: 'id,city,flavor' });
       return e2 ? productsErr(e2) : null;
@@ -4264,7 +4284,7 @@ function bindProducts(m) {
       <input class="wn" placeholder="${L('Причина')}" style="width:150px">
       <button class="btn sm danger wgo">${L('Списать')}</button>
       <button class="btn sm quiet wno">${L('Отмена')}</button>`;
-    row.querySelector('.wno').onclick = () => render();
+    row.querySelector('.wno').onclick = () => keepPlace();
     row.querySelector('.wgo').onclick = async () => {
       const qty = parseInt(row.querySelector('.wq').value, 10);
       if (!Number.isFinite(qty) || qty <= 0) return toast(L('Штук должно быть больше нуля'), true);
@@ -4272,7 +4292,7 @@ function bindProducts(m) {
         p_city: r.city, p_product: r.id, p_flavor: r.flavor || '', p_qty: qty,
         p_reason: row.querySelector('.wr').value, p_note: row.querySelector('.wn').value || null });
       if (error) return toast(error.message, true);
-      toast(L('Списано')); clearDirty(); render();
+      toast(L('Списано')); clearDirty(); keepPlace();
     };
   });
   // Вкус удаляется без вопроса: строка одна, а полоска внизу вернёт её целиком. Настройки
@@ -4284,7 +4304,7 @@ function bindProducts(m) {
     const { error } = await sb.from('products').delete().match({ id: r.id, city: r.city, flavor: r.flavor });
     if (error) return toast(error.message, true);
     if (flOpen === gi + ':' + ri) flOpen = '';
-    clearDirty(); render();
+    clearDirty(); keepPlace();
     offerUndo(L('Вкус удалён: ') + (r.flavor || L('без вкуса')), async () => {
       const { error: e2 } = await sb.from('products').upsert([gone], { onConflict: 'id,city,flavor' });
       return e2 ? productsErr(e2) : null;
@@ -4303,7 +4323,7 @@ function bindProducts(m) {
       qty: +qv || 0, updated_at: new Date().toISOString()
     }], { onConflict: 'id,city,flavor' });
     if (error) return toast(productsErr(error), true);
-    toast(L('Вкус добавлен')); clearDirty(); render();
+    toast(L('Вкус добавлен')); clearDirty(); keepPlace();
   });
   const add = document.getElementById('np_add');
   if (add) add.onclick = async () => {
@@ -4320,12 +4340,11 @@ function bindProducts(m) {
       updated_at: new Date().toISOString()
     }], { onConflict: 'id,city,flavor' });
     if (error) return toast(error.message, true);
-    toast(L('Товар добавлен')); clearDirty(); render();
+    toast(L('Товар добавлен')); clearDirty(); keepPlace();
   };
 }
 
 async function saveProducts() {
-  prodScroll = window.scrollY;
   const btn = document.getElementById('sb-apply');
   // сохраняем ровно то, что панель посчитала изменённым, чтобы счётчик и запись
   // не расходились между собой
@@ -4346,7 +4365,7 @@ async function saveProducts() {
   if (error) return toast(productsErr(error), true);
   toast(L('Сохранено: ') + out.length);
   clearDirty();
-  render();
+  keepPlace();
 }
 
 /* ================= старт ================= */
@@ -4368,7 +4387,7 @@ async function tgAuthFromHash() {
 }
 
 // Отпечаток этой сборки, его проставляет npm run stamp.
-const BUILD = '3d27b577';
+const BUILD = '6eb65bf2';
 
 // Браузер держит саму страницу панели в кеше, и человек видит вчерашний интерфейс, считая,
 // что правки не приехали. Отпечаток рядом лежащего version.json читается мимо кеша: разошлось

@@ -1,5 +1,3 @@
-// Тексты руководств лежат по файлу на язык. Разъехаться им нельзя: человек переключает язык
-// и должен увидеть ту же страницу, а не половину разделов.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
@@ -68,12 +66,9 @@ for (const kind of KINDS) {
     for (const l of ['uk', 'pl']) {
       assert.notEqual(JSON.stringify(BOOK[l][kind]), ru, l + ': текст совпадает с русским');
     }
-    // в польском кириллице делать нечего
     assert.ok(!/[А-Яа-яЁёІіЇїЄє]/.test(JSON.stringify(BOOK.pl[kind])), 'в польском тексте кириллица');
   });
 
-  // Владелец просил убрать из руководства всё про код: он остаётся разработчиком, а
-  // руководство читают люди в магазине.
   test(kind + ': нет технических подробностей', () => {
     const words = ['npm ', 'supabase', 'docker', '.sql', '.md', 'runbook', 'миграц', 'репозитор', 'консол'];
     for (const l of LANGS) {

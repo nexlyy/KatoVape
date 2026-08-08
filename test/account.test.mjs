@@ -1,10 +1,7 @@
-// Проверка почты и изоляции личных данных между аккаунтами на одном устройстве.
-// Функции берём из настоящего shared/core.js, а не переписываем.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { slice, sandbox, repoFile, CORE_SRC } from './helpers/core-src.mjs';
 
-/* ---------- почта ---------- */
 
 const { api: mail } = sandbox(
   [slice('const EMAIL_RE =', 'function validPaczko')],
@@ -15,7 +12,7 @@ const { api: mail } = sandbox(
 const GOOD = [
   'ivan@syn.cae', 'a.b@wp.pl', 'kato_vape+zamowienia@gmail.com',
   'user123@sub.domain.co.uk', 'x1@o2.pl',
-  ' ivan@syn.cae ', 'IVAN@SYN.CAE'   // пробелы по краям и регистр не повод отказывать
+  ' ivan@syn.cae ', 'IVAN@SYN.CAE'
 ];
 const BAD = [
   '@!s1w', '@syn.cae', 'ivan@', 'ivan', 'ivan@localhost', 'ivan@syn',
@@ -40,9 +37,7 @@ test('витрина, регистрация и бот проверяют поч
   }
 });
 
-/* ---------- личные данные на устройстве ---------- */
 
-// claimUser работает с localStorage, поэтому подкладываем минимальную реализацию
 function makeStore(initial) {
   const data = Object.assign({}, initial);
   return {

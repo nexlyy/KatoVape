@@ -4,7 +4,7 @@
 репозиторий, и получить те же цифры. Ручных правок в этом файле быть не должно.
 
 - **Дата прогона:** 08-08-2026
-- **Коммит:** `edaaa9a` — drop the scratch preview page that slipped into the tree
+- **Коммит:** `00f3f4b` — security: a check per table, function, file and page, plus a live probe of the running database
 - **Ветка:** main
 - **Итог:** все проверки прошли
 
@@ -12,9 +12,9 @@
 
 | Набор | Проверок | Прошло | Провалено |
 |---|---:|---:|---:|
-| По исходникам (`test/security.test.mjs`) | 309 | 309 | 0 |
+| По исходникам (`test/security.test.mjs`) | 313 | 313 | 0 |
 | По боевой базе (`tools/security-live.mjs`) | 33 | 33 | 0 |
-| **Всего** | **342** | **342** | **0** |
+| **Всего** | **346** | **346** | **0** |
 
 
 ## Набор по исходникам

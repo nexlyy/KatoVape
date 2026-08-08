@@ -1,13 +1,9 @@
-// Выгрузка отчёта. XLSX и DOCX это ZIP с XML внутри, и собираем мы его сами, поэтому тут
-// архив разбирается обратно: проверяем, что файлы на месте, контрольные суммы сходятся, а
-// текст не потерялся ни на одном из трёх языков.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import zlib from 'node:zlib';
 import { repoFile } from './helpers/core-src.mjs';
 
-// Blob и TextEncoder в Node есть, а document нужен только для скачивания, его не трогаем.
 const box = { window: {}, document: null, URL, Blob, TextEncoder, Date, Math, Number, String, Set, console };
 box.globalThis = box;
 vm.createContext(box);
@@ -32,7 +28,6 @@ const DATA = {
 
 const LANGS = ['ru', 'uk', 'pl'];
 
-// ---------- разбор ZIP, который мы же и написали ----------
 function unzip(bytes) {
   const buf = Buffer.from(bytes);
   const files = {};
@@ -45,8 +40,6 @@ function unzip(bytes) {
     const start = at + 30 + nameLen + extraLen;
     const data = buf.slice(start, start + size);
     assert.equal(method, 0, name + ': ожидали хранение без сжатия');
-    // Считаем сумму независимо от нашего же кода. Без этой проверки архив мог бы собраться
-    // с мусорной суммой, и Excel отказался бы открывать файл уже у владельца.
     assert.equal(typeof zlib.crc32, 'function', 'в этом Node нет zlib.crc32, проверка была бы пустой');
     assert.equal(zlib.crc32(data), crc, name + ': контрольная сумма не сошлась');
     files[name] = data.toString('utf8');
@@ -83,8 +76,6 @@ test('заголовки отчёта переведены, а не оставл
 
 test('CSV: разделитель, экранирование и метка кодировки', async () => {
   const blob = X.csv(X.build('ru', DATA));
-  // Метку кодировки ищем в байтах: при чтении текстом её срезает сам разборщик, и проверка
-  // по первому символу молча проходила бы даже без неё.
   const raw = Buffer.from(await blob.arrayBuffer());
   assert.deepEqual([...raw.slice(0, 3)], [0xEF, 0xBB, 0xBF], 'нет метки кодировки, Excel покажет кракозябры');
   const text = await blob.text();
@@ -110,7 +101,6 @@ test('XLSX: архив собран правильно и лист на кажд
   for (let i = 1; i <= rep.sections.length; i++) {
     assert.ok(files['xl/worksheets/sheet' + i + '.xml'], 'нет листа ' + i);
   }
-  // ссылки книги должны указывать ровно на существующие листы
   const rels = files['xl/_rels/workbook.xml.rels'];
   for (let i = 1; i <= rep.sections.length; i++) {
     assert.ok(rels.includes('worksheets/sheet' + i + '.xml'), 'лист ' + i + ' не подключён к книге');
@@ -182,8 +172,6 @@ test('панель подключает выгрузку и предлагает
   assert.ok(panel.includes('id="x_lang"'), 'нет выбора языка документа');
 });
 
-// Страница печати открывается в отдельном окне и не наследует стили панели. Браузер с тёмной
-// темой красил её тёмным, а текст оставался почти чёрным: отчёт выглядел пустыми клетками.
 test('страница печати всегда светлая', () => {
   const html = X.printHTML(X.build('ru', DATA));
   assert.match(html, /color-scheme:\s*light/, 'не задана светлая схема');

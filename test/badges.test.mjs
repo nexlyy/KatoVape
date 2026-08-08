@@ -1,6 +1,3 @@
-// Ярлыки товара и порядок каталога. Ярлык назначается только в панели (products.hit);
-// раньше второй источник лежал в data/meta.json: оттуда брался «хит» у HQD, невидимый
-// в панели, и он же рисовался вторым, когда галочку всё-таки ставили.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { slice, sandbox, repoFile, esc, plain, CORE_SRC } from './helpers/core-src.mjs';
@@ -18,8 +15,6 @@ const { api, box } = sandbox(
     t: (k) => LBL[k] || k,
     ui: (k) => LBL[k] || k,
     esc,
-    // applyStock переставляет корзину вслед за составом вкусов; здесь речь про ярлыки,
-    // поэтому корзины нет и переставлять нечего
     cartFlavorNames: () => ({}),
     reseatCart: () => {}
   },

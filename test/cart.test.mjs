@@ -1,6 +1,3 @@
-// Корзина витрины: оптовая ступень берётся по сумме всей модели, а не по одному вкусу.
-// Раньше 3 Strawberry + 2 Mango + 5 Cola считались тремя отдельными позициями, и десять
-// штук одной модели шли по розничной цене.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { slice, sandbox, plain } from './helpers/core-src.mjs';
@@ -20,16 +17,13 @@ const ITEMS = {
 
 const { api, box } = sandbox(
   [
-    // от money(): ниже него лежит cash(), которым корзина округляет гроши
     slice('function money(n)', '\n  // ==== повтор заказа'),
-    // сюда попадают и cartLines, и cartTotal: формулу в тест не копируем
     slice('function cartLines()', 'function orderText()')
   ],
   { cart: {}, find: (id) => ITEMS[id] },
   ['cartTotal', 'cartLines', 'unitWithCart', 'tierQtyByGroup']
 );
 
-// ключ корзины: `id::индексВкуса`, у товара без вкусов индекс пустой (как в cartAdd)
 const setCart = (obj) => { box.cart = obj; };
 const total = (obj) => { setCart(obj); return api.cartTotal(); };
 
@@ -70,13 +64,13 @@ test('пустая корзина ничего не стоит', () => {
 });
 
 test('изменение количества пересчитывает всю модель', () => {
-  assert.equal(total({ 'model-a::0': 4, 'model-a::1': 5 }), 360);   // 9 штук
-  assert.equal(total({ 'model-a::0': 5, 'model-a::1': 5 }), 350);   // добавили одну: опт
+  assert.equal(total({ 'model-a::0': 4, 'model-a::1': 5 }), 360);
+  assert.equal(total({ 'model-a::0': 5, 'model-a::1': 5 }), 350);
 });
 
 test('удаление позиции возвращает цену на прежнюю ступень', () => {
   assert.equal(total({ 'model-a::0': 5, 'model-a::1': 5 }), 350);
-  assert.equal(total({ 'model-a::0': 7 }), 280);                    // вкус убрали, осталось 7
+  assert.equal(total({ 'model-a::0': 7 }), 280);
 });
 
 test('смена вкуса при том же количестве не сбрасывает скидку', () => {
@@ -95,9 +89,9 @@ test('цена за штуку одинакова у всех вкусов мо�
 
 test('карточка товара показывает цену с учётом того, что уже в корзине', () => {
   setCart({ 'model-a::0': 8 });
-  assert.equal(api.unitWithCart(ITEMS['model-a'], 1), 40);   // станет 9: ступень пятёрки
-  assert.equal(api.unitWithCart(ITEMS['model-a'], 2), 35);   // станет 10: оптовая
-  assert.equal(api.unitWithCart(ITEMS['model-a'], 0), 40);   // текущая ступень
+  assert.equal(api.unitWithCart(ITEMS['model-a'], 1), 40);
+  assert.equal(api.unitWithCart(ITEMS['model-a'], 2), 35);
+  assert.equal(api.unitWithCart(ITEMS['model-a'], 0), 40);
   setCart({});
   assert.equal(api.unitWithCart(ITEMS['model-a'], 1), 50);
   assert.equal(api.unitWithCart(ITEMS['model-a'], 10), 35);
@@ -110,9 +104,6 @@ test('количества считаются по группам раздель
   assert.equal(g['model-b'], 4);
 });
 
-// ---- набор нескольких вкусов за один заход ----
-// Раньше вкус клали по одному: выбрал, «в корзину», вышел, снова открыл. Теперь у каждого
-// вкуса свой счётчик, и всё уходит в корзину одной кнопкой.
 const many = sandbox(
   [
     slice('function availFor(key)', '  function cartSet(key, n)'),

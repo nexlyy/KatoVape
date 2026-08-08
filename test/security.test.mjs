@@ -273,6 +273,21 @@ for (const page of PAGES) {
     assert.match(csp, /base-uri 'none'/, 'подменённый base уводит все относительные адреса на чужой хост');
   });
 
+  // Политика и код обязаны сходиться. Загрузка фото в панели читала выбранный файл через
+  // createObjectURL, то есть по адресу blob:, а img-src его не разрешал: картинка не
+  // грузилась, и наружу это выходило невнятной ошибкой вместо запрета.
+  test(`${page}: политика разрешает то, чем страница пользуется`, () => {
+    const src = CLIENT[page];
+    const csp = (src.match(/Content-Security-Policy"\s*content="([\s\S]*?)"/) || [])[1] || '';
+    const img = (csp.match(/img-src([^;]*)/) || [])[1] || '';
+    if (/createObjectURL/.test(src)) {
+      assert.match(img, /blob:/, page + ': читает файл через blob:, а img-src его не пускает');
+    }
+    if (/data:image|toDataURL/.test(src)) {
+      assert.match(img, /data:/, page + ': рисует картинку из data:, а img-src его не пускает');
+    }
+  });
+
   test(`${page}: список хостов для запросов ограничен`, () => {
     const csp = (CLIENT[page].match(/Content-Security-Policy"\s*content="([\s\S]*?)"/) || [])[1] || '';
     const connect = (csp.match(/connect-src([^;]*)/) || [])[1] || '';

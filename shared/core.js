@@ -32,6 +32,7 @@ window.KV = (function () {
       empty: 'Ничего не нашлось', updated: 'наличие на',
       inStockN: 'позиций в наличии', qtyNone: 'закончился', pcs: 'шт',
       maxQty: 'Больше нет на складе',
+      flavOnly: 'только в наличии', flavAll: 'показать все', flavFind: 'Найти вкус', flavNone: 'Вкусов не нашлось',
       ml: 'мл', vol: 'объём', saltnic: 'солевой никотин',
       puffs: 'затяжек', recharge: 'перезаряжаемая', mesh: 'mesh-испаритель'
     },
@@ -60,6 +61,7 @@ window.KV = (function () {
       empty: 'Нічого не знайшлось', updated: 'наявність на',
       inStockN: 'позицій в наявності', qtyNone: 'закінчився', pcs: 'шт',
       maxQty: 'Більше немає на складі',
+      flavOnly: 'лише в наявності', flavAll: 'показати всі', flavFind: 'Знайти смак', flavNone: 'Смаків не знайшлося',
       ml: 'мл', vol: 'об’єм', saltnic: 'сольовий нікотин',
       puffs: 'затяжок', recharge: 'перезаряджувана', mesh: 'mesh-випарник'
     },
@@ -88,6 +90,7 @@ window.KV = (function () {
       empty: 'Nic nie znaleziono', updated: 'stan na',
       inStockN: 'pozycji dostępnych', qtyNone: 'wyprzedany', pcs: 'szt',
       maxQty: 'Nie ma więcej na stanie',
+      flavOnly: 'tylko dostępne', flavAll: 'pokaż wszystkie', flavFind: 'Znajdź smak', flavNone: 'Nie znaleziono smaków',
       ml: 'ml', vol: 'pojemność', saltnic: 'sól nikotynowa',
       puffs: 'buchów', recharge: 'z ładowaniem', mesh: 'grzałka mesh'
     }
@@ -396,6 +399,15 @@ window.KV = (function () {
     let s = loc(content.ui && content.ui[key]) || key;
     if (vars) for (const k in vars) s = s.replace('{' + k + '}', vars[k]);
     return s;
+  }
+
+  // Список вкусов по умолчанию показывает только то, что есть на полке: у модели бывает
+  // под тридцать вкусов, и половина из них закончилась. Выбор человека запоминается, потому
+  // что кому-то важно увидеть весь ассортимент и встать в бронь на отсутствующий.
+  let flavOnlyStock = localStorage.getItem('kv_flav_all') !== '1';
+  function setFlavOnly(v) {
+    flavOnlyStock = v;
+    localStorage.setItem('kv_flav_all', v ? '0' : '1');
   }
 
   // у каждого города своя корзина: один заказ уходит в один магазин
@@ -2122,6 +2134,13 @@ window.KV = (function () {
       if (!modal) return;
       if (e.target.classList.contains('kvm-rev-name')) modal.name = e.target.value;
       if (e.target.classList.contains('kvm-rev-text')) modal.text = e.target.value;
+      // Поиск по вкусу перерисовывает только список: полный перерисов сбил бы фокус и
+      // курсор в поле, а печатают в него по букве.
+      if (e.target.classList.contains('kvm-ffind')) {
+        modal.flQuery = e.target.value;
+        drawFlavorList();
+        return;
+      }
       onCommentInput(e);
     });
     document.addEventListener('keydown', e => {
@@ -2181,12 +2200,7 @@ window.KV = (function () {
     // фото товара, а у выбранного вкуса своё, если его загрузили в панели
     const bigPhoto = '<div class="kvm-photo-big">' + photo(item, fl) + '</div>';
 
-    // Набор вкусов. У каждой строки свой счётчик, поэтому три разных вкуса набираются за один
-    // заход, а не тремя открытиями карточки подряд. Клик по самой строке по-прежнему делает
-    // вкус «просматриваемым»: от него зависят профиль, описание и форма отзыва ниже.
-    const countOf = i => Math.max(0, Math.floor(modal.counts[i] || 0));
-    const inCart = i => cart[item.id + '::' + i] || 0;
-    const picked = hasFl ? item.flavors.reduce((s, f, i) => s + countOf(i), 0) : countOf('');
+    const picked = hasFl ? item.flavors.reduce((s, f, i) => s + flCount(i), 0) : flCount('');
     const flavStrip = hasFl ?
       '<div class="kvm-fpick' + (modal.flOpen ? ' open' : '') + '">' +
         '<button class="kvm-fsel" type="button" data-fl-toggle="1">' +
@@ -2194,27 +2208,21 @@ window.KV = (function () {
           '<span class="kvm-fsel-n">' + esc(picked ? t('pickedN', picked) : t('pickFlavor')) + '</span>' +
           '<span class="kvm-fsel-ch" aria-hidden="true">▼</span>' +
         '</button>' +
-        '<div class="kvm-flavs">' + item.flavors.map((f, i) => {
-          const room = Math.max((f.qty || 0) - inCart(i), 0);
-          const have = room > 0;
-          const n = countOf(i);
-          const c = flavorColors(f);
-          return '<div class="kvm-flav' + (i === modal.fl ? ' sel' : '') + (have ? '' : ' off') +
-            (n ? ' has' : '') + '" data-fl-sel="' + i + '" style="--fl:' + c[0] + ';--fl2:' + c[1] + '">' +
-            '<span class="kvm-flav-bar" style="background:' + flavorGrad(f) + '"></span>' +
-            '<span class="kvm-flav-n">' + esc(flavorName(f)) + '</span>' +
-            '<span class="kvm-flav-q">' + (have ? room + ' ' + t('pcs') : t('qtyNone')) + '</span>' +
-            (have
-              ? '<span class="kvm-cnt">' +
-                  '<button class="kvm-cnt-b" type="button" data-fl-minus="' + i + '"' +
-                    (n ? '' : ' disabled') + ' aria-label="-">−</button>' +
-                  '<b class="kvm-cnt-n">' + n + '</b>' +
-                  '<button class="kvm-cnt-b" type="button" data-fl-plus="' + i + '"' +
-                    (n >= room ? ' disabled' : '') + ' aria-label="+">+</button>' +
-                '</span>'
-              : '') +
-          '</div>';
-        }).join('') + '</div>' +
+        // Управление списком появляется, когда вкусов много (у пары штук фильтр и поиск
+        // только мешают) и всегда, когда фильтр что-то спрятал. Иначе получался тупик: у
+        // товара с пятью закончившимися вкусами список пуст, а выключить фильтр нечем.
+        // Поиск при этом остаётся привязанным к длине списка: в пяти строках он не нужен.
+        (item.flavors.length > 8 || outOfStockFlavors(item)
+          ? '<div class="kvm-ftools">' +
+              '<button class="kvm-fonly' + (flavOnlyStock ? ' on' : '') + '" type="button" data-fl-only="1">' +
+                (flavOnlyStock ? t('flavOnly') : t('flavAll')) + '</button>' +
+              (item.flavors.length > 8
+                ? '<input class="kvm-ffind" type="search" placeholder="' + esc(t('flavFind')) +
+                  '" value="' + esc(modal.flQuery || '') + '">'
+                : '') +
+            '</div>'
+          : '') +
+        '<div class="kvm-flavs">' + flavorRowsHTML(item) + '</div>' +
       '</div>' : '';
 
     // профиль вкуса по шкале 1..10
@@ -2244,7 +2252,7 @@ window.KV = (function () {
 
     // Товар без вкусов набирается тем же счётчиком, только строка одна.
     const plainRoom = hasFl ? 0 : Math.max(qty(item) - (cart[item.id + '::'] || 0), 0);
-    const plainCnt = hasFl ? 0 : countOf('');
+    const plainCnt = hasFl ? 0 : flCount('');
     const plainBox = (!hasFl && plainRoom > 0)
       ? '<div class="kvm-plain"><span class="kvm-plain-l">' + t('qtyPick') + '</span>' +
           '<span class="kvm-cnt">' +
@@ -2354,11 +2362,68 @@ window.KV = (function () {
       '</div>' +
       relatedHTML(item);
   }
+  // Набор вкусов. У каждой строки свой счётчик, поэтому три разных вкуса набираются за один
+  // заход, а не тремя открытиями карточки подряд. Клик по самой строке делает вкус
+  // «просматриваемым»: от него зависят профиль, описание и форма отзыва ниже.
+  const flCount = i => Math.max(0, Math.floor((modal && modal.counts[i]) || 0));
+  const flInCart = (item, i) => cart[item.id + '::' + i] || 0;
+
+  // Сколько вкусов закончилось. Считаем независимо от того, включён ли фильтр: иначе
+  // переключатель исчезал сразу после нажатия и вернуть его было нечем.
+  function outOfStockFlavors(item) {
+    if (!item.flavors) return 0;
+    return item.flavors.filter((f, i) =>
+      flCount(i) === 0 && Math.max((f.qty || 0) - flInCart(item, i), 0) <= 0).length;
+  }
+
+  function flavorRowsHTML(item) {
+    const q = (modal.flQuery || '').trim().toLowerCase();
+    const rows = item.flavors.map((f, i) => ({ f, i })).filter(({ f, i }) => {
+      // Набранное показываем всегда: иначе выбранный вкус исчезает из-под пальца, как
+      // только его отложили в корзину и остаток дошёл до нуля.
+      if (flCount(i) > 0) return true;
+      if (flavOnlyStock && Math.max((f.qty || 0) - flInCart(item, i), 0) <= 0) return false;
+      if (!q) return true;
+      return flavorName(f).toLowerCase().includes(q) || String(f.name || '').toLowerCase().includes(q);
+    });
+    if (!rows.length) return '<p class="kvm-fnone">' + t('flavNone') + '</p>';
+    return rows.map(({ f, i }) => {
+      const room = Math.max((f.qty || 0) - flInCart(item, i), 0);
+      const have = room > 0;
+      const n = flCount(i);
+      const c = flavorColors(f);
+      return '<div class="kvm-flav' + (i === modal.fl ? ' sel' : '') + (have ? '' : ' off') +
+        (n ? ' has' : '') + '" data-fl-sel="' + i + '" style="--fl:' + c[0] + ';--fl2:' + c[1] + '">' +
+        '<span class="kvm-flav-bar" style="background:' + flavorGrad(f) + '"></span>' +
+        '<span class="kvm-flav-n">' + esc(flavorName(f)) + '</span>' +
+        '<span class="kvm-flav-q">' + (have ? room + ' ' + t('pcs') : t('qtyNone')) + '</span>' +
+        (have
+          ? '<span class="kvm-cnt">' +
+              '<button class="kvm-cnt-b" type="button" data-fl-minus="' + i + '"' +
+                (n ? '' : ' disabled') + ' aria-label="-">−</button>' +
+              '<b class="kvm-cnt-n">' + n + '</b>' +
+              '<button class="kvm-cnt-b" type="button" data-fl-plus="' + i + '"' +
+                (n >= room ? ' disabled' : '') + ' aria-label="+">+</button>' +
+            '</span>'
+          : '') +
+      '</div>';
+    }).join('');
+  }
+  // Перерисовка одного списка, без всей карточки: так поиск не теряет фокус в поле.
+  function drawFlavorList() {
+    const box = document.querySelector('#kvm .kvm-flavs');
+    const item = modal && find(modal.id);
+    if (!box || !item || !item.flavors) return;
+    box.innerHTML = flavorRowsHTML(item);
+  }
+
   function onModalClick(e) {
     const d = e.currentTarget;
     if (e.target === d || e.target.closest('.kvm-x')) { closeProduct(); return; }
     const ftog = e.target.closest('[data-fl-toggle]');
     if (ftog) { e.stopPropagation(); modal.flOpen = !modal.flOpen; renderModal(); return; }
+    const fonly = e.target.closest('[data-fl-only]');
+    if (fonly) { e.stopPropagation(); setFlavOnly(!flavOnlyStock); renderModal(); return; }
     const revPick = e.target.closest('[data-rev-fl]');
     if (revPick) { modal.revFl = revPick.dataset.revFl; modal.rate = 0; modal.text = ''; renderModal(); return; }
     // Счётчики вкусов. Плюс не пускает за остаток с учётом того, что уже лежит в корзине.
@@ -3086,10 +3151,22 @@ body.kv-noscroll{overflow:hidden}
 .kvm-fsel-n{flex:1;text-align:left;font-weight:800;font-size:14px}
 .kvm-fsel-ch{color:var(--kv-muted);font-size:11px;transition:transform .2s}
 .kvm-fpick.open .kvm-fsel-ch{transform:rotate(180deg)}
-.kvm-flavs{display:none;margin-top:8px;max-height:270px;overflow-y:auto;flex-direction:column;gap:6px;
+/* Список вкусов. У модели их бывает под тридцать, поэтому строки плотные, а над списком
+   появляются фильтр и поиск: одной длинной лентой это читалось как свалка. В две колонки
+   не разводим намеренно: список живёт в узкой колонке карточки, и второй там негде встать. */
+.kvm-flavs{display:none;margin-top:8px;max-height:300px;overflow-y:auto;flex-direction:column;gap:5px;
   background:var(--kv-surface2);border:1px solid var(--kv-line);border-radius:14px;padding:8px;overscroll-behavior:contain}
 .kvm-fpick.open .kvm-flavs{display:flex}
-.kvm-flav{position:relative;overflow:hidden;display:flex;align-items:center;gap:11px;width:100%;text-align:left;background:var(--kv-surface);border:1px solid var(--kv-line);border-radius:11px;padding:10px 12px;cursor:pointer;font-family:inherit;color:var(--kv-text)}
+.kvm-fnone{padding:14px 6px;text-align:center;font-size:12.5px;color:var(--kv-muted)}
+/* фильтр и поиск появляются, только когда вкусов много */
+.kvm-ftools{display:flex;gap:7px;margin-top:8px}
+.kvm-fonly{flex-shrink:0;background:var(--kv-surface);border:1px solid var(--kv-line);color:var(--kv-muted);
+  border-radius:99px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap}
+.kvm-fonly.on{background:var(--kv-accent);border-color:var(--kv-accent);color:var(--kv-accent-ink)}
+.kvm-ffind{flex:1;min-width:0;background:var(--kv-field);border:1px solid var(--kv-line);color:var(--kv-text);
+  border-radius:99px;padding:8px 14px;font-family:inherit;font-size:12.5px;outline:none}
+.kvm-ffind:focus{border-color:var(--kv-accent)}
+.kvm-flav{position:relative;overflow:hidden;display:flex;align-items:center;gap:9px;width:100%;text-align:left;background:var(--kv-surface);border:1px solid var(--kv-line);border-radius:10px;padding:8px 10px;cursor:pointer;font-family:inherit;color:var(--kv-text)}
 /* цвет вкуса мягко растекается от обоих краёв, поэтому строка читается как «вкусовая» */
 .kvm-flav::before{content:"";position:absolute;inset:0;pointer-events:none;opacity:.17;
   background:linear-gradient(90deg,var(--fl,transparent),transparent 34%,transparent 66%,var(--fl2,transparent))}

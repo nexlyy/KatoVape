@@ -1,6 +1,3 @@
-// Ссылки городов: канал и менеджер живут только в shared/config.js. Выбор одинаковый для
-// всех городов (cityLink читает CITY_LINKS[город][вид]), поэтому проверяем саму таблицу, 
-// именно в ней был баг «связаться с менеджером всегда открывает Влада».
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
@@ -11,7 +8,6 @@ vm.createContext(box);
 vm.runInContext(repoFile('shared/config.js'), box);
 const CFG = box.window.KV_CONFIG;
 
-// те же две строки, что в core.js (cityLink / managerName)
 const cityLink = (city, kind) => ((CFG.CITY_LINKS || {})[city] || {})[kind] || '';
 const nameOf = (url) => {
   const m = String(url).match(/t\.me\/@?([A-Za-z0-9_]+)/);

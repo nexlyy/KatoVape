@@ -1,14 +1,9 @@
-// Цены с грошами. Скидочная цена у поставщика дробная (45,50), магазин обязан повторить её
-// один в один: и в поле панели, и в корзине, и в сумме, которую посчитает сервер.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import { slice, sandbox, repoFile } from './helpers/core-src.mjs';
 import { priceCart } from '../supabase/functions/_shared/pricing.ts';
 
-/* ---------- поля панели ---------- */
-
-// moneyIn/moneyOut берём из самой панели: копия в тесте разошлась бы с оригиналом.
 const ADMIN = repoFile('demos/admin/index.html');
 const cut = (from, to) => {
   const a = ADMIN.indexOf(from);
@@ -58,13 +53,11 @@ test('обратно в поле цена печатается по-польск
 });
 
 test('дробные ступени доезжают до опта', () => {
-  // ступени собраны в песочнице, у них чужие прототипы: сверяем по значению
   assert.deepEqual(JSON.parse(JSON.stringify(A.buildTiers(45.5, 42.5, null, 38.99))),
     [{ q: 1, p: 45.5 }, { q: 3, p: 42.5 }, { q: 10, p: 38.99 }]);
   assert.equal(A.buildTiers(45.5, null, null, null), null, 'одна база это не ступени');
 });
 
-/* ---------- корзина витрины ---------- */
 
 const TIERS = [{ q: 1, p: 45.5 }, { q: 3, p: 42.5 }, { q: 10, p: 39.9 }];
 const ITEMS = {
@@ -97,7 +90,6 @@ test('цена печатается запятой, целая остаётся 
 });
 
 test('процент считается до гроша, как в базе', () => {
-  // promo_check округляет round(sum * value / 100, 2): десять процентов от 45,50 это 4,55
   assert.equal(api.promoValue({ type: 'percent', value: 10 }, 45.5), 4.55);
   setCart({ 'model-a::0': 1 });
   box.appliedPromos = [{ code: 'LATO10', type: 'percent', value: 10 }];
@@ -106,7 +98,6 @@ test('процент считается до гроша, как в базе', ()
   box.appliedPromos = [];
 });
 
-/* ---------- сумма заказа на сервере ---------- */
 
 const CATALOG = {
   cities: [{ id: 'katowice', main: true }],

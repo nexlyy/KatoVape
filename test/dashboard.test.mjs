@@ -8,7 +8,6 @@ const MIG = repoFile('supabase/migrations/0030_dashboard.sql');
 const FIX = repoFile('supabase/migrations/0031_dashboard_guard_fix.sql');
 const ROLES = repoFile('supabase/migrations/0041_roles_and_stock.sql');
 
-// Chart maths and the period picker come straight out of the panel source.
 function slice(from, to) {
   const a = PANEL.indexOf(from);
   const b = PANEL.indexOf(to, a);
@@ -24,7 +23,6 @@ const box = {
 vm.createContext(box);
 vm.runInContext(
   slice('const DASH_RANGES = [', 'async function renderDash(') +
-  // dashRange объявлен через let, снаружи его не видно, отдаём сеттер из самой песочницы
   '\nout = { dashBounds, trend, lineChart, barChart, donut, money, nf, RING_COLORS,' +
   ' setRange: (r) => { dashRange = r; }, setCustom: (c) => { dashCustom = c; },' +
   ' fillSeries, dashLabel };',
@@ -53,7 +51,6 @@ test('произвольный диапазон берётся из полей, 
   D.setRange('custom');
   D.setCustom({ from: '2026-01-01', to: '2026-01-31' });
   const b = D.dashBounds();
-  // выбранные даты локальные, а ISO уходит в UTC, сравниваем по смыслу, а не по строке
   const from = new Date(b.from), to = new Date(b.to);
   assert.equal(from.getFullYear() + '-' + String(from.getMonth() + 1).padStart(2, '0') + '-' + String(from.getDate()).padStart(2, '0'), '2026-01-01');
   assert.ok(to > from);
@@ -141,8 +138,6 @@ test('каждая функция дашборда закрыта проверк
 });
 
 test('проверка роли не возвращает null, иначе guard пропускается', () => {
-  // 0031 закрыл трёхзначную логику, 0041 расширил набор ролей. coalesce обязан остаться:
-  // без него admin_role() = null у постороннего снова проходит мимо guard.
   assert.match(FIX, /coalesce\(public\.admin_role\(\) in \(/);
   const full = ROLES.slice(ROLES.indexOf('function public.is_full_admin'));
   assert.match(full, /coalesce\(public\.admin_role\(\) in \('owner', 'owner_manager', 'dev'\), false\)/);
@@ -162,7 +157,6 @@ test('закрытые разделы проверяются одним прав
     assert.match(box, new RegExp(tab + ':\\s*isFull'), tab + ' открыт не только полному доступу');
   }
   assert.match(box, /access:\s*\(\) => !!\(overview && overview\.can_grant\)/, 'раздел прав не привязан к can_grant');
-  // одно правило и для меню, и для переключения вкладки
   assert.match(PANEL, /TABS\(\)\.filter\(\(\[k\]\) => tabAllowed\(k\)\)/, 'меню не фильтруется правилом');
   assert.match(PANEL, /if \(!tabAllowed\(tab\)\) \{ tab = 'orders'; return shell\(\); \}/, 'переход на вкладку не перекрыт');
 });

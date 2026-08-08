@@ -1,6 +1,3 @@
-// Серверный расчёт заказа: та же ступень по модели, что и в корзине. Гоняем настоящий
-// pricing.ts (его зовут create-order, create-payment и create-checkout), подменив только
-// fetch: каталог, строки products и promo_check.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { priceCart, withCardSurcharge, CARD_SURCHARGE } from '../supabase/functions/_shared/pricing.ts';
@@ -27,9 +24,9 @@ const PRODUCTS = [
   { id: 'plain', flavor: '', price: null, qty: 99, tiers: null }
 ];
 
-let cloudTiers = null;          // «менеджер поправил опт в панели»
-let promos = {};                // код -> ответ promo_check
-let promoStatus = 200;          // 500: база не ответила
+let cloudTiers = null;
+let promos = {}; 
+let promoStatus = 200;
 const NO_PROMO = { ok: false, discount: 0, reason: 'not_found' };
 
 globalThis.fetch = async (url, opts) => {
